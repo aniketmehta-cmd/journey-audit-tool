@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/mosaic/Desktop/AMJ/Stage 2/Retention Comms/**)",
+      "Bash(awk -F',' 'NR<=20{print NR\": \"$43}')",
+      "Bash(python3 -c ' *)",
+      "Bash(python3)",
+      "Bash(sed -i '' 's/#c84a14/#0040a0/g' /Users/mosaic/Desktop/journey-audit-tool.html)",
+      "Bash(sed -i '' 's/rgba\\(184, 66, 13, 0.15\\)/rgba\\(0, 74, 173, 0.1\\)/g' /Users/mosaic/Desktop/journey-audit-tool.html)",
+      "Bash(sed -i '' 's/\\\\.topline-card\\\\.hero \\\\.value { color: #ffeed8; }/.topline-card.hero .value { color: #bdd6f8; }/g' /Users/mosaic/Desktop/journey-audit-tool.html)",
+      "Bash(sed -i '' 's/\\\\.pill\\\\.channel\\\\.whatsapp { background: #dfe9d6; color: #4a6b3a; }/.pill.channel.whatsapp { background: #d1fae5; color: #065f46; }/g' /Users/mosaic/Desktop/journey-audit-tool.html)",
+      "Bash(sed -i '' 's/\\\\.pill\\\\.channel\\\\.sms { background: #f5e9c8; color: #8a6815; }/.pill.channel.sms { background: #fef3c7; color: #92400e; }/g' /Users/mosaic/Desktop/journey-audit-tool.html)",
+      "Bash(sed -i '' 's/\\\\.node\\\\.whatsapp::before { background: #4a6b3a; }/.node.whatsapp::before { background: #065f46; }/g' /Users/mosaic/Desktop/journey-audit-tool.html)",
+      "Bash(sed -i '' 's/\\\\.node\\\\.sms::before { background: #8a6815; }/.node.sms::before { background: #92400e; }/g' /Users/mosaic/Desktop/journey-audit-tool.html)",
+      "Bash(sed -i '' 's/\\\\.flow-node\\\\.whatsapp { border-left-color: #4a6b3a; }/.flow-node.whatsapp { border-left-color: #065f46; }/g' /Users/mosaic/Desktop/journey-audit-tool.html)",
+      "Bash(gh auth *)",
+      "Bash(git --version)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//opt/**)",
+      "Read(//Users/mosaic/Applications/**)",
+      "Read(//Applications/**)"
+    ]
+  }
+}

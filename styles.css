@@ -1,0 +1,728 @@
+/*
+  Journey Audit Tool — Styles
+  ====================================================================
+  This file controls how the tool looks.
+
+  Sections (search for these to jump around):
+    1. DESIGN TOKENS           — colors, spacing variables (top of file)
+    2. BASE TYPOGRAPHY         — body, headings, links
+    3. MASTHEAD                — title block at the top
+    4. DATASET BAR             — dark bar showing what's loaded
+    5. TABS                    — tab navigation
+    6. CONTENT                 — main panel layout
+    7. DROP OVERLAY            — drag-and-drop affordance
+    8. TOAST                   — status notifications
+    9. TOPLINE CARDS           — the big-number cards on Overview
+   10. PILLS                   — status badges (Running, Paused, etc.)
+   11. TABLES                  — data tables
+   12. JOURNEY CARD            — the expandable journey deep-dive cards
+   13. CHANNEL CARDS           — per-channel breakdown inside a journey
+   14. NODES                   — the message-by-message timeline
+   15. TOOLBAR                 — search + filter row
+   16. QUALITY FLAGS           — Data Quality tab cards
+   17. ABOUT                   — About tab cards and step list
+   18. MISC + RESPONSIVE       — small utilities, mobile breakpoint
+*/
+
+
+/* =============================================================
+   1. DESIGN TOKENS
+   Change these to re-skin the whole tool. Everything else
+   references these variables.
+   ============================================================= */
+:root {
+  /* Surfaces */
+  --bg: #faf7f2;            /* page background — warm cream */
+  --bg-panel: #fffdf9;      /* card / panel background */
+  --bg-alt: #f4efe6;        /* table header / subtle stripes */
+
+  /* Text */
+  --ink: #1a1a1a;           /* primary text */
+  --ink-soft: #4a4a4a;      /* secondary text */
+  --ink-mute: #8a8a8a;      /* tertiary / muted */
+
+  /* Borders */
+  --rule: #e0d9cc;          /* default border */
+  --rule-soft: #ebe5d8;     /* lighter divider */
+
+  /* Brand accent */
+  --accent: #b8420d;        /* terracotta — primary CTA color */
+  --accent-soft: #f5d9c9;   /* accent background tint */
+
+  /* Status colors */
+  --good: #4a6b3a;
+  --good-bg: #e5ecdd;
+  --warn: #8a6815;
+  --warn-bg: #f5e9c8;
+  --bad: #8a3a1a;
+  --bad-bg: #f0d4c6;
+}
+
+
+/* =============================================================
+   2. BASE TYPOGRAPHY
+   ============================================================= */
+* { box-sizing: border-box; }
+html, body { background: var(--bg); }
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.num, .mono { font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+h1, h2, h3, .display { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -0.01em; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button { font-family: inherit; cursor: pointer; }
+code {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg-alt);
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+
+/* =============================================================
+   3. MASTHEAD
+   ============================================================= */
+.masthead {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--rule);
+  padding: 28px 40px 20px;
+}
+.masthead .top { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; flex-wrap: wrap; }
+.masthead h1 {
+  font-size: 36px;
+  margin: 0;
+  line-height: 1.05;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.masthead h1 em { font-style: italic; color: var(--accent); font-weight: 500; }
+.masthead .kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-mute);
+  margin-bottom: 6px;
+}
+.masthead .meta {
+  text-align: right;
+  color: var(--ink-mute);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.masthead .meta strong { color: var(--ink); font-weight: 600; }
+
+
+/* =============================================================
+   4. DATASET BAR
+   ============================================================= */
+.dataset-bar {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 12px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.dataset-bar .info { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.dataset-bar .mode {
+  background: var(--accent);
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.dataset-bar .mode.uploaded { background: var(--good); }
+.dataset-bar .files {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  max-width: 540px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dataset-bar .counts {
+  color: rgba(255,255,255,0.7);
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.dataset-bar .actions { display: flex; gap: 10px; align-items: center; }
+.dataset-bar .btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.dataset-bar .btn:hover { background: #c84a14; }
+.dataset-bar .btn-text {
+  background: none;
+  color: rgba(255,255,255,0.7);
+  border: none;
+  padding: 8px 4px;
+  font-size: 12px;
+  text-decoration: underline;
+}
+.dataset-bar .btn-text:hover { color: #fff; }
+
+
+/* =============================================================
+   5. TABS
+   ============================================================= */
+.tabbar {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 40px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  overflow-x: auto;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px -8px rgba(0,0,0,0.1);
+}
+.tabbar .tabs { display: inline-flex; gap: 0; }
+.tab {
+  background: none; border: none; cursor: pointer;
+  padding: 14px 18px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+}
+.tab:hover { color: var(--ink); }
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+.tab .count {
+  display: inline-block;
+  margin-left: 6px;
+  background: var(--bg-alt);
+  color: var(--ink-mute);
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+}
+.tab.active .count { background: var(--accent-soft); color: var(--accent); }
+
+
+/* =============================================================
+   6. CONTENT
+   ============================================================= */
+main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 36px 40px 80px;
+}
+.tabpanel { display: none; }
+.tabpanel.active { display: block; animation: fade 0.2s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.section { margin-bottom: 44px; }
+.section + .section { padding-top: 28px; border-top: 1px solid var(--rule); }
+h2 { font-size: 26px; margin: 0 0 10px; font-weight: 600; }
+h3 { font-size: 18px; margin: 28px 0 10px; font-weight: 600; }
+.lede { font-size: 15px; color: var(--ink-soft); margin: 0 0 24px; max-width: 760px; line-height: 1.6; }
+
+
+/* =============================================================
+   7. DROP OVERLAY
+   ============================================================= */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(184, 66, 13, 0.15);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.drop-overlay.active { display: flex; }
+.drop-overlay .drop-card {
+  background: var(--bg-panel);
+  border: 3px dashed var(--accent);
+  padding: 60px 80px;
+  text-align: center;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.25);
+  max-width: 500px;
+}
+.drop-overlay .drop-icon {
+  font-family: 'Fraunces', serif;
+  font-size: 56px;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+.drop-overlay h3 { margin: 0 0 8px; font-size: 24px; }
+.drop-overlay p { margin: 0; color: var(--ink-mute); }
+
+
+/* =============================================================
+   8. TOAST
+   ============================================================= */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 400px;
+}
+.toast {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 12px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  animation: slide-in 0.2s ease;
+}
+.toast.error { background: var(--bad); }
+.toast.success { background: var(--good); }
+@keyframes slide-in { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+
+/* =============================================================
+   9. TOPLINE CARDS
+   ============================================================= */
+.topline {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.topline-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  padding: 20px 22px;
+}
+.topline-card .label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-mute);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.topline-card .value { font-family: 'Fraunces', serif; font-size: 34px; font-weight: 500; line-height: 1; }
+.topline-card .value .unit { font-size: 15px; color: var(--ink-mute); margin-left: 4px; }
+.topline-card .note { margin-top: 10px; font-size: 12px; color: var(--ink-mute); line-height: 1.5; }
+.topline-card.hero { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.topline-card.hero .label, .topline-card.hero .note { color: rgba(255,255,255,0.65); }
+.topline-card.hero .value { color: #ffeed8; }
+
+.empty-state {
+  background: var(--bg-panel);
+  border: 1px dashed var(--rule);
+  padding: 60px 40px;
+  text-align: center;
+  color: var(--ink-mute);
+  font-size: 14px;
+}
+.empty-state strong { color: var(--ink); font-weight: 600; display: block; margin-bottom: 8px; font-size: 16px; }
+
+
+/* =============================================================
+   10. PILLS
+   ============================================================= */
+.pill {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.pill.running { background: var(--good-bg); color: var(--good); }
+.pill.paused { background: var(--bad-bg); color: var(--bad); }
+.pill.restricted { background: var(--warn-bg); color: var(--warn); }
+.pill.draft { background: var(--bg-alt); color: var(--ink-mute); }
+.pill.channel { background: var(--bg-alt); color: var(--ink-soft); margin-right: 4px; }
+.pill.channel.push { background: #dde5ee; color: #3a5878; }
+.pill.channel.whatsapp { background: #dfe9d6; color: #4a6b3a; }
+.pill.channel.sms { background: #f5e9c8; color: #8a6815; }
+.pill.channel.webhook { background: #e5e5e5; color: #555; }
+.pill.channel.email { background: #dcd6e8; color: #4a3a6b; }
+
+
+/* =============================================================
+   11. TABLES
+   ============================================================= */
+.data {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  font-size: 13px;
+}
+.data th, .data td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.data th {
+  background: var(--bg-alt);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: var(--ink-mute);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+.data tr:last-child td { border-bottom: 0; }
+.data tr:hover td { background: var(--bg); }
+.data td.num, .data th.num { text-align: right; font-family: 'JetBrains Mono', monospace; }
+.data td.id { font-family: 'JetBrains Mono', monospace; color: var(--ink-mute); font-size: 12px; }
+
+
+/* =============================================================
+   12. JOURNEY CARD
+   ============================================================= */
+.journey {
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  margin: 14px 0;
+  overflow: hidden;
+}
+.journey > .head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg-alt);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.journey > .head:hover { background: #ede7d8; }
+.journey > .head .chev {
+  color: var(--ink-mute);
+  transition: transform 0.2s;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+.journey.open > .head .chev { transform: rotate(90deg); }
+.journey > .head .jid {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-mute);
+  background: var(--bg-panel);
+  padding: 2px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.journey > .head .jname {
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+.journey > .head .quick {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-mute);
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.journey > .head .quick b { color: var(--ink); font-weight: 600; }
+
+.journey > .body { display: none; padding: 20px 24px; }
+.journey.open > .body { display: block; }
+
+.journey .summary-box {
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.journey .summary-box strong { color: var(--ink); }
+
+.journey .meta {
+  font-size: 12px;
+  color: var(--ink-mute);
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--rule);
+}
+.journey .meta b { color: var(--ink-soft); font-weight: 500; }
+
+
+/* =============================================================
+   13. CHANNEL CARDS (inside a journey)
+   ============================================================= */
+.channel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.ch-card {
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  padding: 12px 14px;
+}
+.ch-card .ch-name {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-mute);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.ch-card .ch-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  padding: 2px 0;
+}
+.ch-card .ch-row .k { color: var(--ink-mute); }
+.ch-card .ch-row .v { font-weight: 500; }
+.ch-card .ch-key {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.goals { font-size: 12px; color: var(--ink-mute); margin: 0 0 14px; }
+.goals b { color: var(--ink-soft); font-weight: 500; }
+
+
+/* =============================================================
+   14. NODES — the message-by-message timeline inside a journey
+   ============================================================= */
+.nodes-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-mute);
+  font-weight: 600;
+  margin: 16px 0 8px;
+}
+.node {
+  border-left: 2px solid var(--rule);
+  padding: 10px 0 10px 16px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.node::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 14px;
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+.node.push::before { background: #5b8db8; }
+.node.whatsapp::before { background: #4a6b3a; }
+.node.sms::before { background: #8a6815; }
+.node.webhook::before { background: var(--ink-mute); }
+.node.email::before { background: #4a3a6b; }
+.node .head-line { font-size: 12px; color: var(--ink-soft); margin-bottom: 4px; }
+.node .head-line .nn { font-family: 'JetBrains Mono', monospace; color: var(--ink-mute); margin-right: 6px; }
+.node .head-line .nname { font-weight: 600; color: var(--ink); }
+.node .head-line .meta { color: var(--ink-mute); font-size: 11px; margin-left: 8px; }
+.node .metrics {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin: 4px 0 6px;
+}
+.node .metrics .arrow { color: var(--ink-mute); margin: 0 4px; }
+.node .metrics .v { color: var(--ink); font-weight: 500; }
+.node .metrics .pct { color: var(--accent); font-weight: 500; }
+.node .copy {
+  background: var(--bg);
+  border: 1px solid var(--rule-soft);
+  padding: 10px 14px;
+  font-style: italic;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 4px;
+  border-radius: 2px;
+}
+.node .copy::before { content: '"'; color: var(--accent); font-weight: 700; margin-right: 2px; }
+.node .copy::after { content: '"'; color: var(--accent); font-weight: 700; margin-left: 2px; }
+
+
+/* =============================================================
+   15. TOOLBAR — search + filter row above lists
+   ============================================================= */
+.toolbar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+.toolbar input[type="text"] {
+  flex: 1; min-width: 220px;
+  padding: 9px 14px;
+  border: 1px solid var(--rule);
+  background: var(--bg-panel);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  border-radius: 2px;
+}
+.toolbar input:focus { outline: none; border-color: var(--accent); }
+.toolbar .filter {
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  padding: 9px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--ink-soft);
+  border-radius: 2px;
+  font-weight: 500;
+}
+.toolbar .filter.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+
+/* =============================================================
+   16. QUALITY FLAGS
+   ============================================================= */
+.flag {
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  padding: 16px 22px;
+  margin-bottom: 16px;
+}
+.flag h4 {
+  margin: 0 0 6px;
+  font-family: 'Fraunces', serif;
+  font-size: 17px;
+  font-weight: 600;
+}
+.flag .lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.flag .desc { color: var(--ink-soft); font-size: 13px; margin: 0 0 8px; }
+.flag .journey-list {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+  padding: 8px 12px;
+  color: var(--ink-soft);
+  max-height: 200px;
+  overflow-y: auto;
+}
+.flag .journey-list .jrow { padding: 3px 0; }
+.flag .journey-list .jrow:not(:last-child) { border-bottom: 1px solid var(--rule-soft); }
+.flag.good { border-left-color: var(--good); }
+.flag.good .lbl { color: var(--good); }
+.flag.warn { border-left-color: var(--warn); }
+.flag.warn .lbl { color: var(--warn); }
+.flag.bad { border-left-color: var(--bad); }
+.flag.bad .lbl { color: var(--bad); background: #fdf6f1; }
+
+
+/* =============================================================
+   17. ABOUT — cards and step list
+   ============================================================= */
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin: 20px 0 24px;
+}
+.about-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  padding: 20px 22px;
+}
+.about-card .icon {
+  font-family: 'Fraunces', serif;
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+.about-card h4 { margin: 0 0 8px; font-size: 16px; font-family: 'Fraunces', serif; font-weight: 600; }
+.about-card p { margin: 0; color: var(--ink-soft); font-size: 13.5px; }
+
+.step-list { counter-reset: step; padding: 0; list-style: none; margin: 16px 0; }
+.step-list li {
+  counter-increment: step;
+  padding: 14px 18px 14px 56px;
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  margin-bottom: 10px;
+  position: relative;
+  border-radius: 2px;
+}
+.step-list li::before {
+  content: counter(step);
+  position: absolute;
+  left: 16px;
+  top: 12px;
+  width: 28px;
+  height: 28px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 14px;
+}
+.step-list li b { color: var(--ink); }
+.step-list li .small { color: var(--ink-mute); font-size: 12px; margin-top: 4px; display: block; }
+
+
+/* =============================================================
+   18. MISC + RESPONSIVE
+   ============================================================= */
+.small { font-size: 12px; color: var(--ink-mute); }
+
+@media (max-width: 900px) {
+  .topline, .about-grid { grid-template-columns: 1fr; }
+  .masthead, main { padding-left: 20px; padding-right: 20px; }
+  .tabbar, .dataset-bar { padding-left: 20px; padding-right: 20px; }
+  .masthead h1 { font-size: 26px; }
+}

@@ -1,0 +1,299 @@
+<!doctype html>
+<!--
+  Journey Audit Tool
+  ====================================================================
+  This is the entry point. Open this file in any browser to use the tool.
+
+  This file contains only HTML structure (markup). The visual styles
+  live in styles.css and the application logic lives in app.js.
+
+  To make changes:
+    - Visual style    → edit styles.css
+    - Tab content     → edit this file (find the <section data-tab="..."> blocks below)
+    - App logic       → edit app.js
+    - Quality flags   → edit flags.js
+    - Demo data       → edit data/demo.js
+
+  No build step required for development. Edit, save, refresh.
+  For sharing as one self-contained file, run: python3 scripts/build.py
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Journey Audit Tool — Mosaic Wellness</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tool stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============================================================
+     MASTHEAD — title and meta
+     ============================================================ -->
+<header class="masthead">
+  <div class="top">
+    <div>
+      <div class="kicker">Mosaic Wellness · Retention Ops</div>
+      <h1>Journey Audit <em>Tool</em></h1>
+    </div>
+    <div class="meta">
+      <div><strong>Reusable Audit Workspace</strong></div>
+      <div>Built for CleverTap journey exports</div>
+      <div>Works offline · v1.0</div>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+     DATASET BAR — shows what data is currently loaded
+     ============================================================ -->
+<div class="dataset-bar">
+  <div class="info">
+    <span class="mode" id="dataset-mode">DEMO</span>
+    <span class="files" id="dataset-files">Hair / Stage 2 sample data</span>
+    <span class="counts" id="dataset-counts"></span>
+  </div>
+  <div class="actions">
+    <input type="file" id="file-input" multiple accept=".csv" hidden>
+    <button class="btn" id="upload-btn">+ Load CSV files</button>
+    <button class="btn-text" id="reset-btn" style="display:none;">Reset to demo</button>
+    <button class="btn-text" id="export-btn">Export JSON</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     TAB BAR — populated by app.js at runtime
+     ============================================================ -->
+<nav class="tabbar">
+  <div class="tabs" id="tabs"></div>
+</nav>
+
+<main>
+
+<!-- ============================================================
+     ABOUT TAB
+     Edit the copy below to change the tool's introduction.
+     ============================================================ -->
+<section class="tabpanel" data-tab="about">
+  <div class="section">
+    <h2>What this tool does</h2>
+    <p class="lede">
+      A reusable audit workspace for CleverTap retention journeys. Drop in your journey CSV exports — for any product, any category, any time period — and the dashboard rebuilds itself from the data. <strong>It only shows what's actually in your files</strong>: no auto-generated recommendations, no fabricated insights.
+    </p>
+
+    <div class="about-grid">
+      <div class="about-card">
+        <div class="icon">01</div>
+        <h4>What you can put in</h4>
+        <p>Any CleverTap journey export CSV — one file or many. The tool dedupes across files automatically (handles the iOS/Android row-split that CleverTap exports for some journeys). Drop them anywhere on the page, or click "Load CSV files" above.</p>
+      </div>
+      <div class="about-card">
+        <div class="icon">02</div>
+        <h4>What you get out</h4>
+        <p>Per-journey deep-dives (every message, full copy, all the metrics), topline aggregates, a searchable inventory, and auto-generated Data Quality flags pointing at things like duplicate journey names, running-but-silent journeys, and push-fatigue risk.</p>
+      </div>
+      <div class="about-card">
+        <div class="icon">03</div>
+        <h4>What it doesn't do</h4>
+        <p>It doesn't write recommendations for you. Auto-generated insights are limited to mechanical rules over your data (e.g. "these journeys show as Running but have zero sends"). Bespoke strategic recommendations are a separate exercise per product.</p>
+      </div>
+      <div class="about-card">
+        <div class="icon">04</div>
+        <h4>How sharing works</h4>
+        <p>This is a static page. Email the bundled HTML to anyone — they can open it in any browser and load their own CSVs. Loaded data stays in their browser only (via local storage); nothing is uploaded anywhere.</p>
+      </div>
+    </div>
+
+    <h3>How to use it — three steps</h3>
+    <ol class="step-list">
+      <li>
+        <b>Open this file in any browser.</b> Right now you're looking at the Hair / Stage 2 sample data so the tool isn't empty. The orange "DEMO" badge in the bar above marks this.
+        <span class="small">No installation required. Works in Chrome, Safari, Firefox, Edge.</span>
+      </li>
+      <li>
+        <b>Drop your CleverTap CSV files anywhere on the page</b> — or click "+ Load CSV files" in the bar above. Drop multiple files at once; the tool will dedupe across them. The DEMO badge flips to UPLOADED, and the dashboard rebuilds.
+        <span class="small">Expected columns: Journey ID, Journey Name, Version Status, Node ID, Node Type, Total Sent, Total Delivered, Total Viewed, Total Clicked, Unique Converted within Conversion Time, Influenced Conversions, Influenced Revenue, Goal 1/2/3 Name + Conversions, Campaign Message, Campaign / Segment / Controller Name + Type, Campaign OS, Delay before Node, Connector from Previous. (Standard CleverTap export schema — should match out of the box.)</span>
+      </li>
+      <li>
+        <b>Browse the tabs.</b> Overview for the topline, Journeys for the full searchable list with deep-dives, Data Quality for auto-flags, Methodology for what each metric means.
+        <span class="small">Your loaded data persists in your browser's local storage, so you don't have to re-upload every time. Click "Reset to demo" to clear and go back to the sample data.</span>
+      </li>
+    </ol>
+
+    <h3>What this tool does NOT replace</h3>
+    <p>For incremental conversion measurement (true journey lift), you still need Control Group data from CleverTap's Campaign Report — it isn't in the standard journey export schema. For bespoke strategic recommendations (a consolidated journey design for a specific product, or a copy-rotation proposal), this tool surfaces the inputs but the synthesis is a human exercise. Frequency-per-customer caps need to be cross-checked in CleverTap's Global Campaign Limits settings — not exported here.</p>
+  </div>
+</section>
+
+<!-- ============================================================
+     OVERVIEW TAB — populated by app.js
+     ============================================================ -->
+<section class="tabpanel" data-tab="overview">
+  <div class="section">
+    <h2>Topline</h2>
+    <p class="lede">Lifetime aggregates across every journey in the loaded dataset.</p>
+    <div class="topline" id="topline-grid"></div>
+    <p class="small" id="topline-note"></p>
+  </div>
+
+  <div class="section">
+    <h2>Status &amp; channel breakdown</h2>
+    <table class="data" id="status-table">
+      <thead>
+        <tr><th>Status</th><th class="num">Journeys</th><th class="num">Sent</th><th class="num">Conv</th><th class="num">Inf Conv</th><th class="num">Inf ₹</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Top performers (by influenced revenue)</h2>
+    <p class="lede">Highest-revenue journeys in the dataset. <strong>Not a recommendation</strong> — just the data ranked. Compare like-for-like with caution: lifetime totals favour older journeys.</p>
+    <table class="data" id="top-rev-table">
+      <thead>
+        <tr><th>ID</th><th>Journey</th><th>Status</th><th class="num">Sent</th><th class="num">Conv</th><th class="num">Inf Conv</th><th class="num">Inf ₹</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Highest WhatsApp/SMS conversion rate</h2>
+    <p class="lede">Journeys with the highest direct CVR on WhatsApp + SMS delivered (excludes Push, where delivery isn't exported by CleverTap, and excludes journeys with under 1,000 delivered to keep ratios meaningful).</p>
+    <table class="data" id="top-cvr-table">
+      <thead>
+        <tr><th>ID</th><th>Journey</th><th>Status</th><th class="num">Delivered</th><th class="num">Conv</th><th class="num">CVR</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================
+     JOURNEYS TAB — populated by app.js
+     ============================================================ -->
+<section class="tabpanel" data-tab="journeys">
+  <div class="section">
+    <h2>All journeys</h2>
+    <p class="lede">Every journey in the loaded dataset. Click a row to expand and see every message, full copy, channel breakdown, and goals.</p>
+    <div class="toolbar">
+      <input type="text" id="j-search" placeholder="Search by name or ID…">
+      <button class="filter active" data-j-filter="all">All</button>
+      <button class="filter" data-j-filter="Running">Running</button>
+      <button class="filter" data-j-filter="Paused">Paused</button>
+      <button class="filter" data-j-filter="Restricted">Restricted</button>
+      <button class="filter" id="expand-all-btn">Expand all</button>
+      <button class="filter" id="collapse-all-btn">Collapse all</button>
+    </div>
+    <div id="journeys-list"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     DATA QUALITY TAB — populated by app.js using rules from flags.js
+     ============================================================ -->
+<section class="tabpanel" data-tab="quality">
+  <div class="section">
+    <h2>Data quality flags</h2>
+    <p class="lede">
+      Auto-generated observations based on mechanical rules over the loaded data. <strong>No interpretation</strong> — just pointers at things worth a second look. Each flag explains the rule that triggered it and lists the affected journeys.
+    </p>
+    <p class="small">To add a new flag rule, edit <code>flags.js</code> — there are inline comments showing how.</p>
+    <div id="flags-list"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     METHODOLOGY TAB
+     ============================================================ -->
+<section class="tabpanel" data-tab="method">
+  <div class="section">
+    <h2>How the tool processes your data</h2>
+    <p class="lede">All processing happens in your browser. Nothing is sent to a server.</p>
+
+    <h3>Dedup logic</h3>
+    <p>CleverTap journey exports have two kinds of duplication:</p>
+    <ul>
+      <li><strong>Within-file:</strong> rows split by Campaign OS (Android, iOS). The same node fired to both OSs appears as two rows — one per OS. If not collapsed, you lose one OS's metrics.</li>
+      <li><strong>Cross-file:</strong> if you export the same journey in multiple files (e.g. as part of a "category" export and a "specific journey" export), each file will have a complete copy of that journey's rows.</li>
+    </ul>
+    <p>The tool handles both:</p>
+    <ol>
+      <li>For each Journey ID, pick <strong>one source file</strong> — the first file (in the order you loaded them) that contains that journey.</li>
+      <li>Within that file, group by (Journey ID, Node ID) and <strong>sum the metric columns</strong>. This collapses OS-split rows into one row per node, with metrics correctly added across OSs.</li>
+      <li>The result is one row per (Journey, Node) with correctly-summed lifetime metrics.</li>
+    </ol>
+    <p class="small">If a journey shows up in two files with DIFFERENT row counts or DIFFERENT metric values, the version from the first-loaded file wins. The other is silently dropped. (If you need different precedence, reorder your file uploads.)</p>
+
+    <h3>What each metric means</h3>
+    <ul>
+      <li><strong>Sent</strong> — for message nodes, attempts to send. For webhook nodes, trigger fires (no comm delivered).</li>
+      <li><strong>Delivered</strong> — populated for WhatsApp and SMS. NOT populated for Push (CleverTap doesn't track push delivery the same way).</li>
+      <li><strong>Viewed</strong> — Push impressions + WhatsApp read receipts.</li>
+      <li><strong>Clicked</strong> — push notification taps. Not tracked here for WhatsApp / SMS (those use link tracking off-platform).</li>
+      <li><strong>Converted</strong> — unique customers who fired the conversion event (typically "Charged") within the configured conversion window. Direct attribution.</li>
+      <li><strong>Influenced Conversions / Revenue</strong> — broader attribution including post-window and assist conversions. Usually the headline number.</li>
+      <li><strong>Goal 1/2/3 Conversions</strong> — counts of customers who hit the configured Goal event for each goal slot. "My segment" goals are funnel-step exits, not outcomes — interpret with care.</li>
+    </ul>
+
+    <h3>Quality flag rules</h3>
+    <p>The Data Quality tab applies these rules to your data:</p>
+    <ul>
+      <li><strong>Silent Running journeys</strong> — Status = Running but Total Sent = 0 across all message nodes. Likely cause: entry condition is broken or never matches.</li>
+      <li><strong>Duplicate journey names</strong> — two or more Journey IDs share the same name. Often a sign of a deprecated version that should be archived.</li>
+      <li><strong>Push-heavy journeys</strong> — 10+ Push nodes vs ≤ 1 WhatsApp node. Push impressions are usually healthy but CVR-per-push is far lower than CVR-per-WhatsApp; fatigue risk if Global Campaign Limits aren't tight.</li>
+      <li><strong>Webhook-only journeys</strong> — every node is a Webhook. The "sent" count counts trigger fires, which is misleading if rolled up into comm-volume KPIs.</li>
+      <li><strong>WA/SMS without delivery data</strong> — WhatsApp or SMS nodes where Total Sent &gt; 0 but Total Delivered = 0. Tracking gap to look into.</li>
+      <li><strong>No Goal events configured</strong> — journeys with no Goal 1/2/3 Name populated. Direct conversion attribution can't be measured.</li>
+      <li><strong>Paused journeys still in the workspace</strong> — Status = Paused. Listed for archival review.</li>
+    </ul>
+    <p class="small">Rules are defined in <code>flags.js</code>. Add or edit rules there.</p>
+
+    <h3>What this tool does NOT compute</h3>
+    <ul>
+      <li><strong>Control-Group / incremental lift</strong> — Control Group counts aren't in the journey export schema. Get from the Campaign Report subscribe flow separately.</li>
+      <li><strong>Frequency per customer</strong> — these are journey-level aggregates, not customer-level.</li>
+      <li><strong>A/B winner determination</strong> — IntelliNODE winner data isn't always present in the export. Where it is, it'll show on the per-node view.</li>
+      <li><strong>Year on dates</strong> — CleverTap date fields don't include the year. The tool shows the raw date string from your export.</li>
+    </ul>
+
+    <h3>Source code &amp; privacy</h3>
+    <p>This is a small static web app. The only third-party library is <a href="https://www.papaparse.com/">PapaParse</a> for CSV parsing (MIT license, ~19KB). Your uploaded data never leaves your browser — it's processed locally and (optionally) saved to local storage on your machine for persistence across page reloads. Hitting "Reset to demo" clears it.</p>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================================================
+     DRAG-DROP OVERLAY — appears when files are being dragged
+     ============================================================ -->
+<div class="drop-overlay" id="drop-overlay">
+  <div class="drop-card">
+    <div class="drop-icon">↓</div>
+    <h3>Drop CSV files to load</h3>
+    <p>Multiple files supported · dedup runs automatically</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOAST CONTAINER — small status messages
+     ============================================================ -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- ============================================================
+     SCRIPTS
+     Order matters — vendor first, then demo data, then flag rules, then main app.
+     ============================================================ -->
+<script src="vendor/papaparse.min.js"></script>
+<script src="data/demo.js"></script>
+<script src="flags.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
