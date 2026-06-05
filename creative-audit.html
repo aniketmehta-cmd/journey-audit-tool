@@ -525,12 +525,24 @@ const fmtPct= n => (n*100).toFixed(0)+'%';
 const fmtI  = n => n==null||isNaN(n)?'—':Math.round(n).toLocaleString('en-IN');
 const esc   = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const normN = s => (s||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();
-// Fuzzy key: strip trailing numeric ID and known format words so different version IDs still match
-const FORMAT_STRIP=new Set(['ugc','statics','static','carousel','educational','podcast','testimonial','skit','documentary','reaction','non','vo','si']);
+// Fuzzy key: iteratively strip trailing suffixes until stable
+// Handles: _si, _bca_si, _bca, numeric IDs, format words — in any order/combination
+const FORMAT_STRIP=new Set([
+  'ugc','statics','static','carousel','educational','podcast','testimonial',
+  'skit','documentary','reaction','non','vo',
+  'si','bca',   // single identity / brand collaboration ad markers
+  '0','1','2','3','4','5','6','7','8','9', // extra guard for single digits
+]);
 function normNBase(s){
   const parts=normN(s).split(' ').filter(Boolean);
-  while(parts.length&&/^\d+$/.test(parts[parts.length-1]))parts.pop();
-  while(parts.length&&FORMAT_STRIP.has(parts[parts.length-1]))parts.pop();
+  let changed=true;
+  while(changed){
+    changed=false;
+    // Strip trailing numeric IDs (e.g. 00096, 4063)
+    while(parts.length&&/^\d+$/.test(parts[parts.length-1])){parts.pop();changed=true;}
+    // Strip trailing suffix tokens (si, bca, format keywords)
+    while(parts.length&&FORMAT_STRIP.has(parts[parts.length-1])){parts.pop();changed=true;}
+  }
   return parts.join(' ');
 }
 const tc    = s => (s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
