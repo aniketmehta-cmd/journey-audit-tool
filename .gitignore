@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Claude Code session files
+.claude/launch.json
+.claude/projects/
+.claude/*.jsonl
+
+# Node / build artifacts (if any)
+node_modules/
+dist/
+
+# Local test CSVs
+test-*.csv
+*.local.csv
