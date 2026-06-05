@@ -525,6 +525,14 @@ const fmtPct= n => (n*100).toFixed(0)+'%';
 const fmtI  = n => n==null||isNaN(n)?'—':Math.round(n).toLocaleString('en-IN');
 const esc   = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const normN = s => (s||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();
+// Fuzzy key: strip trailing numeric ID and known format words so different version IDs still match
+const FORMAT_STRIP=new Set(['ugc','statics','static','carousel','educational','podcast','testimonial','skit','documentary','reaction','non','vo','si']);
+function normNBase(s){
+  const parts=normN(s).split(' ').filter(Boolean);
+  while(parts.length&&/^\d+$/.test(parts[parts.length-1]))parts.pop();
+  while(parts.length&&FORMAT_STRIP.has(parts[parts.length-1]))parts.pop();
+  return parts.join(' ');
+}
 const tc    = s => (s||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 const scalingThreshold = () => +document.getElementById('tier-hit').value||100000;
 
@@ -723,6 +731,7 @@ async function refreshSheet(){
   for(const p of PRODUCTS){try{const csv=await fetchCsv(SHEET_ID_MAIN,p.sheetName);const e=parseSheetForProduct(csv,MC,p.kw);addToCatalogue(e,p.id);loaded+=e.length;}catch(e){errors.push('Main/'+p.label+': '+e.message);}}
   try{const csv=await fetchCsv(SHEET_ID_OLD1,null);for(const p of PRODUCTS){const e=parseSheetForProduct(csv,O1C,p.kw);addToCatalogue(e,p.id);loaded+=e.length;}}catch(e){errors.push('OldSheet1: '+e.message);}
   try{const csv=await fetchCsv(SHEET_ID_OLD2,null);for(const p of PRODUCTS){const e=parseSheetForProduct(csv,O2C,p.kw);addToCatalogue(e,p.id);loaded+=e.length;}}catch(e){errors.push('OldSheet2: '+e.message);}
+  invalidateFuzzyIdx();
   try{localStorage.setItem('mm_cat',JSON.stringify(catalogue));}catch(_){}
   const total=Object.values(catalogue).reduce((a,m)=>a+Object.keys(m).length,0);
   setStatus(errors.length?'warn':'ok',`<strong>Catalogue ready</strong> · ${total} tagged creatives${errors.length?' · ⚠ '+errors.length+' source(s) failed':''}`);
@@ -777,7 +786,7 @@ function applyDailyPerf(){
   if(!rows.length){alert('No valid rows found.');return;}
   closeMapper();
   const cat=catalogue[activeProduct]||{};
-  const tagged=rows.map(p=>{const key=normN(p.adName);let tag=cat[key];if(!tag)tag=parseTagsFromName(p.adName);const ii=tag.int_inf||'Unknown',at=tag.ad_type||'Unknown';return{name:p.adName,spend:p.spend||0,ncs:p.ncs,cac:p.cac,aov:p.aov,roas:p.roas,prepaid:p.prepaid,ctr:p.ctr,hook_rate:p.hook_rate,atc_pct:p.atc_pct,purchase_pct:p.purchase_pct,int_inf:ii,ad_type:at,language:tag.language||'Unknown',person:tag.person||'Unknown',narrative:tag.narrative||'Unknown',ad_format:tag.ad_format||'Unknown',source_funnel:deriveSource(ii,at),funnel_type:parseFunnelFromName(p.adName),link45:tag.link45||null,link916:tag.link916||null};});
+  const tagged=rows.map(p=>{const key=normN(p.adName);let tag=cat[key];if(!tag)tag=parseTagsFromName(p.adName);const ii=tag.int_inf||'Unknown',at=tag.ad_type||'Unknown';return{name:p.adName,spend:p.spend||0,ncs:p.ncs,cac:p.cac,aov:p.aov,roas:p.roas,prepaid:p.prepaid,ctr:p.ctr,hook_rate:p.hook_rate,atc_pct:p.atc_pct,purchase_pct:p.purchase_pct,int_inf:ii,ad_type:at,language:tag.language||'Unknown',person:tag.person||'Unknown',narrative:normalizeNarrative(tag.narrative)||'Unknown',ad_format:tag.ad_format||'Unknown',source_funnel:deriveSource(ii,at),funnel_type:parseFunnelFromName(p.adName),link45:tag.link45||null,link916:tag.link916||null};});
   dailyData[activeProduct]={rows:tagged,label:document.getElementById('daily-period-label').value||'Recent Period'};
   renderDailyDigest();
 }
@@ -785,14 +794,37 @@ function applyDailyPerf(){
 // ═══════════════════════════════════════════════
 // ROW BUILDER
 // ═══════════════════════════════════════════════
+// Build fuzzy index once per product (base key → catalogue entry)
+const _fuzzyIdx={};
+function getFuzzyIdx(productId){
+  if(!_fuzzyIdx[productId]){
+    const cat=catalogue[productId]||{};
+    const idx=new Map();
+    for(const[,v]of Object.entries(cat)){
+      const bk=normNBase(v.ad_name);
+      if(!idx.has(bk))idx.set(bk,v);
+    }
+    _fuzzyIdx[productId]=idx;
+  }
+  return _fuzzyIdx[productId];
+}
+// Invalidate fuzzy index when catalogue updates
+function invalidateFuzzyIdx(){Object.keys(_fuzzyIdx).forEach(k=>delete _fuzzyIdx[k]);}
+
 function buildRows(productId){
-  const cat=catalogue[productId]||{};const rows=[];
+  const cat=catalogue[productId]||{};
+  const fuzzy=getFuzzyIdx(productId);
+  const rows=[];
   for(const[month,perfRows]of Object.entries(perfData[productId]||{})){
     for(const p of perfRows){
-      const key=normN(p.adName);let tag=cat[key];const tagSrc=tag?'cat':null;
-      if(!tag)tag=parseTagsFromName(p.adName);
+      const key=normN(p.adName);
+      let tag=cat[key];
+      let tagSrc=tag?'cat':null;
+      // Fuzzy fallback: strip trailing ID + format, try again
+      if(!tag){const bk=normNBase(p.adName);tag=fuzzy.get(bk);if(tag)tagSrc='fuzzy';}
+      if(!tag){tag=parseTagsFromName(p.adName);tagSrc='parse';}
       const ii=tag.int_inf||'Unknown',at=tag.ad_type||'Unknown';
-      rows.push({name:p.adName,month,spend:p.spend||0,ncs:p.ncs,cac:p.cac,aov:p.aov,roas:p.roas,prepaid:p.prepaid,ctr:p.ctr,cpc:p.cpc,hook_rate:p.hook_rate,atc_pct:p.atc_pct,purchase_pct:p.purchase_pct,int_inf:ii,ad_type:at,language:tag.language||'Unknown',person:tag.person||'Unknown',narrative:tag.narrative||'Unknown',ad_format:tag.ad_format||'Unknown',source_funnel:deriveSource(ii,at),funnel_type:parseFunnelFromName(p.adName),link45:tag.link45||null,link916:tag.link916||null,_tagSrc:tagSrc});
+      rows.push({name:p.adName,month,spend:p.spend||0,ncs:p.ncs,cac:p.cac,aov:p.aov,roas:p.roas,prepaid:p.prepaid,ctr:p.ctr,cpc:p.cpc,hook_rate:p.hook_rate,atc_pct:p.atc_pct,purchase_pct:p.purchase_pct,int_inf:ii,ad_type:at,language:tag.language||'Unknown',person:tag.person||'Unknown',narrative:normalizeNarrative(tag.narrative)||'Unknown',ad_format:tag.ad_format||'Unknown',source_funnel:deriveSource(ii,at),funnel_type:parseFunnelFromName(p.adName),link45:tag.link45||null,link916:tag.link916||null,_tagSrc:tagSrc});
     }
   }
   return rows;
@@ -1292,7 +1324,7 @@ document.getElementById('tier-hit').addEventListener('change',()=>{if(currentRow
 // ═══════════════════════════════════════════════
 const bar=document.getElementById('product-bar');
 PRODUCTS.forEach(p=>{const btn=document.createElement('button');btn.className='ptab '+p.cls+(p.id===activeProduct?' active':'');btn.dataset.id=p.id;btn.textContent=p.label;btn.onclick=()=>switchProduct(p.id);bar.appendChild(btn);});
-try{const saved=localStorage.getItem('mm_cat');if(saved){const parsed=JSON.parse(saved);Object.assign(catalogue.biotin,parsed.biotin||{});Object.assign(catalogue.s1,parsed.s1||{});Object.assign(catalogue.s2,parsed.s2||{});}const savedP=localStorage.getItem('mm_perf');if(savedP){const parsed=JSON.parse(savedP);Object.assign(perfData.biotin,parsed.biotin||{});Object.assign(perfData.s1,parsed.s1||{});Object.assign(perfData.s2,parsed.s2||{});}markStep1Done();refreshAnalytics();}catch(_){}
+try{const saved=localStorage.getItem('mm_cat');if(saved){const parsed=JSON.parse(saved);Object.assign(catalogue.biotin,parsed.biotin||{});Object.assign(catalogue.s1,parsed.s1||{});Object.assign(catalogue.s2,parsed.s2||{});invalidateFuzzyIdx();}const savedP=localStorage.getItem('mm_perf');if(savedP){const parsed=JSON.parse(savedP);Object.assign(perfData.biotin,parsed.biotin||{});Object.assign(perfData.s1,parsed.s1||{});Object.assign(perfData.s2,parsed.s2||{});}markStep1Done();refreshAnalytics();}catch(_){}
 refreshSheet();
 </script>
 </body>
