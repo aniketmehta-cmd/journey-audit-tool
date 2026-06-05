@@ -6,48 +6,53 @@
 <title>Hair Creative Performance Audit — Mosaic</title>
 <style>
 :root {
-  --bg:#f5f5f4; --paper:#ffffff; --paper2:#fafafa; --paper3:#f4f4f3;
-  --ink:#14110d; --ink2:#4a4540; --muted:#8a847b;
-  --line:#ebe9e5; --line-soft:#f3f1ed;
-  --blue:#1a56db; --blue-bg:#eff6ff; --blue-soft:#bfdbfe;
-  --green:#166534; --green-bg:#f0fdf4; --green-soft:#bbf7d0;
-  --amber:#92400e; --amber-bg:#fffbeb; --amber-soft:#fde68a;
-  --red:#991b1b; --red-bg:#fef2f2;
-  --accent:#1a56db;
-  --shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 12px rgba(0,0,0,0.06);
+  --bg:#f0f2f5; --paper:#ffffff; --paper2:#f8f9fa; --paper3:#f0f2f5;
+  --ink:#0f172a; --ink2:#475569; --muted:#94a3b8;
+  --line:#e2e8f0; --line-soft:#f1f5f9;
+  --blue:#2563eb; --blue-bg:#eff6ff; --blue-soft:#bfdbfe; --blue-dark:#1d4ed8;
+  --green:#16a34a; --green-bg:#f0fdf4; --green-soft:#bbf7d0;
+  --amber:#d97706; --amber-bg:#fffbeb; --amber-soft:#fde68a;
+  --red:#dc2626; --red-bg:#fef2f2; --red-soft:#fecaca;
+  --accent:#2563eb;
+  --shadow:0 4px 6px -1px rgba(0,0,0,0.07),0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-md:0 10px 15px -3px rgba(0,0,0,0.08),0 4px 6px -4px rgba(0,0,0,0.05);
   --shadow-sm:0 1px 2px rgba(0,0,0,0.05);
   --serif:ui-serif,Georgia,"Iowan Old Style",serif;
   --sans:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Inter,system-ui,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Monaco,monospace;
-  --radius:12px; --radius-sm:8px;
+  --radius:14px; --radius-sm:8px; --radius-lg:20px;
 }
 *{box-sizing:border-box;}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;}
-.wrap{max-width:1440px;margin:0 auto;padding:20px 20px 80px;}
+.wrap{max-width:1440px;margin:0 auto;padding:0 0 80px;}
 
 /* ── HEADER ── */
-.topbar{background:var(--paper);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;box-shadow:var(--shadow-sm);}
-.topbar-left .eyebrow{font-size:10.5px;text-transform:uppercase;letter-spacing:0.16em;color:var(--muted);font-weight:600;margin-bottom:2px;}
-.topbar-left h1{font-family:var(--serif);font-size:22px;font-weight:500;margin:0;color:var(--ink);}
+.topbar{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:0;}
+.topbar-left .eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:0.2em;color:rgba(255,255,255,0.5);font-weight:600;margin-bottom:3px;}
+.topbar-left h1{font-family:var(--sans);font-size:20px;font-weight:700;margin:0;color:#fff;letter-spacing:-0.01em;}
 .topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
-.btn{padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--sans);border:1px solid var(--line);background:var(--paper2);color:var(--ink2);transition:all 0.13s;}
-.btn:hover{background:var(--paper3);color:var(--ink);}
+.btn{padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:500;cursor:pointer;font-family:var(--sans);border:1px solid var(--line);background:var(--paper);color:var(--ink2);transition:all 0.13s;}
+.btn:hover{background:var(--paper2);color:var(--ink);box-shadow:var(--shadow-sm);}
 .btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}
-.btn-primary:hover{background:#1e40af;}
+.btn-primary:hover{background:var(--blue-dark);}
+.btn-ghost{background:rgba(255,255,255,0.12);color:#fff;border-color:rgba(255,255,255,0.2);}
+.btn-ghost:hover{background:rgba(255,255,255,0.2);color:#fff;}
 
-/* ── PRODUCT TABS ── */
-.product-bar{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;}
-.ptab{padding:8px 18px;border-radius:999px;border:2px solid var(--line);background:var(--paper);color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.13s;font-family:var(--sans);}
-.ptab:hover{border-color:var(--ink2);color:var(--ink);}
-.ptab.p-biotin.active{background:#f0ebfa;border-color:#5c3d8f;color:#5c3d8f;font-weight:600;}
-.ptab.p-s1.active{background:var(--green-bg);border-color:var(--green);color:var(--green);font-weight:600;}
-.ptab.p-s2.active{background:var(--amber-bg);border-color:#b45309;color:#b45309;font-weight:600;}
+/* ── PRODUCT + NAV BAR ── */
+.nav-band{background:var(--paper);border-bottom:1px solid var(--line);padding:0 28px;display:flex;align-items:center;gap:0;box-shadow:var(--shadow-sm);}
+.product-bar{display:flex;gap:0;padding:0;}
+.ptab{padding:14px 18px;border:none;border-bottom:3px solid transparent;background:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.13s;font-family:var(--sans);white-space:nowrap;}
+.ptab:hover{color:var(--ink);}
+.ptab.p-biotin.active{border-bottom-color:#5c3d8f;color:#5c3d8f;font-weight:700;}
+.ptab.p-s1.active{border-bottom-color:var(--green);color:var(--green);font-weight:700;}
+.ptab.p-s2.active{border-bottom-color:#b45309;color:#b45309;font-weight:700;}
+.nav-divider{width:1px;background:var(--line);height:28px;margin:0 8px;align-self:center;}
 
-/* ── MAIN NAV ── */
-.main-nav{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:22px;background:var(--paper);border-radius:var(--radius) var(--radius) 0 0;padding:0 4px;}
-.mnav-btn{padding:12px 20px;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;font-size:13.5px;font-weight:500;color:var(--muted);cursor:pointer;font-family:var(--sans);transition:all 0.14s;white-space:nowrap;}
+/* ── MAIN NAV TABS ── */
+.main-nav{display:flex;gap:0;}
+.mnav-btn{padding:14px 18px;background:none;border:none;border-bottom:3px solid transparent;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;font-family:var(--sans);transition:all 0.14s;white-space:nowrap;}
 .mnav-btn:hover{color:var(--ink2);}
-.mnav-btn.active{color:var(--ink);border-bottom-color:var(--blue);font-weight:600;}
+.mnav-btn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
 .main-tab{display:none;}.main-tab.active{display:block;}
 
 /* ── STATUS ── */
@@ -74,36 +79,39 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .step-card.done .step-done{display:block;}
 
 /* ── FILTER BAR ── */
-.filter-bar{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:12px 16px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:var(--shadow-sm);}
+.filter-bar{background:var(--paper);border-bottom:1px solid var(--line);padding:12px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
 .filter-group{display:flex;align-items:center;gap:7px;}
-.flbl{font-size:10.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);font-weight:700;white-space:nowrap;}
+.flbl{font-size:9.5px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);font-weight:700;white-space:nowrap;}
 .ftabs{display:flex;gap:4px;flex-wrap:wrap;}
-.ftab{background:var(--paper2);border:1px solid var(--line);color:var(--ink2);padding:5px 11px;font-size:11.5px;border-radius:999px;cursor:pointer;font-weight:500;font-family:var(--sans);transition:all 0.13s;}
-.ftab:hover{background:var(--paper3);color:var(--ink);}
-.ftab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.ftab{background:var(--paper2);border:1px solid var(--line);color:var(--ink2);padding:5px 12px;font-size:11.5px;border-radius:999px;cursor:pointer;font-weight:500;font-family:var(--sans);transition:all 0.13s;}
+.ftab:hover{border-color:var(--blue-soft);color:var(--blue);}
+.ftab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
 .filter-meta{font-size:11px;color:var(--muted);margin-left:auto;}
 
-/* ── SUMMARY CARDS ── */
-.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;}
-.scard{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow-sm);}
-.scard .lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);font-weight:600;margin-bottom:5px;}
-.scard .val{font-size:24px;font-weight:600;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-0.02em;}
-.scard .sub{font-size:10.5px;color:var(--muted);margin-top:3px;}
-.scard.roas-card .val{color:var(--blue);}
-.scard.cac-card .val{color:var(--amber);}
+/* ── SUMMARY HERO ── */
+.summary-hero{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:24px 28px 28px;margin-bottom:0;}
+.hero-product-name{font-size:24px;font-weight:800;color:#fff;margin:0 0 4px;letter-spacing:-0.02em;}
+.hero-period{font-size:12px;color:rgba(255,255,255,0.55);font-weight:500;margin-bottom:22px;text-transform:uppercase;letter-spacing:0.1em;}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;}
+.scard{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:var(--radius);padding:14px 16px;backdrop-filter:blur(10px);}
+.scard .lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.5);font-weight:700;margin-bottom:6px;}
+.scard .val{font-size:26px;font-weight:800;line-height:1;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-0.03em;}
+.scard .sub{font-size:10.5px;color:rgba(255,255,255,0.4);margin-top:4px;}
+.scard.roas-card .val{color:#93c5fd;}
+.scard.cac-card .val{color:#fcd34d;}
 
 /* ── FUNNEL STRIP ── */
-.funnel-strip{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:14px 20px;margin-bottom:22px;box-shadow:var(--shadow-sm);}
-.funnel-title{font-size:10.5px;text-transform:uppercase;letter-spacing:0.12em;color:var(--muted);font-weight:700;margin-bottom:10px;}
-.funnel-flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;}
-.funnel-step{text-align:center;padding:0 16px;}
-.funnel-step .fs-lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-weight:600;margin-bottom:3px;}
-.funnel-step .fs-val{font-size:20px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
-.funnel-arrow{color:var(--line);font-size:18px;padding:0 4px;}
-.funnel-extras{display:flex;gap:20px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line-soft);flex-wrap:wrap;}
+.funnel-strip{background:var(--paper);border-bottom:1px solid var(--line);padding:16px 28px;margin-bottom:0;display:flex;align-items:center;gap:0;flex-wrap:wrap;}
+.funnel-label{font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);font-weight:700;margin-right:20px;white-space:nowrap;}
+.funnel-flow{display:flex;align-items:center;flex-wrap:wrap;gap:0;flex:1;}
+.funnel-step{text-align:center;padding:6px 18px;border-right:1px solid var(--line);}
+.funnel-step:last-child{border-right:none;}
+.funnel-step .fs-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-weight:600;margin-bottom:3px;}
+.funnel-step .fs-val{font-size:18px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums;}
+.funnel-extras{display:flex;align-items:center;gap:24px;margin-left:20px;padding-left:20px;border-left:1px solid var(--line);flex-wrap:wrap;}
 .fe-item{display:flex;flex-direction:column;gap:1px;}
 .fe-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);font-weight:600;}
-.fe-val{font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
+.fe-val{font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
 
 /* ── DIMENSION CARDS ── */
 .dim-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
@@ -264,26 +272,29 @@ table.trends tr:hover td{background:var(--paper2);}
     <h1 id="page-title">Hair Creative Audit</h1>
   </div>
   <div class="topbar-right">
-    <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink2);">
-      <span>Scaling ≥ ₹</span><input type="number" id="tier-hit" value="100000" step="10000" style="width:90px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px;font-family:var(--sans);background:var(--paper2);">
+    <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,0.7);">
+      <span>Scaling ≥ ₹</span><input type="number" id="tier-hit" value="100000" step="10000" style="width:90px;padding:5px 8px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;font-size:12px;font-family:var(--sans);background:rgba(255,255,255,0.1);color:#fff;">
     </div>
-    <button class="btn btn-primary" onclick="refreshSheet()">↻ Refresh Sheet</button>
-    <button class="btn" onclick="document.getElementById('perf-input').click()">⬆ Upload CSV</button>
+    <button class="btn btn-ghost" onclick="refreshSheet()">↻ Refresh Sheet</button>
+    <button class="btn btn-ghost" onclick="document.getElementById('perf-input').click()">⬆ Upload CSV</button>
     <input type="file" id="perf-input" accept=".csv,.tsv,.txt" style="display:none">
   </div>
 </div>
 
-<div class="product-bar" id="product-bar"></div>
-
-<div class="main-nav">
-  <button class="mnav-btn active" onclick="switchMainTab('analytics',this)">📊 Monthly Analysis</button>
-  <button class="mnav-btn" onclick="switchMainTab('daily',this)">📅 Daily Digest</button>
-  <button class="mnav-btn" onclick="switchMainTab('trends',this)">📈 Trends</button>
+<div class="nav-band">
+  <div class="product-bar" id="product-bar"></div>
+  <div class="nav-divider"></div>
+  <div class="main-nav">
+    <button class="mnav-btn active" onclick="switchMainTab('analytics',this)">📊 Monthly Analysis</button>
+    <button class="mnav-btn" onclick="switchMainTab('daily',this)">📅 Daily Digest</button>
+    <button class="mnav-btn" onclick="switchMainTab('trends',this)">📈 Trends</button>
+  </div>
 </div>
 
 <!-- ═══ TAB: ANALYTICS ═══ -->
 <div id="main-tab-analytics" class="main-tab active">
 
+<div style="padding:20px 28px 0;">
 <div class="status-strip" id="status-strip">
   <div class="sdot dot-loading" id="sdot"></div>
   <div class="smsg" id="smsg">Fetching creative catalogue from Google Sheets…</div>
@@ -306,9 +317,19 @@ table.trends tr:hover td{background:var(--paper2);}
     <div class="step-done" id="step2-done"></div>
   </div>
 </div>
+</div><!-- /padding -->
 
 <div id="analytics" style="display:none;">
 
+  <!-- Hero: summary + funnel always visible -->
+  <div class="summary-hero" id="summary-hero">
+    <div class="hero-product-name" id="hero-product-name">Stage 2: Hair Regrowth Kit</div>
+    <div class="hero-period" id="hero-period">Combined · All sources</div>
+    <div class="summary-grid" id="summary-grid"></div>
+  </div>
+  <div class="funnel-strip" id="funnel-strip"></div>
+
+  <!-- Filter bar -->
   <div class="filter-bar">
     <div class="filter-group"><div class="flbl">Month</div><div class="ftabs" id="month-tabs"></div></div>
     <div class="filter-group"><div class="flbl">Source</div><div class="ftabs" id="source-tabs"></div></div>
@@ -316,24 +337,31 @@ table.trends tr:hover td{background:var(--paper2);}
     <div class="filter-meta" id="filter-meta"></div>
   </div>
 
-  <div class="summary-grid" id="summary-grid"></div>
+  <!-- Content area with padding -->
+  <div style="padding:24px 28px;">
 
-  <div class="funnel-strip" id="funnel-strip"></div>
-
-  <div style="margin-bottom:22px;">
-    <div class="section-h" style="margin-bottom:14px;"><h2>Breakdown by Dimension</h2><span class="deck">click any card to see the ads · click ▶ Watch to view video</span></div>
-    <div class="dim-tabs" id="dim-tabs"></div>
-    <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);">
-      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:4px;background:#16a34a;border-radius:2px;display:inline-block;"></span> ROAS significantly above average</span>
-      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:4px;background:#2563eb;border-radius:2px;display:inline-block;"></span> At / near average</span>
-      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:4px;background:#d97706;border-radius:2px;display:inline-block;"></span> Below average</span>
-      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:4px;background:#dc2626;border-radius:2px;display:inline-block;"></span> Significantly below</span>
+  <div style="margin-bottom:28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <h2 style="font-size:18px;font-weight:700;margin:0 0 3px;color:var(--ink);">Breakdown by Dimension</h2>
+        <p style="font-size:12.5px;color:var(--muted);margin:0;">Click any card to see its ads · ▶ Watch opens the video directly</p>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);">
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:4px;background:#16a34a;border-radius:2px;display:inline-block;"></span>Outperforming</span>
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:4px;background:#2563eb;border-radius:2px;display:inline-block;"></span>On track</span>
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:4px;background:#d97706;border-radius:2px;display:inline-block;"></span>Below avg</span>
+        <span style="display:flex;align-items:center;gap:5px;"><span style="width:14px;height:4px;background:#dc2626;border-radius:2px;display:inline-block;"></span>Underperforming</span>
+      </div>
     </div>
+    <div class="dim-tabs" id="dim-tabs"></div>
     <div id="dim-panels"></div>
   </div>
 
   <div class="drill-section">
-    <div class="section-h"><h2>All Creatives</h2><span class="deck">sort, filter, search</span></div>
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--line);">
+      <h2 style="font-size:18px;font-weight:700;margin:0;color:var(--ink);">All Creatives</h2>
+      <span style="font-size:12px;color:var(--muted);">sort · filter · search all ads</span>
+    </div>
     <div class="filter-row">
       <label>Source <select id="f-source_funnel"><option value="">all</option></select></label>
       <label>Int/Inf <select id="f-int_inf"><option value="">all</option></select></label>
@@ -372,6 +400,7 @@ table.trends tr:hover td{background:var(--paper2);}
     </table></div>
   </div>
 
+  </div><!-- /content padding -->
 </div><!-- /#analytics -->
 </div><!-- /main-tab-analytics -->
 
@@ -513,10 +542,106 @@ function detectMonthFromFilename(name){const lower=(name||'').toLowerCase();for(
 function parseCsv(text){const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');const out=[];for(const line of lines){if(!line.trim())continue;const row=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){row.push(cur.trim());cur='';}else cur+=c;}row.push(cur.trim());out.push(row);}return out;}
 
 // AD NAME TAG PARSER
-const NARRATIVE_KW=new Set(['receding','price','stages','genetics','science','results','trust','myth','before','consistency','problem','ingredient','others','product','beforeafter','bald','hairline','solution','stage','regrowth','anti','hairfall','dandruff','scalp']);
+const NARRATIVE_KW=new Set(['receding','price','stages','genetics','science','results','trust','myth','before','consistency','problem','ingredient','others','product','beforeafter','bald','hairline','solution','stage','regrowth','anti','hairfall','dandruff','scalp','nutrition','organic','barber','ugc','non','in']);
 const AD_TYPE_NORM={influencer:'VO',vo:'VO',reel:'Reel',static:'Static',statics:'Static',carousel:'Carousel',image:'Static',video:'Video',ugc:'UGC'};
-function extractPNF(remaining){while(remaining.length&&(/^\d+$/.test(remaining[remaining.length-1])||remaining[remaining.length-1]==='si'))remaining.pop();if(!remaining.length)return{person:'Internal',narrative:'Unknown',ad_format:'Unknown'};const format=remaining.pop();if(!remaining.length)return{person:'Internal',narrative:tc(format),ad_format:'Unknown'};let personParts=[],narrativeParts=[];const first=remaining[0];if(!first||first==='none'||first==='ai'||first==='internal'){narrativeParts=remaining.slice(1);}else{for(let i=0;i<remaining.length;i++){const p=remaining[i];if(NARRATIVE_KW.has(p.split('/')[0])){narrativeParts=remaining.slice(i);break;}personParts.push(p);if(i>=2){narrativeParts=remaining.slice(i+1);break;}}}const person=personParts.length?personParts.map(p=>tc(p)).join(' '):'Internal';const narrative=narrativeParts.length?narrativeParts.map(p=>p.replace(/\//g,' / ')).map(tc).join(' '):'Unknown';return{person,narrative,ad_format:tc(format)};}
-function parseTagsFromName(adName){const lower=(adName||'').toLowerCase().replace(/^_+/,'');const parts=lower.split('_');let int_inf='Unknown',ad_type='Unknown',language='Unknown',person='Unknown',narrative='Unknown',ad_format='Unknown',funnel_type='Unknown';if(/^(stage[12]|biotin30?|s[12]|anti)/.test(lower)){funnel_type=(parts[1]||'bof').toUpperCase();int_inf=normalizeIntInf(parts[2]);ad_type=AD_TYPE_NORM[parts[3]]||tc(parts[3])||'Unknown';language=tc(parts[4]||'Unknown');const e=extractPNF([...parts.slice(5)]);person=e.person;narrative=e.narrative;ad_format=e.ad_format;}else if(/^inf_/.test(lower)){int_inf='Influencer';funnel_type='BOF';ad_type=AD_TYPE_NORM[parts[1]]||tc(parts[1])||'VO';person=tc(parts[3]||'Unknown');language=tc(parts[4]||'Unknown');const pi=parts.indexOf('pan');const np=pi>5?parts.slice(5,pi):parts.slice(5,parts.length-1);if(np.length>=2){narrative=np.slice(0,-1).map(p=>p.replace(/\//g,' / ')).map(tc).join(' ');ad_format=tc(np[np.length-1]);}else{narrative=np.map(tc).join(' ')||'Unknown';}}else if(/^int_/.test(lower)){int_inf='Internal';funnel_type='BOF';ad_type=AD_TYPE_NORM[parts[1]]||tc(parts[1])||'Unknown';person=parts[3]==='internal'?'Internal':tc(parts[3]||'Internal');language=tc(parts[4]||'Unknown');const pi=parts.indexOf('pan');const np=pi>5?parts.slice(5,pi):parts.slice(5,parts.length-1);if(np.length>=2){narrative=np.slice(0,-1).map(p=>p.replace(/\//g,' / ')).map(tc).join(' ');ad_format=tc(np[np.length-1]);}else{narrative=np.map(tc).join(' ')||'Unknown';}}else if(/^static_/.test(lower)){int_inf='Internal';funnel_type='BOF';ad_type='Static';person=parts[2]==='internal'?'Internal':tc(parts[2]||'Internal');language=tc(parts[3]||'Unknown');narrative=tc((parts[4]||'Unknown').replace(/\//g,' / '));ad_format=tc(parts[5]||'Unknown');}const clean=v=>(!v||v==='Unknown'||v===''||v==='-')?'Unknown':v;return{int_inf:clean(int_inf),ad_type:clean(ad_type),language:clean(language),person:clean(person),narrative:clean(narrative),ad_format:clean(ad_format),funnel_type:clean(funnel_type)};}
+const FUNNEL_KW=new Set(['bof','mof','tof']);
+
+function extractPNF(remaining){
+  while(remaining.length&&(/^\d+$/.test(remaining[remaining.length-1])||remaining[remaining.length-1]==='si'))remaining.pop();
+  if(!remaining.length)return{person:'Internal',narrative:'Unknown',ad_format:'Unknown'};
+  const format=remaining.pop();
+  if(!remaining.length)return{person:'Internal',narrative:tc(format),ad_format:'Unknown'};
+  let personParts=[],narrativeParts=[];
+  const first=remaining[0];
+  if(!first||first==='none'||first==='ai'||first==='internal'||/^\d+$/.test(first)){
+    narrativeParts=remaining.slice(first&&!(/^\d+$/.test(first))&&first!=='none'&&first!=='ai'?0:1);
+    if(first==='none'||first==='ai')narrativeParts=remaining.slice(1);
+  }else{
+    for(let i=0;i<remaining.length;i++){
+      const p=remaining[i];
+      if(NARRATIVE_KW.has(p.split('/')[0].split('-')[0])){narrativeParts=remaining.slice(i);break;}
+      personParts.push(p);
+      if(i>=2){narrativeParts=remaining.slice(i+1);break;}
+    }
+  }
+  const person=personParts.length?personParts.map(p=>tc(p)).join(' '):'Internal';
+  const narrative=narrativeParts.length?narrativeParts.map(p=>p.replace(/[-\/]/g,' / ')).map(tc).join(' '):'Unknown';
+  return{person,narrative,ad_format:tc(format)};
+}
+
+function parseNewConv(parts, funOffset) {
+  // funOffset: index where funnel/intinf starts
+  // Stage2: stage2,bof,inf,reel,lang,... → funOffset=1 (funnel at 1)
+  // Stage_1: stage,1,bof,inf,reel,lang,... → funOffset=2 (funnel at 2)
+  // Biotin: biotin30,inf,reel,lang,... → funOffset=null (no funnel)
+  let int_inf,ad_type,language,funnel_type='Unknown';
+  if(funOffset===null){
+    // Biotin-style: [0]=product, [1]=intinf, [2]=adtype, [3]=lang
+    int_inf=normalizeIntInf(parts[1]);
+    ad_type=AD_TYPE_NORM[parts[2]]||tc(parts[2])||'Unknown';
+    language=tc(parts[3]||'Unknown');
+    const e=extractPNF([...parts.slice(4)]);
+    return{int_inf,ad_type,language,funnel_type,person:e.person,narrative:e.narrative,ad_format:e.ad_format};
+  }
+  funnel_type=(parts[funOffset]||'bof').toUpperCase();
+  int_inf=normalizeIntInf(parts[funOffset+1]);
+  ad_type=AD_TYPE_NORM[parts[funOffset+2]]||tc(parts[funOffset+2])||'Unknown';
+  language=tc(parts[funOffset+3]||'Unknown');
+  const e=extractPNF([...parts.slice(funOffset+4)]);
+  return{int_inf,ad_type,language,funnel_type,person:e.person,narrative:e.narrative,ad_format:e.ad_format};
+}
+
+function parseTagsFromName(adName){
+  const lower=(adName||'').toLowerCase().replace(/^_+/,'');
+  const parts=lower.split('_');
+  let r={int_inf:'Unknown',ad_type:'Unknown',language:'Unknown',person:'Unknown',narrative:'Unknown',ad_format:'Unknown',funnel_type:'Unknown'};
+
+  // Stage 2 / S2: stage2_bof_inf_reel_hindi_...
+  if(/^stage2_|^s2_/.test(lower)){
+    r=parseNewConv(parts,1);
+  }
+  // Stage 1 with underscore: stage_1_bof_inf_reel_hinglish_...  parts=['stage','1','bof','inf',...]
+  else if(/^stage_1_|^stage_2_/.test(lower)){
+    r=parseNewConv(parts,2); // funnel at index 2
+  }
+  // Stage 1 compact: stage1_bof_inf_reel_...
+  else if(/^stage1_/.test(lower)){
+    r=parseNewConv(parts,1);
+  }
+  // Biotin (no funnel type): biotin30_inf_reel_english_...
+  else if(/^biotin30?_/.test(lower)){
+    // Check if parts[1] is a funnel keyword or intinf
+    r=parseNewConv(parts, FUNNEL_KW.has(parts[1])?1:null);
+  }
+  // Old: inf_influencer_stage2_... or inf_vo_biotin_...
+  else if(/^inf_/.test(lower)){
+    const pi=parts.indexOf('pan');
+    const langIdx=4;const np=pi>langIdx?parts.slice(langIdx+1,pi):parts.slice(langIdx+1,parts.length-1);
+    r={int_inf:'Influencer',funnel_type:'BOF',ad_type:AD_TYPE_NORM[parts[1]]||tc(parts[1])||'VO',
+      language:tc(parts[langIdx]||'Unknown'),person:tc(parts[3]||'Unknown'),
+      narrative:np.length>=2?np.slice(0,-1).map(p=>p.replace(/[-\/]/g,' / ')).map(tc).join(' '):np.map(tc).join(' ')||'Unknown',
+      ad_format:np.length>=2?tc(np[np.length-1]):'Unknown'};
+  }
+  // Old: int_static_stage2_... or int_vo_...
+  else if(/^int_/.test(lower)){
+    const pi=parts.indexOf('pan');
+    const np=pi>5?parts.slice(5,pi):parts.slice(5,parts.length-1);
+    r={int_inf:'Internal',funnel_type:'BOF',ad_type:AD_TYPE_NORM[parts[1]]||tc(parts[1])||'Unknown',
+      language:tc(parts[4]||'Unknown'),person:parts[3]==='internal'?'Internal':tc(parts[3]||'Internal'),
+      narrative:np.length>=2?np.slice(0,-1).map(p=>p.replace(/[-\/]/g,' / ')).map(tc).join(' '):np.map(tc).join(' ')||'Unknown',
+      ad_format:np.length>=2?tc(np[np.length-1]):'Unknown'};
+  }
+  // Old static: _static_stage2_...
+  else if(/^static_/.test(lower)){
+    r={int_inf:'Internal',funnel_type:'BOF',ad_type:'Static',
+      language:tc(parts[3]||'Unknown'),person:parts[2]==='internal'?'Internal':tc(parts[2]||'Internal'),
+      narrative:tc((parts[4]||'Unknown').replace(/[-\/]/g,' / ')),ad_format:tc(parts[5]||'Unknown')};
+  }
+
+  const clean=v=>(!v||v==='Unknown'||v===''||v==='-')?'Unknown':v;
+  return{int_inf:clean(r.int_inf),ad_type:clean(r.ad_type),language:clean(r.language),
+    person:clean(r.person),narrative:clean(r.narrative),ad_format:clean(r.ad_format),funnel_type:clean(r.funnel_type)};
+}
 
 // ═══════════════════════════════════════════════
 // CATALOGUE
@@ -788,27 +913,28 @@ function renderAll(){
   const wPurch=wAvg(rows,'purchase_pct','spend');
   const wPrep=wAvg(rows,'prepaid','spend');
   const mLbl=activeMonth==='combined'?'Combined':activeMonth;
-  document.getElementById('filter-meta').textContent=mLbl+(activeSource==='all'?'':' · '+activeSource)+(activeFunnel==='all'?'':' · '+activeFunnel);
+  const periodLabel=mLbl+(activeSource==='all'?'':' · '+activeSource)+(activeFunnel==='all'?'':' · '+activeFunnel);
+  document.getElementById('filter-meta').textContent=periodLabel;
+  document.getElementById('hero-period').textContent=periodLabel+' · '+rows.length+' creatives';
+  const p=PRODUCTS.find(x=>x.id===activeProduct);
+  document.getElementById('hero-product-name').textContent=p.label;
 
-  // Summary cards
+  // Summary cards (dark hero)
   document.getElementById('summary-grid').innerHTML=
     `<div class="scard"><div class="lbl">Total Spend</div><div class="val">${fmtS(ts)}</div><div class="sub">${rows.length} creatives</div></div>`+
-    `<div class="scard"><div class="lbl">Conversions (NCs)</div><div class="val">${fmtI(tncs)||'—'}</div><div class="sub">${rows.filter(r=>r.ncs).length} ads with data</div></div>`+
-    `<div class="scard roas-card"><div class="lbl">W.Avg ROAS</div><div class="val">${fmtR(wRoas)}</div><div class="sub">spend-weighted</div></div>`+
-    `<div class="scard cac-card"><div class="lbl">W.Avg CAC</div><div class="val">${fmtC(wCAC)}</div><div class="sub">total spend ÷ NCs</div></div>`+
-    `<div class="scard"><div class="lbl">W.Avg AOV</div><div class="val">${fmtC(wAOV)}</div><div class="sub">conv-weighted</div></div>`+
+    `<div class="scard"><div class="lbl">Conversions</div><div class="val">${fmtI(tncs)||'—'}</div><div class="sub">NCs</div></div>`+
+    `<div class="scard roas-card"><div class="lbl">ROAS</div><div class="val">${fmtR(wRoas)}</div><div class="sub">spend-weighted</div></div>`+
+    `<div class="scard cac-card"><div class="lbl">CAC</div><div class="val">${fmtC(wCAC)}</div><div class="sub">spend ÷ NCs</div></div>`+
+    `<div class="scard"><div class="lbl">AOV</div><div class="val">${fmtC(wAOV)}</div></div>`+
     `<div class="scard"><div class="lbl">Prepaid %</div><div class="val">${fmtP(wPrep)}</div></div>`;
 
-  // Funnel strip
+  // Funnel strip (light bar)
   document.getElementById('funnel-strip').innerHTML=
-    `<div class="funnel-title">Funnel Health (spend-weighted)</div>
+    `<div class="funnel-label">Funnel</div>
     <div class="funnel-flow">
       <div class="funnel-step"><div class="fs-lbl">CTR</div><div class="fs-val">${fmtP(wCTR)}</div></div>
-      <div class="funnel-arrow">→</div>
       <div class="funnel-step"><div class="fs-lbl">Hook Rate</div><div class="fs-val">${fmtP(wHook)}</div></div>
-      <div class="funnel-arrow">→</div>
       <div class="funnel-step"><div class="fs-lbl">ATC %</div><div class="fs-val">${fmtP(wATC)}</div></div>
-      <div class="funnel-arrow">→</div>
       <div class="funnel-step"><div class="fs-lbl">Purchase %</div><div class="fs-val">${fmtP(wPurch)}</div></div>
     </div>`;
 
