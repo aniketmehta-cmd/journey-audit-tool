@@ -106,47 +106,78 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .fe-val{font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
 
 /* ── DIMENSION CARDS ── */
-.dim-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
-.dim-tab{padding:7px 16px;background:var(--paper);border:1px solid var(--line);color:var(--ink2);font-size:12.5px;font-weight:500;border-radius:999px;cursor:pointer;transition:all 0.13s;font-family:var(--sans);}
-.dim-tab:hover{border-color:var(--blue-soft);color:var(--ink);}
+.dim-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px;}
+.dim-tab{padding:8px 18px;background:var(--paper);border:1.5px solid var(--line);color:var(--ink2);font-size:13px;font-weight:500;border-radius:999px;cursor:pointer;transition:all 0.13s;font-family:var(--sans);}
+.dim-tab:hover{border-color:var(--blue);color:var(--blue);}
 .dim-tab.active{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600;}
 .dim-panel{display:none;}.dim-panel.active{display:block;}
-.dim-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
-.dim-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;transition:box-shadow 0.14s;}
-.dim-card:hover{box-shadow:var(--shadow);}
-.dim-card-header{padding:14px 16px 0;display:flex;align-items:baseline;justify-content:space-between;cursor:pointer;user-select:none;}
-.dim-card-name{font-size:14.5px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;}
-.dim-card-arrow{font-size:10px;color:var(--muted);transition:transform 0.18s;display:inline-block;}
+.dim-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+
+/* Card performance bands */
+.dim-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;cursor:pointer;transition:box-shadow 0.14s,transform 0.1s;}
+.dim-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.10);transform:translateY(-1px);}
+.dim-card-band{height:4px;width:100%;background:var(--blue);}
+.dim-card.perf-great .dim-card-band{background:#16a34a;}
+.dim-card.perf-good  .dim-card-band{background:#2563eb;}
+.dim-card.perf-mid   .dim-card-band{background:#d97706;}
+.dim-card.perf-low   .dim-card-band{background:#dc2626;}
+.dim-card.perf-none  .dim-card-band{background:#e5e7eb;}
+
+.dim-card-inner{padding:14px 16px 0;}
+.dim-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.dim-card-name{font-size:15px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:7px;}
+.dim-card-arrow{font-size:11px;color:var(--muted);transition:transform 0.2s;display:inline-block;}
 .dim-card.expanded .dim-card-arrow{transform:rotate(90deg);}
-.dim-card-count{font-size:11.5px;color:var(--muted);font-weight:500;}
-.dim-card-spend{padding:6px 16px 0;font-size:22px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:8px;}
-.dim-spend-pct{font-size:11.5px;font-weight:500;color:var(--muted);}
-.dim-bar-wrap{padding:8px 16px;}
-.dim-bar-track{height:4px;background:var(--paper3);border-radius:2px;overflow:hidden;}
-.dim-bar-fill{height:100%;background:var(--blue);border-radius:2px;transition:width 0.4s ease;}
-.dim-metrics{padding:8px 16px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
-.dim-metric-row2{padding:0 16px 14px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;border-bottom:1px solid var(--line-soft);}
-.dm{display:flex;flex-direction:column;gap:1px;}
-.dm .dl{font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-weight:600;}
-.dm .dv{font-size:13px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
-.dm .dv.roas-good{color:var(--green);}
-.dm .dv.roas-mid{color:var(--amber);}
-.dm .dv.roas-low{color:var(--red);}
+.dim-card-count{font-size:11.5px;color:var(--muted);background:var(--paper3);padding:2px 8px;border-radius:999px;font-weight:500;}
+
+.dim-spend-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:6px;}
+.dim-spend-amount{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-0.03em;font-variant-numeric:tabular-nums;}
+.dim-pct-badge{font-size:11.5px;font-weight:600;color:var(--ink2);background:var(--paper3);padding:2px 8px;border-radius:5px;margin-bottom:3px;}
+.dim-bar-wrap{margin-bottom:12px;}
+.dim-bar-track{height:5px;background:var(--paper3);border-radius:3px;overflow:hidden;}
+.dim-bar-fill{height:100%;border-radius:3px;transition:width 0.5s ease;}
+.dim-card.perf-great .dim-bar-fill{background:#16a34a;}
+.dim-card.perf-good  .dim-bar-fill{background:#2563eb;}
+.dim-card.perf-mid   .dim-bar-fill{background:#d97706;}
+.dim-card.perf-low   .dim-bar-fill{background:#dc2626;}
+
+.dim-primary{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:8px;}
+.dim-primary .dm{padding:8px 10px;border-right:1px solid var(--line);}
+.dim-primary .dm:last-child{border-right:none;}
+.dim-secondary{display:flex;gap:0;flex-wrap:nowrap;margin-bottom:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.dim-secondary .dm{padding:7px 10px;border-right:1px solid var(--line);flex:1;}
+.dim-secondary .dm:last-child{border-right:none;}
+.dm .dl{font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);font-weight:600;margin-bottom:2px;}
+.dm .dv{font-size:13px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
+.dm .dv.roas-great{color:#16a34a;}
+.dm .dv.roas-good{color:#2563eb;}
+.dm .dv.roas-mid{color:#d97706;}
+.dm .dv.roas-low{color:#dc2626;}
+
+.dim-see-ads{padding:10px 16px;border-top:1px solid var(--line-soft);display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;color:var(--blue);transition:background 0.12s;}
+.dim-card:hover .dim-see-ads{background:var(--blue-bg);}
+.dim-card.expanded .dim-see-ads{background:var(--blue-bg);}
 
 /* ── EXPANDED ADS ── */
-.card-ads{display:none;max-height:380px;overflow-y:auto;}
+.card-ads{display:none;border-top:2px solid var(--line);}
 .dim-card.expanded .card-ads{display:block;}
-.card-ad-row{padding:11px 16px;border-top:1px solid var(--line-soft);display:flex;align-items:flex-start;gap:12px;transition:background 0.1s;}
+.card-ads-header{padding:10px 16px;background:var(--paper2);display:flex;align-items:center;justify-content:space-between;}
+.card-ads-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);}
+.card-ads-list{max-height:400px;overflow-y:auto;}
+.card-ad-row{padding:10px 16px;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:12px;transition:background 0.1s;}
 .card-ad-row:hover{background:var(--paper2);}
+.card-ad-bar{width:3px;flex-shrink:0;border-radius:2px;align-self:stretch;min-height:36px;background:var(--blue);opacity:0.3;}
 .card-ad-main{flex:1;min-width:0;}
-.card-ad-name{font-family:var(--mono);font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
-.card-ad-metrics{display:flex;gap:10px;flex-wrap:wrap;font-size:11.5px;font-variant-numeric:tabular-nums;}
-.card-ad-m{color:var(--ink2);}
-.card-ad-m span{font-weight:600;color:var(--ink);}
-.card-ad-links{display:flex;flex-direction:column;gap:4px;flex-shrink:0;}
-.watch-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;white-space:nowrap;transition:all 0.12s;}
-.watch-btn:hover{background:var(--blue);color:#fff;}
-.no-link{font-size:10px;color:var(--muted);padding:5px 0;}
+.card-ad-display{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-ad-rawname{font-family:var(--mono);font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px;}
+.card-ad-metrics{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink2);}
+.card-ad-metrics strong{color:var(--ink);font-weight:700;}
+.card-ad-right{display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end;}
+.watch-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:var(--blue);color:#fff;border:none;border-radius:7px;font-size:11.5px;font-weight:700;text-decoration:none;white-space:nowrap;transition:all 0.12s;cursor:pointer;}
+.watch-btn:hover{background:#1e40af;transform:scale(1.02);}
+.watch-btn-sm{padding:4px 9px;font-size:10.5px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);border-radius:5px;}
+.watch-btn-sm:hover{background:var(--blue);color:#fff;}
+.no-link{font-size:10px;color:var(--muted);}
 
 /* ── DRILL DOWN ── */
 .drill-section{margin-top:28px;}
@@ -292,6 +323,12 @@ table.trends tr:hover td{background:var(--paper2);}
   <div style="margin-bottom:22px;">
     <div class="section-h" style="margin-bottom:14px;"><h2>Breakdown by Dimension</h2><span class="deck">click any card to see the ads · click ▶ Watch to view video</span></div>
     <div class="dim-tabs" id="dim-tabs"></div>
+    <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);">
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:4px;background:#16a34a;border-radius:2px;display:inline-block;"></span> ROAS significantly above average</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:4px;background:#2563eb;border-radius:2px;display:inline-block;"></span> At / near average</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:4px;background:#d97706;border-radius:2px;display:inline-block;"></span> Below average</span>
+      <span style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:4px;background:#dc2626;border-radius:2px;display:inline-block;"></span> Significantly below</span>
+    </div>
     <div id="dim-panels"></div>
   </div>
 
@@ -616,61 +653,115 @@ function buildDimData(rows,dim){
   })).sort((a,b)=>b.spend-a.spend);
 }
 
-function renderDimCards(groups,totalSpend){
-  if(!groups.length)return'<div style="color:var(--muted);padding:20px;text-align:center;">No data</div>';
-  return'<div class="dim-cards-grid">'+groups.map(g=>{
-    const roasClass=g.roas==null?'':g.roas>=0.65?'roas-good':g.roas>=0.5?'roas-mid':'roas-low';
-    return`<div class="dim-card" onclick="toggleCard(this)">
-      <div class="dim-card-header">
-        <div class="dim-card-name"><span class="dim-card-arrow">▶</span>${esc(g.key)}</div>
-        <div class="dim-card-count">${g.rows.length} ads</div>
-      </div>
-      <div class="dim-card-spend">${fmtS(g.spend)}<span class="dim-spend-pct">${fmtPct(g.pct)} of spend</span></div>
-      <div class="dim-bar-wrap"><div class="dim-bar-track"><div class="dim-bar-fill" style="width:${(g.pct*100).toFixed(1)}%"></div></div></div>
-      <div class="dim-metrics">
-        <div class="dm"><div class="dl">NCs</div><div class="dv">${g.ncs?fmtI(g.ncs):'—'}</div></div>
-        <div class="dm"><div class="dl">CAC</div><div class="dv">${fmtC(g.cac)}</div></div>
-        <div class="dm"><div class="dl">ROAS</div><div class="dv ${roasClass}">${fmtR(g.roas)}</div></div>
-        <div class="dm"><div class="dl">AOV</div><div class="dv">${fmtC(g.aov)}</div></div>
-      </div>
-      <div class="dim-metric-row2">
-        <div class="dm"><div class="dl">Prepaid</div><div class="dv">${fmtP(g.prepaid)}</div></div>
-        <div class="dm"><div class="dl">CTR</div><div class="dv">${fmtP(g.ctr)}</div></div>
-        <div class="dm"><div class="dl">Hook</div><div class="dv">${fmtP(g.hook)}</div></div>
-        <div class="dm"><div class="dl">Pur%</div><div class="dv">${fmtP(g.purch)}</div></div>
-      </div>
-      <div class="card-ads">${renderCardAdList(g.rows)}</div>
-    </div>`;
-  }).join('')+'</div>';
+function adDisplayName(r) {
+  const parts = [
+    (r.person && r.person !== 'Internal' && r.person !== 'Unknown') ? r.person : null,
+    (r.narrative && r.narrative !== 'Unknown') ? r.narrative : null,
+    (r.language && r.language !== 'Unknown') ? r.language : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
 }
 
-function renderCardAdList(rows){
-  const sorted=[...rows].sort((a,b)=>(b.spend||0)-(a.spend||0));
-  return sorted.map(r=>{
-    const shortName=r.name.length>60?r.name.slice(0,57)+'…':r.name;
-    const same=r.link45&&r.link916&&r.link45===r.link916;
-    let links='<div class="no-link">No link</div>';
-    if(r.link45||r.link916){
-      links='';
-      if(same)links=`<a class="watch-btn" href="${esc(r.link45)}" target="_blank">▶ Watch</a>`;
-      else{if(r.link45)links+=`<a class="watch-btn" href="${esc(r.link45)}" target="_blank">▶ 4:5</a>`;if(r.link916)links+=`<a class="watch-btn" href="${esc(r.link916)}" target="_blank">▶ 9:16</a>`;}
-    }
-    return`<div class="card-ad-row">
-      <div class="card-ad-main">
-        <div class="card-ad-name" title="${esc(r.name)}">${esc(shortName)}</div>
-        <div class="card-ad-metrics">
-          <div class="card-ad-m">Spend: <span>${fmtS(r.spend)}</span></div>
-          ${r.ncs!=null?`<div class="card-ad-m">NCs: <span>${r.ncs}</span></div>`:''}
-          ${r.roas!=null?`<div class="card-ad-m">ROAS: <span>${fmtR(r.roas)}</span></div>`:''}
-          ${r.cac!=null?`<div class="card-ad-m">CAC: <span>${fmtC(r.cac)}</span></div>`:''}
+function perfClass(roas, portfolioRoas) {
+  if (roas == null || portfolioRoas == null) return 'perf-none';
+  const ratio = roas / portfolioRoas;
+  if (ratio >= 1.12) return 'perf-great';
+  if (ratio >= 0.95) return 'perf-good';
+  if (ratio >= 0.78) return 'perf-mid';
+  return 'perf-low';
+}
+
+function roasClass(roas, portfolioRoas) {
+  if (roas == null || portfolioRoas == null) return '';
+  const ratio = roas / portfolioRoas;
+  if (ratio >= 1.12) return 'roas-great';
+  if (ratio >= 0.95) return 'roas-good';
+  if (ratio >= 0.78) return 'roas-mid';
+  return 'roas-low';
+}
+
+function renderDimCards(groups, totalSpend, portfolioRoas) {
+  if (!groups.length) return '<div style="color:var(--muted);padding:30px;text-align:center;font-size:13px;">No data for this dimension</div>';
+  const maxSpend = groups[0]?.spend || 1;
+  return '<div class="dim-cards-grid">' + groups.map(g => {
+    const pc   = perfClass(g.roas, portfolioRoas);
+    const rc   = roasClass(g.roas, portfolioRoas);
+    const barW = Math.min(100, (g.spend / maxSpend) * 100).toFixed(1);
+    return `<div class="dim-card ${pc}" onclick="toggleCard(this)">
+      <div class="dim-card-band"></div>
+      <div class="dim-card-inner">
+        <div class="dim-card-header">
+          <div class="dim-card-name"><span class="dim-card-arrow">▶</span>${esc(g.key)}</div>
+          <div class="dim-card-count">${g.rows.length} ads</div>
+        </div>
+        <div class="dim-spend-row">
+          <div class="dim-spend-amount">${fmtS(g.spend)}</div>
+          <div class="dim-pct-badge">${fmtPct(g.pct)} of spend</div>
+        </div>
+        <div class="dim-bar-wrap"><div class="dim-bar-track"><div class="dim-bar-fill" style="width:${barW}%"></div></div></div>
+        <div class="dim-primary">
+          <div class="dm"><div class="dl">NCs</div><div class="dv">${g.ncs ? fmtI(g.ncs) : '—'}</div></div>
+          <div class="dm"><div class="dl">ROAS</div><div class="dv ${rc}">${fmtR(g.roas)}</div></div>
+          <div class="dm"><div class="dl">CAC</div><div class="dv">${fmtC(g.cac)}</div></div>
+          <div class="dm"><div class="dl">AOV</div><div class="dv">${fmtC(g.aov)}</div></div>
+        </div>
+        <div class="dim-secondary">
+          <div class="dm"><div class="dl">Prepaid</div><div class="dv">${fmtP(g.prepaid)}</div></div>
+          <div class="dm"><div class="dl">CTR</div><div class="dv">${fmtP(g.ctr)}</div></div>
+          <div class="dm"><div class="dl">Hook</div><div class="dv">${fmtP(g.hook)}</div></div>
+          <div class="dm"><div class="dl">Pur%</div><div class="dv">${fmtP(g.purch)}</div></div>
         </div>
       </div>
-      <div class="card-ad-links">${links}</div>
+      <div class="dim-see-ads">▶ &nbsp;See ${g.rows.length} ads</div>
+      <div class="card-ads">
+        <div class="card-ads-header">
+          <span class="card-ads-title">${esc(g.key)} · ${g.rows.length} creatives · sorted by spend</span>
+        </div>
+        <div class="card-ads-list">${renderCardAdList(g.rows, portfolioRoas)}</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function renderCardAdList(rows, portfolioRoas) {
+  const sorted = [...rows].sort((a,b) => (b.spend||0) - (a.spend||0));
+  const maxSpend = sorted[0]?.spend || 1;
+  return sorted.map(r => {
+    const displayName = adDisplayName(r);
+    const rawName = r.name.length > 65 ? r.name.slice(0,62)+'…' : r.name;
+    const barW = Math.min(100, ((r.spend||0) / maxSpend * 100)).toFixed(0);
+    const rc = roasClass(r.roas, portfolioRoas);
+
+    const same = r.link45 && r.link916 && r.link45 === r.link916;
+    let watchHtml = '<div class="no-link">No link</div>';
+    if (r.link45 || r.link916) {
+      if (same) {
+        watchHtml = `<a class="watch-btn" href="${esc(r.link45)}" target="_blank" rel="noopener">▶ Watch</a>`;
+      } else {
+        watchHtml = '';
+        if (r.link916) watchHtml += `<a class="watch-btn" href="${esc(r.link916)}" target="_blank" rel="noopener">▶ 9:16</a>`;
+        if (r.link45)  watchHtml += `<a class="watch-btn watch-btn-sm" href="${esc(r.link45)}" target="_blank" rel="noopener">4:5</a>`;
+      }
+    }
+
+    return `<div class="card-ad-row" onclick="event.stopPropagation()">
+      <div class="card-ad-bar" style="opacity:${0.2 + 0.8*(r.spend/maxSpend)};background:var(--blue);"></div>
+      <div class="card-ad-main">
+        ${displayName ? `<div class="card-ad-display">${esc(displayName)}</div>` : ''}
+        <div class="card-ad-rawname" title="${esc(r.name)}">${esc(rawName)}</div>
+        <div class="card-ad-metrics">
+          <span><strong>${fmtS(r.spend)}</strong></span>
+          ${r.ncs != null ? `<span><strong>${r.ncs}</strong> NCs</span>` : ''}
+          ${r.roas != null ? `<span class="${rc}"><strong>${fmtR(r.roas)}</strong> ROAS</span>` : ''}
+          ${r.cac  != null ? `<span><strong>${fmtC(r.cac)}</strong> CAC</span>` : ''}
+        </div>
+      </div>
+      <div class="card-ad-right">${watchHtml}</div>
     </div>`;
   }).join('');
 }
 
-function toggleCard(el){
+function toggleCard(el) {
   el.classList.toggle('expanded');
 }
 
@@ -735,7 +826,7 @@ function renderAll(){
   }
   DIM_TABS.forEach(d=>{
     const panel=document.getElementById('dtp-'+d.key);
-    if(panel)panel.innerHTML=renderDimCards(buildDimData(rows,d.key),ts);
+    if(panel)panel.innerHTML=renderDimCards(buildDimData(rows,d.key),ts,wRoas);
   });
 
   // Dropdowns for drill
