@@ -849,7 +849,7 @@ function showMapper(headers, mapping, detectedMonth) {
 function closeMapper() { document.getElementById('mapper-overlay').classList.remove('open'); pendingMapperTarget='monthly'; }
 
 function applyPerf() {
-  const gI = id => +document.getElementById('map-'+id).value;
+  const gI = id => { const el = document.getElementById('map-'+id); return el ? +el.value : -1; };
   if (gI('adName')<0||gI('spend')<0) { alert('Ad Name and Spend columns are required.'); return; }
   let month = document.getElementById('perf-month-sel').value;
   if (month==='__custom__') { month=prompt('Enter month (e.g. "Apr 2026"):').trim()||'Unknown'; }
@@ -1400,7 +1400,7 @@ function showDailyMapper(headers, mapping) {
 let pendingMapperTarget = 'monthly'; // 'monthly' or 'daily'
 
 function applyDailyPerf() {
-  const gI = id => +document.getElementById('map-'+id).value;
+  const gI = id => { const el = document.getElementById('map-'+id); return el ? +el.value : -1; };
   if (gI('adName')<0||gI('spend')<0) { alert('Ad Name and Spend columns are required.'); return; }
 
   const rows = pendingPerfRows.map(r => {
