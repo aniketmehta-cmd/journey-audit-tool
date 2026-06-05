@@ -542,31 +542,69 @@ function detectMonthFromFilename(name){const lower=(name||'').toLowerCase();for(
 function parseCsv(text){const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');const out=[];for(const line of lines){if(!line.trim())continue;const row=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(c===','&&!inQ){row.push(cur.trim());cur='';}else cur+=c;}row.push(cur.trim());out.push(row);}return out;}
 
 // AD NAME TAG PARSER
-const NARRATIVE_KW=new Set(['receding','price','stages','genetics','science','results','trust','myth','before','consistency','problem','ingredient','others','product','beforeafter','bald','hairline','solution','stage','regrowth','anti','hairfall','dandruff','scalp','nutrition','organic','barber','ugc','non','in']);
+const NARRATIVE_KW=new Set(['receding','price','stages','genetics','science','results','trust','myth','before','consistency','problem','ingredient','others','product','beforeafter','bald','hairline','solution','stage','regrowth','anti','hairfall','dandruff','scalp','nutrition','organic','barber','skit']);
 const AD_TYPE_NORM={influencer:'VO',vo:'VO',reel:'Reel',static:'Static',statics:'Static',carousel:'Carousel',image:'Static',video:'Video',ugc:'UGC'};
 const FUNNEL_KW=new Set(['bof','mof','tof']);
+// ONLY these tokens at the end of a name represent the ad format. Everything else is narrative.
+const FORMAT_KW=new Set(['ugc','statics','static','carousel','educational','podcast','testimonial','skit','documentary','reaction','non','vo']);
+const LANG_KW=new Set(['hindi','hinglish','english','tamil','telugu','kannada','bengali','marathi','punjabi','malayalam']);
+
+// Canonical map — all spelling variants → one label
+const NARR_NORM={
+  'problem solution':'Problem-Solution','problem-solution':'Problem-Solution',
+  'problem / solution':'Problem-Solution','problem - solution':'Problem-Solution',
+  'problem  solution':'Problem-Solution',
+  'results assurance':'Results/Assurance','results-assurance':'Results/Assurance',
+  'results / assurance':'Results/Assurance',
+  'results assurance product first':'Results/Assurance/ProductFirst',
+  'receding hairline bald spots':'Receding Hairline/Bald Spots',
+  'receding hairline/bald spots':'Receding Hairline/Bald Spots',
+  'receding hairline / bald spots':'Receding Hairline/Bald Spots',
+  'before after':'Before/After','before-after':'Before/After','before / after':'Before/After',
+  'myth busting':'Myth Busting','myth-busting':'Myth Busting',
+  'product first':'Product First','product based':'Product Based',
+  'price slash':'Price Slash',
+};
+function normalizeNarrative(s){
+  if(!s||s==='Unknown')return s;
+  const key=s.toLowerCase().trim().replace(/\s+/g,' ');
+  return NARR_NORM[key]||s.trim();
+}
 
 function extractPNF(remaining){
+  // Remove blank tokens and standalone dash/underscore artifacts
+  remaining=remaining.filter(p=>p&&p!=='-'&&p!=='');
+  // Strip trailing IDs and 'si' suffix
   while(remaining.length&&(/^\d+$/.test(remaining[remaining.length-1])||remaining[remaining.length-1]==='si'))remaining.pop();
   if(!remaining.length)return{person:'Internal',narrative:'Unknown',ad_format:'Unknown'};
-  const format=remaining.pop();
-  if(!remaining.length)return{person:'Internal',narrative:tc(format),ad_format:'Unknown'};
+  // Pop 1-2 trailing format keyword tokens (handles 'non vo', 'non reel', etc.)
+  let ad_format='Unknown';
+  if(remaining.length&&FORMAT_KW.has(remaining[remaining.length-1])){
+    const f1=remaining.pop();
+    if(remaining.length&&FORMAT_KW.has(remaining[remaining.length-1])){
+      const f2=remaining.pop();
+      ad_format=tc(f2)+' '+tc(f1); // e.g. 'Non Vo'
+    } else { ad_format=tc(f1); }
+  }
+  if(!remaining.length)return{person:'Internal',narrative:'Unknown',ad_format};
+  // Parse person vs narrative
   let personParts=[],narrativeParts=[];
   const first=remaining[0];
-  if(!first||first==='none'||first==='ai'||first==='internal'||/^\d+$/.test(first)){
-    narrativeParts=remaining.slice(first&&!(/^\d+$/.test(first))&&first!=='none'&&first!=='ai'?0:1);
-    if(first==='none'||first==='ai')narrativeParts=remaining.slice(1);
+  if(!first||['none','ai','internal'].includes(first)){
+    narrativeParts=remaining.slice(1);
   }else{
     for(let i=0;i<remaining.length;i++){
       const p=remaining[i];
-      if(NARRATIVE_KW.has(p.split('/')[0].split('-')[0])){narrativeParts=remaining.slice(i);break;}
+      const stem=p.split('/')[0].split('-')[0];
+      if(NARRATIVE_KW.has(stem)){narrativeParts=remaining.slice(i);break;}
       personParts.push(p);
       if(i>=2){narrativeParts=remaining.slice(i+1);break;}
     }
   }
   const person=personParts.length?personParts.map(p=>tc(p)).join(' '):'Internal';
-  const narrative=narrativeParts.length?narrativeParts.map(p=>p.replace(/[-\/]/g,' / ')).map(tc).join(' '):'Unknown';
-  return{person,narrative,ad_format:tc(format)};
+  const rawNarr=narrativeParts.map(p=>p.replace(/[\/]/g,'/').replace(/-+/g,'-')).map(tc).join(' ');
+  const narrative=normalizeNarrative(rawNarr)||'Unknown';
+  return{person,narrative,ad_format};
 }
 
 function parseNewConv(parts, funOffset) {
@@ -600,9 +638,37 @@ function parseTagsFromName(adName){
   if(/^stage2_|^s2_/.test(lower)){
     r=parseNewConv(parts,1);
   }
-  // Stage 1 with underscore: stage_1_bof_inf_reel_hinglish_...  parts=['stage','1','bof','inf',...]
+  // Stage 1 with underscore: stage_1_{bof|inf}_...  parts=['stage','1',...]
+  // parts[2] might be a funnel keyword (bof/mof/tof) OR directly intinf (inf/int)
   else if(/^stage_1_|^stage_2_/.test(lower)){
-    r=parseNewConv(parts,2); // funnel at index 2
+    if(FUNNEL_KW.has(parts[2])){
+      r=parseNewConv(parts,2); // funnel at 2, intinf at 3, adtype at 4, lang at 5
+    } else {
+      // No funnel: stage_1_inf_vo_narrative_language_person_format_id
+      // After stripping stage+1+intinf+adtype, scan for language keyword to find boundary
+      const ii=normalizeIntInf(parts[2]);
+      const at=AD_TYPE_NORM[parts[3]]||tc(parts[3])||'Unknown';
+      const after=parts.slice(4).filter(p=>p&&p!=='-');
+      const langPos=after.findIndex(p=>LANG_KW.has(p));
+      let la='Unknown',narr='Unknown',pers='Internal',fmt='Unknown';
+      if(langPos>0){
+        // narrative = tokens before language
+        narr=normalizeNarrative(after.slice(0,langPos).map(tc).join(' '));
+        la=tc(after[langPos]);
+        const e=extractPNF([...after.slice(langPos+1)]);
+        pers=e.person; fmt=e.ad_format;
+      } else if(langPos===0){
+        la=tc(after[0]);
+        const e=extractPNF([...after.slice(1)]);
+        pers=e.person; narr=e.narrative; fmt=e.ad_format;
+      } else {
+        // No language found — fallback: treat normally with parts[4] as language
+        la=tc(parts[4]||'Unknown');
+        const e=extractPNF([...parts.slice(5)]);
+        pers=e.person; narr=e.narrative; fmt=e.ad_format;
+      }
+      r={int_inf:ii,ad_type:at,language:la,funnel_type:'Unknown',person:pers,narrative:narr,ad_format:fmt};
+    }
   }
   // Stage 1 compact: stage1_bof_inf_reel_...
   else if(/^stage1_/.test(lower)){
@@ -646,7 +712,7 @@ function parseTagsFromName(adName){
 // ═══════════════════════════════════════════════
 // CATALOGUE
 // ═══════════════════════════════════════════════
-function buildCatalogueEntry(row,cfg){const g=i=>(row[i]||'').trim();const adName=g(cfg.adName);if(!adName)return null;return{ad_name:adName,int_inf:normalizeIntInf(g(cfg.intInf)),ad_type:tc(g(cfg.adType))||'Unknown',language:tc(g(cfg.language))||'Unknown',person:(v=>(!v||v.toLowerCase()==='none'||v==='-'||v.toLowerCase()==='na'||v.toLowerCase()==='internal')?'Internal':v)(g(cfg.person)),narrative:g(cfg.narrative)||'Unknown',ad_format:g(cfg.adFormat)||'Unknown',link45:g(cfg.link45)||null,link916:g(cfg.link916)||null};}
+function buildCatalogueEntry(row,cfg){const g=i=>(row[i]||'').trim();const adName=g(cfg.adName);if(!adName)return null;return{ad_name:adName,int_inf:normalizeIntInf(g(cfg.intInf)),ad_type:tc(g(cfg.adType))||'Unknown',language:tc(g(cfg.language))||'Unknown',person:(v=>(!v||v.toLowerCase()==='none'||v==='-'||v.toLowerCase()==='na'||v.toLowerCase()==='internal')?'Internal':v)(g(cfg.person)),narrative:normalizeNarrative(g(cfg.narrative))||'Unknown',ad_format:g(cfg.adFormat)||'Unknown',link45:g(cfg.link45)||null,link916:g(cfg.link916)||null};}
 function addToCatalogue(entries,pid){for(const e of entries){if(!e||!e.ad_name)continue;const k=normN(e.ad_name);if(!catalogue[pid][k])catalogue[pid][k]=e;}}
 function parseSheetForProduct(csvText,cfg,productKw){const rows=parseCsv(csvText);const data=rows.slice(cfg.skip);const kwNorm=productKw.toLowerCase().replace(/\s+/g,'');return data.map(r=>{const prod=(r[cfg.product]||'').toLowerCase().replace(/\s+/g,'');if(!prod||!prod.includes(kwNorm))return null;return buildCatalogueEntry(r,cfg);}).filter(Boolean);}
 async function fetchCsv(sheetId,sheetName){const url=sheetName?`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`:`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}
