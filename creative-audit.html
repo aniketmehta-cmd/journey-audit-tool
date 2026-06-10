@@ -448,12 +448,14 @@ table.trends tr:hover td{background:var(--paper2);}
     <h2>Connect Google Sheet</h2>
     <p>Paste your <strong>Apps Script Web App URL</strong> below. This lets the tool append a log row every time you click <em>Save to Sheet</em>.</p>
     <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:0 0 16px;font-size:12px;line-height:1.7;color:var(--ink2);">
-      <strong style="color:var(--ink);">One-time setup (takes ~2 min):</strong><br>
-      1. Open <strong>script.google.com</strong> → New project<br>
-      2. Paste the Apps Script code (copy button below) → Save<br>
-      3. Click <strong>Deploy → New deployment → Web app</strong><br>
-      4. Set <em>Execute as: Me</em> · <em>Who has access: Anyone</em> → Deploy<br>
-      5. Copy the Web App URL → paste here
+      <strong style="color:var(--ink);">One-time setup (takes ~3 min):</strong><br>
+      1. Create a new Google Sheet (or open existing) → copy its <strong>Sheet ID</strong> from the URL<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<em>docs.google.com/spreadsheets/d/<strong>THIS_PART</strong>/edit</em><br>
+      2. Click <strong>📋 Copy Apps Script Code</strong> below<br>
+      3. Open <strong>script.google.com</strong> → New project → paste code → replace <code>YOUR_SHEET_ID_HERE</code> with your Sheet ID → Save<br>
+      4. Click <strong>Deploy → New deployment → Web app</strong><br>
+      5. Set <em>Execute as: Me</em> · <em>Who has access: Anyone</em> → Deploy → Authorize<br>
+      6. Copy the Web App URL → paste below
     </div>
     <div style="margin-bottom:12px;">
       <button class="btn btn-ghost" style="font-size:12px;" onclick="copyAppsScript()">📋 Copy Apps Script Code</button>
@@ -1386,13 +1388,15 @@ document.getElementById('tier-hit').addEventListener('change',()=>{if(currentRow
 // ═══════════════════════════════════════════════
 const APPS_SCRIPT_CODE=`// ── Mosaic Creative Audit — Sheet Logger ──────────────────────────
 // Deploy as: Web App · Execute as: Me · Access: Anyone
-// Sheet gets two tabs: "Daily Log" (one row per digest save) and
-// "Ad Rows" (one row per ad in that digest, for deep slicing).
+// ⚠️  Replace YOUR_SHEET_ID_HERE with your Google Sheet ID
+//     (the long string in the Sheet URL between /d/ and /edit)
+
+const SHEET_ID = 'YOUR_SHEET_ID_HERE';
 
 function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById(SHEET_ID);
     appendDailyLog(ss, payload);
     appendAdRows(ss, payload);
     return ContentService.createTextOutput(JSON.stringify({ok:true}))
