@@ -1712,28 +1712,31 @@ function buildDocsHtml(productId){
 
   // Retention cohorts
   if(ctx&&ctx.retention&&ctx.retention.months.length){
-    const{months,actual,extra}=ctx.retention;
+    const{months,actual,extra,total}=ctx.retention;
     h+=`<h2 style="${H2}">Retention Cohorts</h2>`;
     h+=`<table style="${T}"><thead><tr>`;
-    ['Month','Total','M0%','M1%','M2%','M3%','M4%','M5%'].forEach(x=>h+=`<th style="${TH}">${x}</th>`);
+    ['','M0','M0','M1','M2','M3','M4','M5'].forEach((x,i)=>h+=`<th style="${i?TH:TH+'text-align:left;'">${x}</th>`);
     h+=`</tr></thead><tbody>`;
     months.forEach((r,i)=>{
-      const bg=i%2?'background:#f5f7ff;':'';
+      const bg=i%2===0?'background:#fff;':'background:#f5f7ff;';
       h+=`<tr style="${bg}">`+r.slice(0,8).map((v,ci)=>`<td style="${ci?TDR:TD}">${v||''}</td>`).join('')+`</tr>`;
     });
-    // Separator row
+    // Total row
+    if(total){
+      h+=`<tr style="background:#f0f4ff;font-weight:600;">`;
+      h+=`<td style="${TD}"></td><td style="${TDR}">${total[1]||''}</td>`;
+      for(let i=2;i<8;i++)h+=`<td style="${TDR}"></td>`;
+      h+=`</tr>`;
+    }
     h+=`<tr><td colspan="8" style="padding:0;height:2px;background:#e2e8f0;"></td></tr>`;
-    // Actual row — raw values exactly as in sheet: [label, month, metric1, val1, metric2, val2, metric3, val3]
     if(actual){
-      const a=actual;
       h+=`<tr style="background:#e6f4ea;font-weight:bold;">`;
-      [a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7]].forEach((v,ci)=>h+=`<td style="${ci?TDR:TD}">${v||''}</td>`);
+      actual.slice(0,8).forEach((v,ci)=>h+=`<td style="${ci?TDR:TD}">${v||''}</td>`);
       h+=`</tr>`;
     }
     if(extra){
-      const e=extra;
       h+=`<tr style="background:#fffde7;font-weight:bold;">`;
-      [e[0],e[1],e[2],e[3],e[4],e[5],e[6],e[7]].forEach((v,ci)=>h+=`<td style="${ci?TDR:TD}">${v||''}</td>`);
+      extra.slice(0,8).forEach((v,ci)=>h+=`<td style="${ci?TDR:TD}">${v||''}</td>`);
       h+=`</tr>`;
     }
     h+=`</tbody></table>`;
@@ -1898,7 +1901,7 @@ function parseProductContextSheet(csvText){
   const DATA_LABELS=['ld','l10','l30','month to date','mtd','projection','target','% ach'];
   const MONTH_RE=/^[A-Za-z]{3}-\d{2}/;
   const ncrc=[], monthRows=[];
-  let actualRow=null, extraRow=null;
+  let actualRow=null, extraRow=null, totalRow=null;
   for(const row of rows){
     const b=(row[1]||'').trim();
     const bl=b.toLowerCase();
@@ -1908,13 +1911,34 @@ function parseProductContextSheet(csvText){
       if(vals[0]&&vals[0]!=='-')ncrc.push({label:b,nc:vals[0],ncAov:vals[1]||'—',rc:vals[2]||'—',rcAov:vals[3]||'—'});
     }
     // Retention month rows
-    if(MONTH_RE.test(b)&&row[2]&&row[2].trim()&&row[2].trim()!=='-'){
-      monthRows.push(row.slice(1,9)); // [month, total, M0%, M1%, M2%, M3%, M4%, M5%]
+    if(MONTH_RE.test(b)){
+      monthRows.push(row.slice(1,9)); // [month, total, M0%, M1, M2, M3, M4, M5]
     }
-    if(bl==='actual')actualRow=row.slice(1);
-    if(bl.startsWith('extrapolat'))extraRow=row.slice(1);
+    // Total row (blank month, numeric total)
+    if(!b&&(row[2]||'').trim()&&/^[\d,]+$/.test((row[2]||'').trim())&&!totalRow){
+      totalRow=row.slice(1,9);
+    }
+    if(bl==='actual')actualRow=row.slice(1,9);
+    if(bl.startsWith('extrapolat'))extraRow=row.slice(1,9);
   }
-  return{ncrc,retention:{months:monthRows.slice(-6),actual:actualRow,extra:extraRow}};
+  // Derive months: Actual = second-to-last month, Extrapolated = last month
+  const validMonths=monthRows.filter(r=>MONTH_RE.test(r[0]||''));
+  const actualMonth=validMonths.length>=2?validMonths[validMonths.length-2][0]:'';
+  const extraMonth=validMonths.length>=1?validMonths[validMonths.length-1][0]:'';
+  // Fill in hardcoded labels for blank slots in Actual/Extrapolated rows
+  if(actualRow){
+    if(!actualRow[1])actualRow[1]=actualMonth;
+    if(!actualRow[2])actualRow[2]='M1+M2+M3';
+    if(!actualRow[4])actualRow[4]='M0 Diff';
+    if(!actualRow[6])actualRow[6]='M1 to M6';
+  }
+  if(extraRow){
+    if(!extraRow[1])extraRow[1]=extraMonth;
+    if(!extraRow[2])extraRow[2]='M1+M2+M3';
+    if(!extraRow[4])extraRow[4]='Delta (M1 - M3)';
+    if(!extraRow[6])extraRow[6]='M1 to M6';
+  }
+  return{ncrc,retention:{months:monthRows.slice(-6),actual:actualRow,extra:extraRow,total:totalRow}};
 }
 
 function fmtNCRC(productId){
@@ -1932,20 +1956,22 @@ function fmtNCRC(productId){
 function fmtRetention(productId){
   const d=contextData[productId];
   if(!d||!d.retention||!d.retention.months.length)return null;
-  const{months,actual,extra}=d.retention;
+  const{months,actual,extra,total}=d.retention;
   let out='';
-  out+='  '+['Month','Total','M0%','M1%','M2%','M3%','M4%','M5%'].map((h,i)=>i===0?h.padEnd(10):h.padStart(9)).join('')+'\n';
+  out+='  '+['','M0','M0','M1','M2','M3','M4','M5'].map((h,i)=>i===0?''.padEnd(10):h.padStart(9)).join('')+'\n';
   out+='  '+'─'.repeat(82)+'\n';
   months.forEach(r=>{
     out+='  '+(r[0]||'').padEnd(10)+r.slice(1,8).map(v=>(v||'').padStart(9)).join('')+'\n';
   });
+  if(total){
+    out+='  '+''.padEnd(10)+(total[1]||'').padStart(9)+'\n';
+  }
+  out+='  '+'─'.repeat(82)+'\n';
   if(actual){
-    // actual = [label, month, metric1_label, metric1_val, metric2_label, metric2_val, metric3_label, metric3_val]
-    out+='  '+'─'.repeat(82)+'\n';
-    out+=`  Actual (${actual[1]||''}):   ${actual[2]||'M1+M2+M3'}: ${actual[3]||'—'}   ${actual[4]||'M0 Diff'}: ${actual[5]||'—'}   ${actual[6]||'M1 to M6'}: ${actual[7]||'—'}\n`;
+    out+='  '+actual.slice(0,8).map((v,i)=>i===0?(v||'').padEnd(10):(v||'').padStart(9)).join('')+'\n';
   }
   if(extra){
-    out+=`  Extrap. (${extra[1]||''}):   ${extra[2]||'M1+M2+M3'}: ${extra[3]||'—'}   ${extra[4]||'Delta'}: ${extra[5]||'—'}   ${extra[6]||'M1 to M6'}: ${extra[7]||'—'}\n`;
+    out+='  '+extra.slice(0,8).map((v,i)=>i===0?(v||'').padEnd(10):(v||'').padStart(9)).join('')+'\n';
   }
   return out;
 }
