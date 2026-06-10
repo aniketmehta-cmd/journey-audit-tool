@@ -1719,19 +1719,22 @@ function buildDocsHtml(productId){
     h+=`</tr></thead><tbody>`;
     months.forEach((r,i)=>{
       const bg=i%2?'background:#f5f7ff;':'';
-      h+=`<tr style="${bg}">`+r.slice(0,8).map((v,ci)=>`<td style="${ci?TDR:TD}">${v||'—'}</td>`).join('')+`</tr>`;
+      h+=`<tr style="${bg}">`+r.slice(0,8).map((v,ci)=>`<td style="${ci?TDR:TD}">${v||''}</td>`).join('')+`</tr>`;
     });
+    // Separator row
+    h+=`<tr><td colspan="8" style="padding:0;height:2px;background:#e2e8f0;"></td></tr>`;
+    // Actual row — raw values exactly as in sheet: [label, month, metric1, val1, metric2, val2, metric3, val3]
     if(actual){
+      const a=actual;
       h+=`<tr style="background:#e6f4ea;font-weight:bold;">`;
-      h+=`<td style="${TD}">Actual (${actual[1]||''})</td><td style="${TD}">${actual[2]||'M1+M2+M3'}: ${actual[3]||'—'}</td>`;
-      h+=`<td style="${TDR}">${actual[5]||'—'}</td><td style="${TD}">${actual[4]||'M0 Diff'}</td>`;
-      h+=`<td style="${TDR}">${actual[7]||'—'}</td><td style="${TD}">${actual[6]||'M1 to M6'}</td><td colspan="2"></td></tr>`;
+      [a[0],a[1],a[2],a[3],a[4],a[5],a[6],a[7]].forEach((v,ci)=>h+=`<td style="${ci?TDR:TD}">${v||''}</td>`);
+      h+=`</tr>`;
     }
     if(extra){
+      const e=extra;
       h+=`<tr style="background:#fffde7;font-weight:bold;">`;
-      h+=`<td style="${TD}">Extrap. (${extra[1]||''})</td><td style="${TD}">${extra[2]||'M1+M2+M3'}: ${extra[3]||'—'}</td>`;
-      h+=`<td style="${TDR}">${extra[5]||'—'}</td><td style="${TD}">${extra[4]||'Delta'}</td>`;
-      h+=`<td style="${TDR}">${extra[7]||'—'}</td><td style="${TD}">${extra[6]||'M1 to M6'}</td><td colspan="2"></td></tr>`;
+      [e[0],e[1],e[2],e[3],e[4],e[5],e[6],e[7]].forEach((v,ci)=>h+=`<td style="${ci?TDR:TD}">${v||''}</td>`);
+      h+=`</tr>`;
     }
     h+=`</tbody></table>`;
   }
@@ -1753,8 +1756,10 @@ function copyForDocs(){
 function _copyRichHtmlToClipboard(html){
   const full=html.startsWith('<html')?html:`<html><body>${html}</body></html>`;
   if(navigator.clipboard&&window.ClipboardItem){
-    const blob=new Blob([full],{type:'text/html'});
-    return navigator.clipboard.write([new ClipboardItem({'text/html':blob})]).catch(()=>_execCmdCopy(full));
+    const htmlBlob=new Blob([full],{type:'text/html'});
+    const textBlob=new Blob([document.createElement('div').appendChild(document.createTextNode(full)).parentNode.innerText||full],{type:'text/plain'});
+    const item=new ClipboardItem({'text/html':htmlBlob,'text/plain':new Blob([full],{type:'text/plain'})});
+    return navigator.clipboard.write([item]).catch(()=>_execCmdCopy(full));
   }
   return Promise.resolve(_execCmdCopy(full));
 }
