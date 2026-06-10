@@ -458,6 +458,21 @@ table.trends tr:hover td{background:var(--paper2);}
   </div>
 </div>
 
+<!-- Gmail overlay -->
+<div id="gmail-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="font-size:40px;margin-bottom:12px;">📋</div>
+    <h3 style="margin:0 0 8px;font-size:18px;">Digest copied to clipboard!</h3>
+    <p style="margin:0 0 24px;color:#666;font-size:14px;">Click the button below to open Gmail, then click inside the email body and press <strong>Cmd+V</strong> to paste.</p>
+    <a id="gmail-overlay-link" href="#" target="_blank" onclick="document.getElementById('gmail-overlay').style.display='none';"
+       style="display:inline-block;background:#ea4335;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;margin-bottom:12px;">
+      ✉ Open Gmail Compose →
+    </a>
+    <br>
+    <button onclick="document.getElementById('gmail-overlay').style.display='none';" style="background:none;border:none;color:#999;font-size:13px;cursor:pointer;margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
 <!-- ═══ TAB: TRENDS ═══ -->
 <div id="main-tab-trends" class="main-tab">
   <div id="trends-content"><div class="trends-empty">Upload at least 1 month of data in Monthly Analysis to see trends.</div></div>
@@ -1942,30 +1957,32 @@ function extractAdNum(name){
 // ═══════════════════════════════════════════════
 // GMAIL SEND
 // ═══════════════════════════════════════════════
+function _openGmailOverlay(subject,html){
+  const btn=document.getElementById('gmail-btn');
+  const cbtn=document.getElementById('gmail-combined-btn');
+  _copyRichHtmlToClipboard(html).then(()=>{
+    document.getElementById('gmail-overlay-link').href=`https://mail.google.com/mail/?view=cm&su=${subject}`;
+    const ov=document.getElementById('gmail-overlay');
+    ov.style.display='flex';
+    if(btn)btn.textContent='📋 Copied!';
+    if(cbtn)cbtn.textContent='📋 Copied!';
+    setTimeout(()=>{
+      if(btn)btn.textContent='✉ Send via Gmail';
+      if(cbtn)cbtn.textContent='✉ Send via Gmail';
+    },4000);
+  }).catch(()=>{
+    alert('Copy failed — please try again or use "Copy for Google Docs" instead.');
+  });
+}
 function sendViaGmail(){
   const d=dailyData[activeProduct];if(!d)return;
   const p=PRODUCTS.find(x=>x.id===activeProduct);
-  const btn=document.getElementById('gmail-btn');
   const subject=encodeURIComponent(`${p.label} · Creative Update · ${d.label}`);
-  const html=buildDocsHtml();
-  // Copy first (while this tab has focus), then open Gmail
-  _copyRichHtmlToClipboard(html).then(()=>{
-    btn.textContent='📋 Copied! Opening Gmail…';
-    setTimeout(()=>{
-      window.open(`https://mail.google.com/mail/?view=cm&su=${subject}`,'_blank');
-      btn.textContent='✅ Paste into Gmail body (Cmd+V)';
-      setTimeout(()=>{btn.textContent='✉ Send via Gmail';},5000);
-    },300);
-  }).catch(()=>{
-    btn.textContent='⚠ Copy failed — try again';
-    setTimeout(()=>{btn.textContent='✉ Send via Gmail';},3000);
-  });
+  _openGmailOverlay(subject,buildDocsHtml());
 }
 function sendCombinedViaGmail(){
   const text=document.getElementById('combined-email-body').textContent||'';
   if(!text){alert('Generate the combined digest first.');return;}
-  const btn=document.getElementById('gmail-combined-btn');
-  // Build combined HTML for all loaded products
   let html='<html><body style="font-family:Arial,sans-serif;">';
   for(const p of PRODUCTS){
     const d=dailyData[p.id];if(!d||!d.rows.length)continue;
@@ -1974,11 +1991,7 @@ function sendCombinedViaGmail(){
   html+='</body></html>';
   const period=(dailyData[PRODUCTS.find(p=>dailyData[p.id]?.rows?.length)?.id]||{}).label||'';
   const subject=encodeURIComponent(`Hair Creative Update · ${period}`);
-  _copyRichHtmlToClipboard(html).then(()=>{
-    window.open(`https://mail.google.com/mail/?view=cm&su=${subject}`,'_blank');
-    btn.textContent='✅ Gmail opened — Cmd+V to paste!';
-    setTimeout(()=>{btn.textContent='✉ Send via Gmail';},4000);
-  });
+  _openGmailOverlay(subject,html);
 }
 
 // ═══════════════════════════════════════════════
