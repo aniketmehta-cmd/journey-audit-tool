@@ -1403,8 +1403,8 @@ document.getElementById('tier-hit').addEventListener('change',()=>{if(currentRow
 // SHEET LOG — APPS SCRIPT INTEGRATION
 // ═══════════════════════════════════════════════
 const APPS_SCRIPT_CODE=`// Mosaic Creative Audit — Sheet Logger
-// Paste this into Extensions > Apps Script from inside your Google Sheet
-// Then: Deploy > New deployment > Web app > Execute as Me > Anyone > Deploy
+// Open your Google Sheet → Extensions → Apps Script → paste this → Save
+// Then: Deploy → New deployment → Web app → Execute as Me → Anyone → Deploy
 
 function doGet(e) {
   return ContentService.createTextOutput('OK - Mosaic Sheet Logger is live');
@@ -1413,47 +1413,65 @@ function doGet(e) {
 function doPost(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var data = JSON.parse(e.parameter.data);
+    var d = JSON.parse(e.parameter.data);
+    var at = d.savedAt, prod = d.product, per = d.period;
 
-    // --- Daily Log tab ---
-    var logSheet = ss.getSheetByName('Daily Log');
-    if (!logSheet) {
-      logSheet = ss.insertSheet('Daily Log');
-      logSheet.appendRow(['Saved At','Product','Period','Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC%','Purchase%','Prepaid%','Email Digest']);
-      logSheet.getRange(1,1,1,14).setFontWeight('bold');
-      logSheet.setFrozenRows(1);
-    }
-    logSheet.appendRow([
-      data.savedAt, data.product, data.period,
-      data.spend, data.ncs, data.roas, data.cac, data.aov,
-      data.ctr, data.hookRate, data.atcPct, data.purchasePct, data.prepaidPct,
-      data.emailDigest
+    // ── Tab 1: Daily Summary (one row per save, all headline metrics) ──
+    var s1 = getOrCreate(ss, 'Daily Summary', [
+      'Saved At','Product','Period',
+      'Spend (₹)','NCs','ROAS','CAC (₹)','AOV (₹)',
+      'CTR %','Hook Rate %','ATC %','Purchase %','Prepaid %'
     ]);
+    s1.appendRow([at, prod, per,
+      d.spend, d.ncs, d.roas, d.cac, d.aov,
+      d.ctr, d.hookRate, d.atcPct, d.purchasePct, d.prepaidPct]);
 
-    // --- Ad Rows tab ---
-    var adSheet = ss.getSheetByName('Ad Rows');
-    if (!adSheet) {
-      adSheet = ss.insertSheet('Ad Rows');
-      adSheet.appendRow(['Saved At','Product','Period','Ad Name','Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC%','Purchase%','Prepaid%','Narrative','Language','Person','Ad Format','Ad Type','Int/Inf','Funnel','Source']);
-      adSheet.getRange(1,1,1,22).setFontWeight('bold');
-      adSheet.setFrozenRows(1);
+    // ── Tab 2: Dimension Breakdown (one row per dimension×label per save) ──
+    var s2 = getOrCreate(ss, 'Dimension Breakdown', [
+      'Saved At','Product','Period','Dimension','Label',
+      'Spend (₹)','Spend Share %','NCs','ROAS','CAC (₹)','AOV (₹)','CTR %','Hook Rate %'
+    ]);
+    var dims = d.dimRows || [];
+    for (var i = 0; i < dims.length; i++) {
+      var x = dims[i];
+      s2.appendRow([at, prod, per,
+        x.dimension, x.label,
+        x.spend, x.spendShare, x.ncs,
+        x.roas, x.cac, x.aov, x.ctr, x.hookRate]);
     }
-    var rows = data.adRows || [];
-    for (var i = 0; i < rows.length; i++) {
-      var r = rows[i];
-      adSheet.appendRow([
-        data.savedAt, data.product, data.period,
+
+    // ── Tab 3: Ad Rows (one row per ad per save) ──
+    var s3 = getOrCreate(ss, 'Ad Rows', [
+      'Saved At','Product','Period','Ad Name',
+      'Spend (₹)','NCs','ROAS','CAC (₹)','AOV (₹)',
+      'CTR %','Hook Rate %','ATC %','Purchase %','Prepaid %',
+      'Narrative','Language','Person','Ad Format','Ad Type','Int/Inf','Funnel','Source'
+    ]);
+    var ads = d.adRows || [];
+    for (var j = 0; j < ads.length; j++) {
+      var r = ads[j];
+      s3.appendRow([at, prod, per,
         r.name, r.spend, r.ncs, r.roas, r.cac, r.aov,
         r.ctr, r.hook_rate, r.atc_pct, r.purchase_pct, r.prepaid,
         r.narrative, r.language, r.person, r.ad_format,
-        r.ad_type, r.int_inf, r.funnel_type, r.source_funnel
-      ]);
+        r.ad_type, r.int_inf, r.funnel_type, r.source_funnel]);
     }
 
     return ContentService.createTextOutput('SAVED');
   } catch(err) {
     return ContentService.createTextOutput('ERROR: ' + err.message);
   }
+}
+
+function getOrCreate(ss, name, headers) {
+  var sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.appendRow(headers);
+    sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#f3f3f3');
+    sh.setFrozenRows(1);
+  }
+  return sh;
 }`;
 
 function openSheetSettings(){
@@ -1499,6 +1517,32 @@ function copyAppsScript(){
   });
 }
 
+function _dimBreakdown(rows,dimKey,totalSpend){
+  const map=new Map();
+  for(const r of rows){
+    const k=r[dimKey]||'Unknown';
+    if(!map.has(k))map.set(k,{key:k,spend:0,ncs:0,_wR:0,_wC:0,_wH:0,_taov:0});
+    const v=map.get(k);
+    v.spend+=(r.spend||0);
+    if(r.ncs>0)v.ncs+=r.ncs;
+    if(r.roas!=null)v._wR+=(r.spend||0)*r.roas;
+    if(r.ctr!=null)v._wC+=(r.spend||0)*r.ctr;
+    if(r.hook_rate!=null)v._wH+=(r.spend||0)*r.hook_rate;
+    if(r.aov!=null&&r.ncs>0)v._taov+=r.ncs*r.aov;
+  }
+  return[...map.values()].filter(v=>v.key!=='Unknown').map(v=>({
+    dimension:dimKey,label:v.key,
+    spend:Math.round(v.spend),
+    spendShare:totalSpend>0?+(v.spend/totalSpend*100).toFixed(1):null,
+    ncs:v.ncs||null,
+    roas:v.spend>0?+(v._wR/v.spend).toFixed(2):null,
+    cac:v.ncs>0?+(v.spend/v.ncs).toFixed(0):null,
+    aov:v.ncs>0&&v._taov>0?+(v._taov/v.ncs).toFixed(0):null,
+    ctr:v.spend>0?+(v._wC/v.spend*100).toFixed(2):null,
+    hookRate:v.spend>0?+(v._wH/v.spend*100).toFixed(2):null,
+  })).sort((a,b)=>b.spend-a.spend);
+}
+
 async function saveToSheet(){
   const url=localStorage.getItem('mm_sheet_url')||'';
   if(!url){
@@ -1513,27 +1557,39 @@ async function saveToSheet(){
   const p=PRODUCTS.find(x=>x.id===activeProduct);
   const btn=document.getElementById('save-to-sheet-btn');
   btn.textContent='Saving…';btn.disabled=true;
+
+  // Build dimension breakdowns — each becomes its own structured rows in the sheet
+  const dims=['narrative','language','person','ad_format','ad_type','int_inf','funnel_type'];
+  const dimRows=dims.flatMap(dim=>_dimBreakdown(rows,dim,ts));
+
   const payload={
     savedAt:new Date().toISOString(),
     product:p.label,
     period:d.label,
+    // Headline metrics
     spend:Math.round(ts),
     ncs:tncs,
-    roas:wAvg(rows,'roas','spend')?.toFixed(2)||null,
-    cac:totalCAC(rows)?.toFixed(0)||null,
-    aov:wAvgAOV(rows)?.toFixed(0)||null,
-    ctr:(wAvg(rows,'ctr','spend')*100)?.toFixed(2)||null,
-    hookRate:(wAvg(rows,'hook_rate','spend')*100)?.toFixed(2)||null,
-    atcPct:(wAvg(rows,'atc_pct','spend')*100)?.toFixed(2)||null,
-    purchasePct:(wAvg(rows,'purchase_pct','spend')*100)?.toFixed(2)||null,
-    prepaidPct:(wAvg(rows,'prepaid','spend')*100)?.toFixed(2)||null,
-    emailDigest:document.getElementById('email-body').textContent||'',
+    roas:wAvg(rows,'roas','spend')!=null?+wAvg(rows,'roas','spend').toFixed(2):null,
+    cac:totalCAC(rows)!=null?+totalCAC(rows).toFixed(0):null,
+    aov:wAvgAOV(rows)!=null?+wAvgAOV(rows).toFixed(0):null,
+    ctr:wAvg(rows,'ctr','spend')!=null?+(wAvg(rows,'ctr','spend')*100).toFixed(2):null,
+    hookRate:wAvg(rows,'hook_rate','spend')!=null?+(wAvg(rows,'hook_rate','spend')*100).toFixed(2):null,
+    atcPct:wAvg(rows,'atc_pct','spend')!=null?+(wAvg(rows,'atc_pct','spend')*100).toFixed(2):null,
+    purchasePct:wAvg(rows,'purchase_pct','spend')!=null?+(wAvg(rows,'purchase_pct','spend')*100).toFixed(2):null,
+    prepaidPct:wAvg(rows,'prepaid','spend')!=null?+(wAvg(rows,'prepaid','spend')*100).toFixed(2):null,
+    // Structured breakdowns
+    dimRows,
+    // Individual ad rows
     adRows:rows.map(r=>({
       name:r.name,spend:Math.round(r.spend||0),ncs:r.ncs||null,
-      roas:r.roas?.toFixed(2)||null,cac:r.cac?.toFixed(0)||null,
-      aov:r.aov?.toFixed(0)||null,ctr:r.ctr?.toFixed(4)||null,
-      hook_rate:r.hook_rate?.toFixed(4)||null,atc_pct:r.atc_pct?.toFixed(4)||null,
-      purchase_pct:r.purchase_pct?.toFixed(4)||null,prepaid:r.prepaid?.toFixed(4)||null,
+      roas:r.roas!=null?+r.roas.toFixed(2):null,
+      cac:r.cac!=null?+r.cac.toFixed(0):null,
+      aov:r.aov!=null?+r.aov.toFixed(0):null,
+      ctr:r.ctr!=null?+(r.ctr*100).toFixed(2):null,
+      hook_rate:r.hook_rate!=null?+(r.hook_rate*100).toFixed(2):null,
+      atc_pct:r.atc_pct!=null?+(r.atc_pct*100).toFixed(2):null,
+      purchase_pct:r.purchase_pct!=null?+(r.purchase_pct*100).toFixed(2):null,
+      prepaid:r.prepaid!=null?+(r.prepaid*100).toFixed(2):null,
       narrative:r.narrative,language:r.language,person:r.person,
       ad_format:r.ad_format,ad_type:r.ad_type,int_inf:r.int_inf,
       funnel_type:r.funnel_type,source_funnel:r.source_funnel
