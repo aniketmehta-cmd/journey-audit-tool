@@ -444,26 +444,42 @@ table.trends tr:hover td{background:var(--paper2);}
 
 <!-- Sheet Settings Modal -->
 <div class="overlay" id="sheet-settings-overlay" onclick="if(event.target===this)closeSheetSettings()">
-  <div class="modal" style="max-width:580px;">
+  <div class="modal" style="max-width:600px;">
     <h2>Connect Google Sheet</h2>
-    <p>Paste your <strong>Apps Script Web App URL</strong> below. This lets the tool append a log row every time you click <em>Save to Sheet</em>.</p>
-    <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:0 0 16px;font-size:12px;line-height:1.7;color:var(--ink2);">
-      <strong style="color:var(--ink);">One-time setup (takes ~3 min):</strong><br>
-      1. Create a new Google Sheet (or open existing) → copy its <strong>Sheet ID</strong> from the URL<br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<em>docs.google.com/spreadsheets/d/<strong>THIS_PART</strong>/edit</em><br>
-      2. Click <strong>📋 Copy Apps Script Code</strong> below<br>
-      3. Open <strong>script.google.com</strong> → New project → paste code → replace <code>YOUR_SHEET_ID_HERE</code> with your Sheet ID → Save<br>
-      4. Click <strong>Deploy → New deployment → Web app</strong><br>
-      5. Set <em>Execute as: Me</em> · <em>Who has access: Anyone</em> → Deploy → Authorize<br>
-      6. Copy the Web App URL → paste below
+
+    <div style="background:#fff8e1;border:1px solid #f0c040;border-radius:8px;padding:12px 16px;margin:0 0 16px;font-size:12px;line-height:1.8;color:#5a4000;">
+      <strong>What is the Sheet ID?</strong><br>
+      Open your Google Sheet. Look at the URL in your browser — it looks like:<br>
+      <code style="background:#fff3cd;padding:2px 6px;border-radius:4px;font-size:11px;">https://docs.google.com/spreadsheets/d/<strong style="color:#c00;">1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890</strong>/edit</code><br>
+      The bold part between <code>/d/</code> and <code>/edit</code> is your Sheet ID.
     </div>
-    <div style="margin-bottom:12px;">
-      <button class="btn btn-ghost" style="font-size:12px;" onclick="copyAppsScript()">📋 Copy Apps Script Code</button>
-      <span id="as-copy-confirm" style="font-size:12px;color:var(--green,#1a8a4a);margin-left:8px;display:none;">✅ Copied!</span>
+
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:0 0 14px;font-size:12px;line-height:1.9;color:var(--ink2);">
+      <strong style="color:var(--ink);">Setup steps:</strong><br>
+      <strong>1.</strong> Open the Google Sheet where you want data saved<br>
+      <strong>2.</strong> Click <strong>Extensions → Apps Script</strong> (top menu of the Sheet)<br>
+      <strong>3.</strong> Delete any existing code in the editor<br>
+      <strong>4.</strong> Click <strong>📋 Copy Script</strong> below → paste into the editor<br>
+      <strong>5.</strong> Click <strong>Save</strong> (💾 icon or Cmd+S)<br>
+      <strong>6.</strong> Click <strong>Deploy → New deployment</strong><br>
+      <strong>7.</strong> Click the gear ⚙ next to "Select type" → choose <strong>Web app</strong><br>
+      <strong>8.</strong> Set <em>"Execute as"</em> → <strong>Me</strong> · Set <em>"Who has access"</em> → <strong>Anyone</strong><br>
+      <strong>9.</strong> Click <strong>Deploy</strong> → click <strong>Authorize access</strong> → choose your Google account → Allow<br>
+      <strong>10.</strong> Copy the <strong>Web app URL</strong> that appears → paste below
     </div>
+
+    <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-ghost" style="font-size:12px;" onclick="copyAppsScript()">📋 Copy Script</button>
+      <span id="as-copy-confirm" style="font-size:12px;color:#1a8a4a;display:none;">✅ Copied to clipboard!</span>
+    </div>
+
     <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">Web App URL</label>
     <input id="sheet-url-input" type="url" placeholder="https://script.google.com/macros/s/…/exec"
-      style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:var(--sans);background:var(--bg);color:var(--ink);box-sizing:border-box;margin-bottom:16px;">
+      style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:var(--sans);background:var(--bg);color:var(--ink);box-sizing:border-box;margin-bottom:10px;">
+    <div style="margin-bottom:16px;">
+      <button class="btn btn-ghost" style="font-size:12px;" onclick="testSheetConnection()">🔗 Test Connection</button>
+      <span id="test-confirm" style="font-size:12px;margin-left:8px;display:none;"></span>
+    </div>
     <div class="modal-btns">
       <button class="btn" onclick="closeSheetSettings()">Cancel</button>
       <button class="btn btn-primary" onclick="saveSheetSettings()">Save & Connect</button>
@@ -1386,63 +1402,64 @@ document.getElementById('tier-hit').addEventListener('change',()=>{if(currentRow
 // ═══════════════════════════════════════════════
 // SHEET LOG — APPS SCRIPT INTEGRATION
 // ═══════════════════════════════════════════════
-const APPS_SCRIPT_CODE=`// ── Mosaic Creative Audit — Sheet Logger ──────────────────────────
-// Deploy as: Web App · Execute as: Me · Access: Anyone
-// ⚠️  Replace YOUR_SHEET_ID_HERE with your Google Sheet ID
-//     (the long string in the Sheet URL between /d/ and /edit)
+const APPS_SCRIPT_CODE=`// Mosaic Creative Audit — Sheet Logger
+// Paste this into Extensions > Apps Script from inside your Google Sheet
+// Then: Deploy > New deployment > Web app > Execute as Me > Anyone > Deploy
 
-const SHEET_ID = 'YOUR_SHEET_ID_HERE';
+function doGet(e) {
+  return ContentService.createTextOutput('OK - Mosaic Sheet Logger is live');
+}
 
 function doPost(e) {
   try {
-    const payload = JSON.parse(e.parameter.data);
-    const ss = SpreadsheetApp.openById(SHEET_ID);
-    appendDailyLog(ss, payload);
-    appendAdRows(ss, payload);
-    return HtmlService.createHtmlOutput('<p>Saved ✅</p>');
-  } catch(err) {
-    return HtmlService.createHtmlOutput('<p>Error: ' + err.message + '</p>');
-  }
-}
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var data = JSON.parse(e.parameter.data);
 
-function appendDailyLog(ss, p) {
-  let sh = ss.getSheetByName('Daily Log');
-  if (!sh) {
-    sh = ss.insertSheet('Daily Log');
-    sh.appendRow(['Saved At','Product','Period','Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC%','Purchase%','Prepaid%','Email Digest']);
-    sh.getRange(1,1,1,14).setFontWeight('bold');
-    sh.setFrozenRows(1);
-  }
-  sh.appendRow([
-    p.savedAt, p.product, p.period,
-    p.spend, p.ncs, p.roas, p.cac, p.aov,
-    p.ctr, p.hookRate, p.atcPct, p.purchasePct, p.prepaidPct,
-    p.emailDigest
-  ]);
-}
-
-function appendAdRows(ss, p) {
-  let sh = ss.getSheetByName('Ad Rows');
-  if (!sh) {
-    sh = ss.insertSheet('Ad Rows');
-    sh.appendRow(['Saved At','Product','Period','Ad Name','Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC%','Purchase%','Prepaid%','Narrative','Language','Person','Ad Format','Ad Type','Int/Inf','Funnel','Source']);
-    sh.getRange(1,1,1,22).setFontWeight('bold');
-    sh.setFrozenRows(1);
-  }
-  (p.adRows||[]).forEach(r => {
-    sh.appendRow([
-      p.savedAt, p.product, p.period,
-      r.name, r.spend, r.ncs, r.roas, r.cac, r.aov,
-      r.ctr, r.hook_rate, r.atc_pct, r.purchase_pct, r.prepaid,
-      r.narrative, r.language, r.person, r.ad_format,
-      r.ad_type, r.int_inf, r.funnel_type, r.source_funnel
+    // --- Daily Log tab ---
+    var logSheet = ss.getSheetByName('Daily Log');
+    if (!logSheet) {
+      logSheet = ss.insertSheet('Daily Log');
+      logSheet.appendRow(['Saved At','Product','Period','Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC%','Purchase%','Prepaid%','Email Digest']);
+      logSheet.getRange(1,1,1,14).setFontWeight('bold');
+      logSheet.setFrozenRows(1);
+    }
+    logSheet.appendRow([
+      data.savedAt, data.product, data.period,
+      data.spend, data.ncs, data.roas, data.cac, data.aov,
+      data.ctr, data.hookRate, data.atcPct, data.purchasePct, data.prepaidPct,
+      data.emailDigest
     ]);
-  });
+
+    // --- Ad Rows tab ---
+    var adSheet = ss.getSheetByName('Ad Rows');
+    if (!adSheet) {
+      adSheet = ss.insertSheet('Ad Rows');
+      adSheet.appendRow(['Saved At','Product','Period','Ad Name','Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC%','Purchase%','Prepaid%','Narrative','Language','Person','Ad Format','Ad Type','Int/Inf','Funnel','Source']);
+      adSheet.getRange(1,1,1,22).setFontWeight('bold');
+      adSheet.setFrozenRows(1);
+    }
+    var rows = data.adRows || [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      adSheet.appendRow([
+        data.savedAt, data.product, data.period,
+        r.name, r.spend, r.ncs, r.roas, r.cac, r.aov,
+        r.ctr, r.hook_rate, r.atc_pct, r.purchase_pct, r.prepaid,
+        r.narrative, r.language, r.person, r.ad_format,
+        r.ad_type, r.int_inf, r.funnel_type, r.source_funnel
+      ]);
+    }
+
+    return ContentService.createTextOutput('SAVED');
+  } catch(err) {
+    return ContentService.createTextOutput('ERROR: ' + err.message);
+  }
 }`;
 
 function openSheetSettings(){
   const url=localStorage.getItem('mm_sheet_url')||'';
   document.getElementById('sheet-url-input').value=url;
+  const tc=document.getElementById('test-confirm');tc.style.display='none';
   document.getElementById('sheet-settings-overlay').style.display='flex';
 }
 function closeSheetSettings(){
@@ -1451,25 +1468,34 @@ function closeSheetSettings(){
 function saveSheetSettings(){
   const url=document.getElementById('sheet-url-input').value.trim();
   if(url&&!url.startsWith('https://script.google.com')){
-    alert('That doesn\'t look like an Apps Script URL. It should start with https://script.google.com/macros/s/…');
+    alert('That doesn\'t look like an Apps Script URL.\nIt should start with:\nhttps://script.google.com/macros/s/…/exec');
     return;
   }
   localStorage.setItem('mm_sheet_url',url);
   closeSheetSettings();
-  alert(url?'Connected! The "Save to Sheet" button will now log to your Google Sheet.':'URL cleared.');
+  if(url)alert('Saved! Now click "Test Connection" to verify before using Save to Sheet.');
+}
+function testSheetConnection(){
+  const url=document.getElementById('sheet-url-input').value.trim();
+  if(!url){alert('Paste the Web App URL first.');return;}
+  const tc=document.getElementById('test-confirm');
+  tc.style.display='inline';tc.style.color='#888';tc.textContent='Testing…';
+  // Open in new tab — if deployed correctly, you'll see "OK - Mosaic Sheet Logger is live"
+  window.open(url,'_blank');
+  tc.textContent='✅ Opened in new tab — you should see "OK - Mosaic Sheet Logger is live". If you do, connection works!';
+  tc.style.color='#1a8a4a';
 }
 function copyAppsScript(){
   navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(()=>{
     const c=document.getElementById('as-copy-confirm');
-    c.style.display='inline';
-    setTimeout(()=>c.style.display='none',2500);
+    c.style.display='inline';setTimeout(()=>c.style.display='none',3000);
   }).catch(()=>{
     const ta=document.createElement('textarea');
     ta.value=APPS_SCRIPT_CODE;ta.style.position='fixed';ta.style.opacity='0';
     document.body.appendChild(ta);ta.select();document.execCommand('copy');
     document.body.removeChild(ta);
     const c=document.getElementById('as-copy-confirm');
-    c.style.display='inline';setTimeout(()=>c.style.display='none',2500);
+    c.style.display='inline';setTimeout(()=>c.style.display='none',3000);
   });
 }
 
