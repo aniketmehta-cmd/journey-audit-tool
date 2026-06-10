@@ -21,7 +21,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Journey Audit Tool — Mosaic Wellness</title>
+  <title>Journey Intelligence — Man Matters</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -121,98 +121,365 @@ code {
 /* =============================================================
    3. MASTHEAD
    ============================================================= */
+/* === BRAND MASTHEAD === */
 .masthead {
-  background: var(--bg-panel);
-  border-bottom: 1px solid var(--rule);
-  padding: 28px 40px 20px;
+  background: #004AAD;
+  padding: 0;
 }
-.masthead .top { display: flex; justify-content: space-between; align-items: baseline; gap: 24px; flex-wrap: wrap; }
-.masthead h1 {
-  font-size: 36px;
-  margin: 0;
-  line-height: 1.05;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-.masthead h1 em { font-style: italic; color: var(--accent); font-weight: 500; }
-.masthead .kicker {
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-mute);
-  margin-bottom: 6px;
-}
-.masthead .meta {
-  text-align: right;
-  color: var(--ink-mute);
-  font-size: 12px;
-  line-height: 1.5;
-}
-.masthead .meta strong { color: var(--ink); font-weight: 600; }
-
-
-/* =============================================================
-   4. DATASET BAR
-   ============================================================= */
-.dataset-bar {
-  background: var(--ink);
-  color: var(--bg);
-  padding: 12px 40px;
+.brand-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  font-size: 13px;
+  padding: 16px 40px;
 }
-.dataset-bar .info { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-.dataset-bar .mode {
-  background: var(--accent);
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   color: #fff;
-  padding: 3px 10px;
-  border-radius: 3px;
-  font-size: 10px;
+}
+.brand-name {
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-.dataset-bar .mode.uploaded { background: var(--good); }
-.dataset-bar .files {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: rgba(255,255,255,0.85);
-  max-width: 540px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.dataset-bar .counts {
-  color: rgba(255,255,255,0.7);
-  font-size: 12px;
-  font-family: 'JetBrains Mono', monospace;
-}
-.dataset-bar .actions { display: flex; gap: 10px; align-items: center; }
-.dataset-bar .btn {
-  background: var(--accent);
+  letter-spacing: -0.02em;
   color: #fff;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 3px;
-  font-size: 12px;
+}
+.brand-divider { color: rgba(255,255,255,0.35); font-size: 18px; }
+.brand-product {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.75);
+  letter-spacing: 0.02em;
+}
+.add-data-btn {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
   transition: background 0.15s;
 }
-.dataset-bar .btn:hover { background: #0040a0; }
-.dataset-bar .btn-text {
-  background: none;
-  color: rgba(255,255,255,0.7);
-  border: none;
-  padding: 8px 4px;
-  font-size: 12px;
-  text-decoration: underline;
+.add-data-btn:hover { background: rgba(255,255,255,0.25); }
+
+/* === CATEGORY NAV === */
+.cat-nav {
+  background: #003a8a;
+  padding: 0 40px;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
 }
-.dataset-bar .btn-text:hover { color: #fff; }
+.cat-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.65);
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.cat-btn:hover { color: #fff; }
+.cat-btn.active {
+  color: #fff;
+  font-weight: 700;
+  border-bottom-color: #fff;
+}
+
+/* === SUBCATEGORY NAV === */
+.subcat-nav {
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 40px;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+}
+.subcat-btn {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.subcat-btn:hover { color: var(--ink); }
+.subcat-btn.active {
+  color: var(--accent);
+  font-weight: 700;
+  border-bottom-color: var(--accent);
+}
+
+/* === CONTEXT BANNER (shows what you're viewing) === */
+.context-banner {
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--rule);
+  padding: 8px 40px;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.context-banner .ctx-path { display: flex; align-items: center; gap: 6px; }
+.context-banner .ctx-sep { color: var(--ink-mute); }
+.context-banner .ctx-count { font-family: 'JetBrains Mono', monospace; color: var(--ink-mute); }
+
+/* === EMPTY CATEGORY STATE === */
+.cat-empty {
+  background: var(--bg-panel);
+  border: 2px dashed var(--rule);
+  padding: 60px 40px;
+  text-align: center;
+  margin: 40px 0;
+}
+.cat-empty .ce-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
+.cat-empty .ce-sub { font-size: 14px; color: var(--ink-mute); margin-bottom: 20px; }
+.cat-empty .ce-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* === BULK UPLOAD MODAL === */
+.bulk-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,10,30,0.6);
+  z-index: 9000;
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  overflow-y: auto;
+}
+.bulk-modal.open { display: flex; }
+.bulk-card {
+  background: #fff;
+  border: 1px solid var(--rule);
+  padding: 32px;
+  width: 520px;
+  max-width: 95vw;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+  border-radius: 6px;
+}
+.bulk-card-wide { width: 860px; }
+.bulk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+.bulk-title { font-size: 20px; font-weight: 700; color: var(--ink); }
+.bulk-subtitle { font-size: 13px; color: var(--ink-mute); margin-top: 4px; }
+.bulk-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--ink-mute);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.bulk-close:hover { color: var(--ink); }
+.bulk-drop-zone {
+  border: 2px dashed var(--rule);
+  border-radius: 6px;
+  padding: 48px 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 16px;
+}
+.bulk-drop-zone:hover, .bulk-drop-zone.dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.bdz-icon { font-size: 36px; color: var(--ink-mute); margin-bottom: 12px; }
+.bdz-title { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.bdz-sub { font-size: 13px; color: var(--ink-mute); }
+.bdz-browse { color: var(--accent); text-decoration: underline; cursor: pointer; }
+
+/* === UPLOAD CHOICE GRID === */
+.upload-choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.upload-choice-card {
+  border: 2px solid var(--rule);
+  border-radius: 6px;
+  padding: 20px 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.upload-choice-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+.ucc-icon { font-size: 28px; margin-bottom: 10px; }
+.ucc-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: var(--ink); }
+.ucc-desc { font-size: 12px; color: var(--ink-soft); line-height: 1.55; }
+.ucc-tag {
+  display: inline-block;
+  margin-top: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+/* === INDIVIDUAL UPLOAD FIELDS === */
+.um-field { margin-bottom: 14px; }
+.um-field label { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-mute); margin-bottom: 6px; }
+.um-field select {
+  width: 100%; padding: 10px 12px; border: 1px solid var(--rule);
+  background: var(--bg); font-size: 14px; color: var(--ink);
+  border-radius: 3px; font-family: inherit;
+}
+.bulk-hint {
+  font-size: 12px;
+  color: var(--ink-mute);
+  background: var(--bg-alt);
+  padding: 10px 14px;
+  border-radius: 4px;
+  line-height: 1.55;
+}
+
+/* Review step */
+.bulk-review-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  font-size: 12px;
+}
+.conf-badge { padding: 3px 10px; border-radius: 3px; font-weight: 500; }
+.conf-badge.high { background: var(--good-bg); color: var(--good); }
+.conf-badge.low  { background: var(--warn-bg); color: var(--warn); }
+.conf-badge.none { background: var(--bad-bg);  color: var(--bad);  }
+
+.bulk-table-wrap {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+.bulk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.bulk-table th {
+  background: var(--bg-alt);
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-mute);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--rule);
+}
+.bulk-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: middle;
+}
+.bulk-table tr:last-child td { border-bottom: none; }
+.bulk-table tr.conf-low  td { background: #fffbeb; }
+.bulk-table tr.conf-none td { background: #fff5f5; }
+.bulk-table tr.conf-high td { background: #fff; }
+.bulk-table select {
+  padding: 4px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink);
+  background: #fff;
+  width: 100%;
+}
+.bulk-table select.unset { border-color: var(--bad); color: var(--bad); }
+.bulk-table .jname { font-weight: 500; max-width: 260px; }
+.bulk-table .jid { font-family: 'JetBrains Mono', monospace; color: var(--ink-mute); font-size: 11px; }
+.conf-col { width: 120px; }
+.conf-icon { font-size: 13px; }
+.bulk-row-delete {
+  background: none;
+  border: none;
+  color: var(--ink-mute);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: all 0.1s;
+  line-height: 1;
+}
+.bulk-row-delete:hover { background: var(--bad-bg); color: var(--bad); }
+
+.bulk-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.bulk-unclassified-warn { font-size: 13px; color: var(--bad); font-weight: 500; }
+.bulk-footer-actions { display: flex; gap: 10px; margin-left: auto; }
+.bulk-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bulk-btn-primary:hover { background: #0040a0; }
+.bulk-btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+.bulk-btn-secondary {
+  background: none;
+  border: 1px solid var(--rule);
+  padding: 10px 18px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+/* === CROSS-CATEGORY INSPIRATION SECTION === */
+.inspiration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.inspo-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--rule);
+  padding: 16px 18px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.inspo-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.inspo-card .ic-cat { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-mute); margin-bottom: 6px; }
+.inspo-card .ic-name { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.inspo-card .ic-meta { font-size: 12px; color: var(--ink-mute); display: flex; gap: 12px; }
+
+/* === DATASET BAR (kept for legacy reference, now hidden) === */
+.dataset-bar { display: none; }
 
 
 /* =============================================================
@@ -829,9 +1096,9 @@ h3 { font-size: 18px; margin: 28px 0 10px; font-weight: 600; }
 
 @media (max-width: 900px) {
   .topline, .about-grid { grid-template-columns: 1fr; }
-  .masthead, main { padding-left: 20px; padding-right: 20px; }
-  .tabbar, .dataset-bar { padding-left: 20px; padding-right: 20px; }
-  .masthead h1 { font-size: 26px; }
+  main { padding-left: 20px; padding-right: 20px; }
+  .tabbar, .brand-bar, .cat-nav, .subcat-nav, .context-banner { padding-left: 20px; padding-right: 20px; }
+  .brand-name { font-size: 16px; }
 }
 
 </style>
@@ -839,38 +1106,38 @@ h3 { font-size: 18px; margin: 28px 0 10px; font-weight: 600; }
 <body>
 
 <!-- ============================================================
-     MASTHEAD — title and meta
+     MASTHEAD — Man Matters brand bar
      ============================================================ -->
 <header class="masthead">
-  <div class="top">
-    <div>
-      <div class="kicker">Mosaic Wellness · Retention Ops</div>
-      <h1>Journey Audit <em>Tool</em></h1>
+  <div class="brand-bar">
+    <div class="brand-lockup">
+      <span class="brand-name">Man Matters</span>
+      <span class="brand-divider">|</span>
+      <span class="brand-product">Journey Intelligence</span>
     </div>
-    <div class="meta">
-      <div><strong>Reusable Audit Workspace</strong></div>
-      <div>Built for CleverTap journey exports</div>
-      <div>Works offline · v1.0</div>
-    </div>
+    <button class="add-data-btn" id="add-data-btn">+ Add data</button>
   </div>
 </header>
 
 <!-- ============================================================
-     DATASET BAR — shows what data is currently loaded
+     CATEGORY NAV — top-level category tabs
      ============================================================ -->
-<div class="dataset-bar">
-  <div class="info">
-    <span class="mode" id="dataset-mode">DEMO</span>
-    <span class="files" id="dataset-files">Hair / Stage 2 sample data</span>
-    <span class="counts" id="dataset-counts"></span>
-  </div>
-  <div class="actions">
-    <input type="file" id="file-input" multiple accept=".csv" hidden>
-    <button class="btn" id="upload-btn">+ Load CSV files</button>
-    <button class="btn-text" id="reset-btn" style="display:none;">Reset to demo</button>
-    <button class="btn-text" id="export-btn">Export JSON</button>
-  </div>
-</div>
+<nav class="cat-nav" id="cat-nav">
+  <button class="cat-btn active" data-cat="all">All Categories</button>
+  <button class="cat-btn" data-cat="hair">💇 Hair</button>
+  <button class="cat-btn" data-cat="beard">🧔 Beard</button>
+  <button class="cat-btn" data-cat="nutrition">💊 Nutrition</button>
+</nav>
+
+<!-- ============================================================
+     SUBCATEGORY NAV — populated dynamically
+     ============================================================ -->
+<nav class="subcat-nav" id="subcat-nav" style="display:none"></nav>
+
+<!-- ============================================================
+     CONTEXT BANNER — shows current view path + journey count
+     ============================================================ -->
+<div class="context-banner" id="context-banner"></div>
 
 <!-- ============================================================
      TAB BAR — populated by app.js at runtime
@@ -878,6 +1145,129 @@ h3 { font-size: 18px; margin: 28px 0 10px; font-weight: 600; }
 <nav class="tabbar">
   <div class="tabs" id="tabs"></div>
 </nav>
+
+<!-- BULK UPLOAD MODAL -->
+<div class="bulk-modal" id="bulk-modal">
+  <!-- STEP 0: Choose upload mode -->
+  <div class="bulk-step" id="bulk-step-choose" style="display:flex;justify-content:center;width:100%">
+    <div class="bulk-card">
+      <div class="bulk-header">
+        <div class="bulk-title">Add journey data</div>
+        <button class="bulk-close" id="bulk-close-0">✕</button>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);margin:0 0 20px">How would you like to upload?</p>
+      <div class="upload-choice-grid">
+        <div class="upload-choice-card" id="choose-bulk">
+          <div class="ucc-icon">📦</div>
+          <div class="ucc-title">Bulk upload</div>
+          <div class="ucc-desc">Drop all your CSVs at once — any category, any product. The tool auto-classifies each journey and lets you review before saving.</div>
+          <div class="ucc-tag">Recommended</div>
+        </div>
+        <div class="upload-choice-card" id="choose-single">
+          <div class="ucc-icon">🗂️</div>
+          <div class="ucc-title">Upload by category</div>
+          <div class="ucc-desc">Pick a specific category and sub-category first, then upload just those CSV files. Useful when updating one product at a time.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Bulk drop zone -->
+  <div class="bulk-step" id="bulk-step-drop" style="display:none;justify-content:center;width:100%">
+    <div class="bulk-card">
+      <div class="bulk-header">
+        <div class="bulk-title">Add journey data</div>
+        <button class="bulk-close" id="bulk-close-1">✕</button>
+      </div>
+      <div class="bulk-drop-zone" id="bulk-drop-zone">
+        <div class="bdz-icon">↑</div>
+        <div class="bdz-title">Drop all your CSV files here</div>
+        <div class="bdz-sub">Any category · Any product · All at once</div>
+        <div class="bdz-sub" style="margin-top:8px">or <span class="bdz-browse" id="bdz-browse">browse files</span></div>
+        <input type="file" id="bdz-file-input" accept=".csv" multiple style="display:none">
+      </div>
+      <div class="bulk-hint">
+        The tool will read every journey name and auto-suggest the right category. You'll review before anything is saved.
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Review table -->
+  <div class="bulk-step" id="bulk-step-review" style="display:none;justify-content:center;width:100%">
+    <div class="bulk-card bulk-card-wide">
+      <div class="bulk-header">
+        <div>
+          <div class="bulk-title">Review &amp; confirm</div>
+          <div class="bulk-subtitle" id="bulk-review-subtitle"></div>
+        </div>
+        <button class="bulk-close" id="bulk-close-2">✕</button>
+      </div>
+      <div class="bulk-review-legend">
+        <span class="conf-badge high">✅ High confidence</span>
+        <span class="conf-badge low">⚠️ Low confidence — please verify</span>
+        <span class="conf-badge none">❓ Unclassified — must assign</span>
+      </div>
+      <div class="bulk-table-wrap">
+        <table class="bulk-table" id="bulk-review-table">
+          <thead>
+            <tr>
+              <th>Journey</th>
+              <th>ID</th>
+              <th>Category</th>
+              <th>Sub-category</th>
+              <th class="conf-col">Confidence</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="bulk-review-tbody"></tbody>
+        </table>
+      </div>
+      <div class="bulk-footer">
+        <div class="bulk-unclassified-warn" id="bulk-unclassified-warn" style="display:none">
+          ❗ <span id="bulk-warn-count"></span> journey(s) still unclassified — assign a category to each before confirming.
+        </div>
+        <div class="bulk-footer-actions">
+          <button class="bulk-btn-secondary" id="bulk-back">← Back</button>
+          <button class="bulk-btn-primary" id="bulk-confirm">Confirm &amp; Load</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP INDIVIDUAL: Upload by category -->
+  <div class="bulk-step" id="bulk-step-single" style="display:none;justify-content:center;width:100%">
+    <div class="bulk-card">
+      <div class="bulk-header">
+        <div>
+          <div class="bulk-title">Upload by category</div>
+          <div class="bulk-subtitle">Select where this data belongs, then drop the CSV files</div>
+        </div>
+        <button class="bulk-close" id="bulk-close-single">✕</button>
+      </div>
+      <div class="um-field">
+        <label>Category</label>
+        <select id="um-cat">
+          <option value="hair">Hair</option>
+          <option value="beard">Beard</option>
+          <option value="nutrition">Nutrition</option>
+        </select>
+      </div>
+      <div class="um-field">
+        <label>Sub-category</label>
+        <select id="um-subcat"></select>
+      </div>
+      <div class="bulk-drop-zone" id="single-drop-zone">
+        <div class="bdz-icon">↑</div>
+        <div class="bdz-title">Drop CSV files here</div>
+        <div class="bdz-sub">or <span class="bdz-browse" id="single-browse">browse files</span></div>
+        <input type="file" id="single-file-input" accept=".csv" multiple style="display:none">
+      </div>
+      <div class="bulk-footer-actions" style="justify-content:space-between;width:100%;display:flex">
+        <button class="bulk-btn-secondary" id="single-back">← Back</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <main>
 
@@ -1017,64 +1407,8 @@ h3 { font-size: 18px; margin: 28px 0 10px; font-weight: 600; }
 <!-- ============================================================
      METHODOLOGY TAB
      ============================================================ -->
-<section class="tabpanel" data-tab="method">
-  <div class="section">
-    <h2>How the tool processes your data</h2>
-    <p class="lede">All processing happens in your browser. Nothing is sent to a server.</p>
-
-    <h3>Dedup logic</h3>
-    <p>CleverTap journey exports have two kinds of duplication:</p>
-    <ul>
-      <li><strong>Within-file:</strong> rows split by Campaign OS (Android, iOS). The same node fired to both OSs appears as two rows — one per OS. If not collapsed, you lose one OS's metrics.</li>
-      <li><strong>Cross-file:</strong> if you export the same journey in multiple files (e.g. as part of a "category" export and a "specific journey" export), each file will have a complete copy of that journey's rows.</li>
-    </ul>
-    <p>The tool handles both:</p>
-    <ol>
-      <li>For each Journey ID, pick <strong>one source file</strong> — the first file (in the order you loaded them) that contains that journey.</li>
-      <li>Within that file, group by (Journey ID, Node ID) and <strong>sum the metric columns</strong>. This collapses OS-split rows into one row per node, with metrics correctly added across OSs.</li>
-      <li>The result is one row per (Journey, Node) with correctly-summed lifetime metrics.</li>
-    </ol>
-    <p class="small">If a journey shows up in two files with DIFFERENT row counts or DIFFERENT metric values, the version from the first-loaded file wins. The other is silently dropped. (If you need different precedence, reorder your file uploads.)</p>
-
-    <h3>What each metric means</h3>
-    <ul>
-      <li><strong>Sent</strong> — for message nodes, attempts to send. For webhook nodes, trigger fires (no comm delivered).</li>
-      <li><strong>Delivered</strong> — populated for WhatsApp and SMS. NOT populated for Push (CleverTap doesn't track push delivery the same way).</li>
-      <li><strong>Viewed</strong> — Push impressions + WhatsApp read receipts.</li>
-      <li><strong>Clicked</strong> — push notification taps. Not tracked here for WhatsApp / SMS (those use link tracking off-platform).</li>
-      <li><strong>Converted</strong> — unique customers who fired the conversion event (typically "Charged") within the configured conversion window. Direct attribution.</li>
-      <li><strong>Influenced Conversions / Revenue</strong> — broader attribution including post-window and assist conversions. Usually the headline number.</li>
-      <li><strong>Goal 1/2/3 Conversions</strong> — counts of customers who hit the configured Goal event for each goal slot. "My segment" goals are funnel-step exits, not outcomes — interpret with care.</li>
-    </ul>
-
-    <h3>Quality flag rules</h3>
-    <p>The Data Quality tab applies these rules to your data:</p>
-    <ul>
-      <li><strong>Silent Running journeys</strong> — Status = Running but Total Sent = 0 across all message nodes. Likely cause: entry condition is broken or never matches.</li>
-      <li><strong>Duplicate journey names</strong> — two or more Journey IDs share the same name. Often a sign of a deprecated version that should be archived.</li>
-      <li><strong>Push-heavy journeys</strong> — 10+ Push nodes vs ≤ 1 WhatsApp node. Push impressions are usually healthy but CVR-per-push is far lower than CVR-per-WhatsApp; fatigue risk if Global Campaign Limits aren't tight.</li>
-      <li><strong>Webhook-only journeys</strong> — every node is a Webhook. The "sent" count counts trigger fires, which is misleading if rolled up into comm-volume KPIs.</li>
-      <li><strong>WA/SMS without delivery data</strong> — WhatsApp or SMS nodes where Total Sent &gt; 0 but Total Delivered = 0. Tracking gap to look into.</li>
-      <li><strong>No Goal events configured</strong> — journeys with no Goal 1/2/3 Name populated. Direct conversion attribution can't be measured.</li>
-      <li><strong>Paused journeys still in the workspace</strong> — Status = Paused. Listed for archival review.</li>
-    </ul>
-    <p class="small">Rules are defined in <code>flags.js</code>. Add or edit rules there.</p>
-
-    <h3>What this tool does NOT compute</h3>
-    <ul>
-      <li><strong>Control-Group / incremental lift</strong> — CleverTap's journey export does not include control group data. To see target vs control group conversion metrics, export the Campaign Report from CleverTap and match by Campaign ID. The journey export only contains treatment group sends.</li>
-      <li><strong>Frequency per customer</strong> — these are journey-level aggregates, not customer-level.</li>
-      <li><strong>A/B winner determination</strong> — IntelliNODE winner data isn't always present in the export. Where it is, it'll show on the per-node view.</li>
-      <li><strong>Year on dates</strong> — CleverTap date fields don't include the year. The tool shows the raw date string from your export.</li>
-    </ul>
-
-    <h3>Source code &amp; privacy</h3>
-    <p>This is a small static web app. The only third-party library is <a href="https://www.papaparse.com/">PapaParse</a> for CSV parsing (MIT license, ~19KB). Your uploaded data never leaves your browser — it's processed locally and (optionally) saved to local storage on your machine for persistence across page reloads. Hitting "Reset to demo" clears it.</p>
-  </div>
-</section>
-
 <!-- ============================================================
-     ANALYTICS TAB — populated by app.js
+     ANALYTICS TAB — populated by JS
      ============================================================ -->
 <section class="tabpanel" data-tab="analytics">
   <div class="section">
@@ -1085,70 +1419,75 @@ h3 { font-size: 18px; margin: 28px 0 10px; font-weight: 600; }
 </section>
 
 <!-- ============================================================
-     GUIDE TAB — reading guide for first-time users
+     HOW TO TAB — reading guide + methodology combined
      ============================================================ -->
-<section class="tabpanel" data-tab="guide">
+<section class="tabpanel" data-tab="howto">
   <div class="section">
-    <h2>How to read this dashboard</h2>
-    <p class="lede">A quick-start reference for anyone opening this tool for the first time.</p>
+    <h2>How to use this dashboard</h2>
+    <p class="lede">A quick-start reference for anyone opening this tool for the first time, plus a full explanation of how the data is processed.</p>
 
+    <h3>Reading the data</h3>
     <div class="about-grid">
       <div class="about-card">
         <div class="icon">01</div>
         <h4>What is a Journey?</h4>
-        <p>A CleverTap Journey is an automated multi-channel communication sequence triggered when a customer enters a defined segment or takes an action. Each journey can contain multiple messages (nodes) across channels like WhatsApp, Push, and SMS — sent in sequence with configurable delays between each step.</p>
+        <p>A CleverTap Journey is an automated multi-channel communication sequence triggered when a customer enters a defined segment or takes an action. Each journey contains multiple messages (nodes) across channels like WhatsApp, Push, and SMS — sent in sequence with configurable delays between each step.</p>
       </div>
       <div class="about-card">
         <div class="icon">02</div>
-        <h4>Reading the Journey Cards</h4>
-        <p>Click any journey to expand it. You'll see: (1) a channel summary bar showing how many nodes per channel, (2) a visual flow of every message in order with timing, (3) metrics for each message node including delivery, read, and conversion rates.</p>
+        <h4>Reading Journey Cards</h4>
+        <p>Click any journey to expand it. You'll see: (1) a channel summary bar, (2) a visual flow of every message in order with timing labels, (3) metrics per message node including delivery, read, and conversion rates.</p>
       </div>
       <div class="about-card">
         <div class="icon">03</div>
         <h4>Metric Definitions</h4>
-        <p><strong>Sent:</strong> attempts to send. <strong>Delivered:</strong> confirmed delivery (WA/SMS only). <strong>Viewed:</strong> push impressions + WA read receipts. <strong>Clicked:</strong> push taps. <strong>Converted:</strong> customers who purchased within the conversion window. <strong>Influenced Conversions:</strong> broader attribution including assists. <strong>Influenced Revenue:</strong> ₹ attributed to those influenced conversions. <strong>Goal Conversions:</strong> customers who hit the journey's configured goal event.</p>
+        <p><strong>Sent:</strong> attempts to send. <strong>Delivered:</strong> confirmed delivery (WA/SMS only — Push not tracked this way). <strong>Viewed:</strong> push impressions + WA read receipts. <strong>Clicked:</strong> push taps. <strong>Converted:</strong> purchased within the conversion window. <strong>Influenced Conv/Rev:</strong> broader attribution including assists.</p>
       </div>
       <div class="about-card">
         <div class="icon">04</div>
         <h4>Status Meanings</h4>
-        <p><strong>Running:</strong> actively enrolling new users. <strong>Paused:</strong> no new enrollments, existing users continue through the flow. <strong>Restricted:</strong> journey ran but entry is closed — no new users can enter. <strong>Draft:</strong> never published.</p>
+        <p><strong>Running:</strong> actively enrolling new users. <strong>Paused:</strong> no new enrollments, existing users continue. <strong>Restricted:</strong> entry closed, no new users. <strong>Draft:</strong> never published.</p>
       </div>
       <div class="about-card">
         <div class="icon">05</div>
-        <h4>Channel Color Coding</h4>
-        <p>Each message node is color-coded by channel in the flow view: <span class="pill channel whatsapp">WhatsApp</span> green · <span class="pill channel push">Push</span> blue · <span class="pill channel sms">SMS</span> amber · <span class="pill channel webhook">Webhook</span> grey. The same colors appear on the channel summary pills in each journey header.</p>
+        <h4>Channel Colors</h4>
+        <p><span class="pill channel whatsapp">WhatsApp</span> green &nbsp;·&nbsp; <span class="pill channel push">Push</span> blue &nbsp;·&nbsp; <span class="pill channel sms">SMS</span> amber &nbsp;·&nbsp; <span class="pill channel webhook">Webhook</span> grey. Consistent across flow cards, pills, and channel breakdown tables.</p>
       </div>
       <div class="about-card">
         <div class="icon">06</div>
         <h4>Why Totals Look Large</h4>
-        <p>These are <strong>lifetime totals</strong> since the journey was first published. A journey running for 2 years has accumulated far more sends than one running for 2 months. Don't compare absolute numbers across journeys without checking the start date shown in each journey's detail panel.</p>
+        <p>All numbers are <strong>lifetime totals</strong> since the journey was published. A 2-year-old journey will always outweigh a 2-month-old one on absolute volume. Always check the start date before comparing journeys.</p>
       </div>
       <div class="about-card">
         <div class="icon">07</div>
         <h4>Control Group Note</h4>
-        <p>Some journeys were run with a control group. Control group data is <strong>not</strong> in the CleverTap journey export CSV — it lives in the Campaign Report. Where relevant, check the campaign-level report for target vs control conversion rates and match by Campaign ID.</p>
+        <p>Control group data is <strong>not</strong> in CleverTap's journey CSV export — it lives in the Campaign Report. For target vs control conversion rates, export the Campaign Report and match by Campaign ID.</p>
       </div>
       <div class="about-card">
         <div class="icon">08</div>
-        <h4>Data Quality Flags</h4>
-        <p>The Data Quality tab applies mechanical rules to highlight things worth investigating: running journeys with zero sends, duplicate names, journeys missing goal configuration, and more. These are observations, not conclusions — a human needs to interpret each one in context.</p>
+        <h4>Adding Data</h4>
+        <p>Click <strong>+ Add data</strong> in the top bar. Select the category and sub-category, then drop in your CleverTap journey CSV exports. Data is stored in your browser — to share with the team, commit the updated file to GitHub.</p>
       </div>
     </div>
+
+    <h3 style="margin-top: 36px;">How the data is processed</h3>
+    <p>All processing happens in your browser. Nothing is sent to a server.</p>
+    <ul>
+      <li><strong>Dedup within file:</strong> CleverTap splits the same node into Android + iOS rows. The tool groups by (Journey ID, Node ID) and sums metrics across both — giving one correct row per node.</li>
+      <li><strong>Dedup across files:</strong> If the same journey appears in multiple uploaded files, the first file loaded wins. Others are dropped silently.</li>
+      <li><strong>Sent</strong> — message attempts for comm nodes; trigger fires for webhook nodes (not a customer message).</li>
+      <li><strong>Delivered</strong> — WhatsApp and SMS only. Push delivery is not exported by CleverTap in the journey schema.</li>
+      <li><strong>Converted</strong> — unique customers who fired the conversion event within the configured window. Direct attribution only.</li>
+      <li><strong>Influenced Conversions / Revenue</strong> — broader attribution including post-window and assist conversions. This is typically the headline number.</li>
+      <li><strong>Control-Group lift</strong> — not in this export. Get from CleverTap's Campaign Report.</li>
+      <li><strong>Frequency per customer</strong> — not computable here. These are journey-level aggregates.</li>
+      <li><strong>Dates</strong> — CleverTap exports don't include the year. Dates are shown as-is from the export.</li>
+    </ul>
   </div>
 </section>
 
 </main>
 
-<!-- ============================================================
-     DRAG-DROP OVERLAY — appears when files are being dragged
-     ============================================================ -->
-<div class="drop-overlay" id="drop-overlay">
-  <div class="drop-card">
-    <div class="drop-icon">↓</div>
-    <h3>Drop CSV files to load</h3>
-    <p>Multiple files supported · dedup runs automatically</p>
-  </div>
-</div>
 
 <!-- ============================================================
      TOAST CONTAINER — small status messages
@@ -1414,9 +1753,6 @@ window.FLAG_RULES = [
    A. CONFIG & CONSTANTS
    ==================================================================== */
 
-// localStorage key — bump the version (v1 → v2) if the data shape changes
-const STORAGE_KEY = 'cm_journey_audit_v1';
-
 // CSV columns the tool needs to consider a file valid
 const REQUIRED_COLS = ['Journey ID', 'Node ID', 'Journey Name'];
 
@@ -1429,15 +1765,41 @@ const METRIC_COLS = [
   'Goal 1 Conversions','Goal 2 Conversions','Goal 3 Conversions',
 ];
 
-// Tabs shown in order — edit this to add/remove tabs
+// Tabs shown in order
 const TABS = [
-  { id: 'about',     label: 'About' },
   { id: 'overview',  label: 'Overview' },
-  { id: 'analytics', label: 'Analytics' },
   { id: 'journeys',  label: 'Journeys' },
+  { id: 'analytics', label: 'Analytics' },
   { id: 'quality',   label: 'Data Quality' },
-  { id: 'method',    label: 'Methodology' },
-  { id: 'guide',     label: 'Guide' },
+  { id: 'howto',     label: 'How To' },
+];
+
+// Category + subcategory config
+const CATEGORIES = [
+  {
+    id: 'hair', label: 'Hair', icon: '💇',
+    subcategories: [
+      { id: 'all',     label: 'All Hair' },
+      { id: 'stage-1', label: 'Stage 1 Kit' },
+      { id: 'stage-2', label: 'Stage 2 Kit' },
+      { id: 'stage-3', label: 'Stage 3 Kit' },
+      { id: 'gummies', label: 'Hair Gummies' },
+    ]
+  },
+  {
+    id: 'beard', label: 'Beard', icon: '🧔',
+    subcategories: [
+      { id: 'all', label: 'All Beard' },
+    ]
+  },
+  {
+    id: 'nutrition', label: 'Nutrition', icon: '💊',
+    subcategories: [
+      { id: 'all',       label: 'All Nutrition' },
+      { id: 'creatine',  label: 'Creatine' },
+      { id: 'shilajit',  label: 'Shilajit' },
+    ]
+  },
 ];
 
 
@@ -1446,46 +1808,73 @@ const TABS = [
    ==================================================================== */
 
 let state = {
-  mode: 'demo',                     // 'demo' | 'uploaded'
-  files: [],                        // [{ name, rowCount }]
-  journeys: window.DEMO_DATA || [], // processed journey objects
-  loadedAt: null,
+  activeCategory: 'all',      // 'all' | 'hair' | 'beard' | 'nutrition'
+  activeSubcategory: 'all',   // 'all' | 'stage-1' | 'stage-2' | etc.
+  activeTab: 'overview',
+  categoryData: {
+    hair: {
+      'stage-1': [],
+      'stage-2': window.DEMO_DATA || [],
+      'stage-3': [],
+      'gummies': [],
+    },
+    beard: {
+      'all': [],
+    },
+    nutrition: {
+      'creatine': [],
+      'shilajit': [],
+    },
+  },
 };
 
-function save() {
-  try {
-    if (state.mode === 'uploaded') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        mode: state.mode,
-        files: state.files,
-        journeys: state.journeys,
-        loadedAt: state.loadedAt,
-      }));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  } catch (e) {
-    console.warn('Could not save to local storage:', e);
-    toast('Could not save to local storage (may be full). Data will not persist across reloads.', 'error', 6000);
+function getActiveJourneys() {
+  if (state.activeCategory === 'all') {
+    return Object.values(state.categoryData).flatMap(subcats =>
+      Object.values(subcats).flat()
+    );
   }
+  const catData = state.categoryData[state.activeCategory];
+  if (!catData) return [];
+  if (state.activeSubcategory === 'all') {
+    return Object.values(catData).flat();
+  }
+  return catData[state.activeSubcategory] || [];
 }
 
-function loadFromStorage() {
+function storageKey(cat, subcat) {
+  return `mm_journey_v2_${cat}_${subcat}`;
+}
+
+function saveAll() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
-    const data = JSON.parse(raw);
-    if (data.journeys && data.journeys.length) {
-      state.mode = data.mode || 'uploaded';
-      state.files = data.files || [];
-      state.journeys = data.journeys;
-      state.loadedAt = data.loadedAt;
-      return true;
+    for (const [cat, subcats] of Object.entries(state.categoryData)) {
+      for (const [subcat, journeys] of Object.entries(subcats)) {
+        if (journeys.length > 0) {
+          localStorage.setItem(storageKey(cat, subcat), JSON.stringify(journeys));
+        }
+      }
     }
-  } catch (e) {
-    console.warn('Could not load from local storage:', e);
+  } catch(e) { console.warn('Storage error', e); }
+}
+
+function loadAllFromStorage() {
+  let loaded = false;
+  for (const [cat, subcats] of Object.entries(state.categoryData)) {
+    for (const subcat of Object.keys(subcats)) {
+      try {
+        const raw = localStorage.getItem(storageKey(cat, subcat));
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (data && data.length) {
+            state.categoryData[cat][subcat] = data;
+            loaded = true;
+          }
+        }
+      } catch(e) {}
+    }
   }
-  return false;
+  return loaded;
 }
 
 
@@ -1743,129 +2132,364 @@ function processRawRows(filesData) {
    E. FILE UPLOAD HANDLING
    ==================================================================== */
 
-async function handleFiles(fileList) {
-  const files = Array.from(fileList).filter(f =>
-    f.name.toLowerCase().endsWith('.csv') || f.type === 'text/csv'
-  );
-  if (files.length === 0) {
-    toast('No CSV files in that drop. Try again.', 'error');
-    return;
-  }
+/* ====================================================================
+   BULK UPLOAD + CLASSIFY FLOW
+   ==================================================================== */
 
-  toast(`Parsing ${files.length} file${files.length>1?'s':''}…`, 'info', 2500);
+let bulkParsedJourneys = [];
 
+function openBulkModal() {
+  document.getElementById('bulk-modal').classList.add('open');
+  showBulkStep('choose');
+}
+
+function closeBulkModal() {
+  document.getElementById('bulk-modal').classList.remove('open');
+  bulkParsedJourneys = [];
+}
+
+function showBulkStep(step) {
+  ['choose','drop','review','single'].forEach(s => {
+    const el = document.getElementById('bulk-step-' + s);
+    if (el) el.style.display = s === step ? 'flex' : 'none';
+  });
+}
+
+/* Individual upload helpers */
+function populateSubcatDropdown() {
+  const cat = document.getElementById('um-cat').value;
+  const opts = {
+    hair:      [['stage-2','Stage 2 Kit'],['stage-1','Stage 1 Kit'],['stage-3','Stage 3 Kit'],['gummies','Hair Gummies'],['all','All Hair']],
+    beard:     [['all','All Beard']],
+    nutrition: [['creatine','Creatine'],['shilajit','Shilajit'],['all','All Nutrition']],
+  };
+  document.getElementById('um-subcat').innerHTML =
+    (opts[cat] || []).map(([v,l]) => `<option value="${v}">${l}</option>`).join('');
+}
+
+async function handleSingleUpload(fileList) {
+  const cat   = document.getElementById('um-cat').value;
+  const subcat = document.getElementById('um-subcat').value;
+  const files = Array.from(fileList).filter(f => f.name.toLowerCase().endsWith('.csv'));
+  if (!files.length) { toast('No CSV files found.', 'error'); return; }
+  toast(`Parsing ${files.length} file${files.length > 1 ? 's' : ''}…`, 'info', 2500);
   try {
     const parsed = await Promise.all(files.map(parseCsvFile));
     const journeys = processRawRows(parsed);
-    if (journeys.length === 0) {
-      toast('No journeys found in those files.', 'error');
-      return;
-    }
-    state.mode = 'uploaded';
-    state.files = parsed.map(p => ({ name: p.name, rowCount: p.rows.length }));
-    state.journeys = journeys;
-    state.loadedAt = new Date().toISOString();
-    save();
+    if (!journeys.length) { toast('No journeys found.', 'error'); return; }
+    if (!state.categoryData[cat]) state.categoryData[cat] = {};
+    state.categoryData[cat][subcat] = journeys;
+    saveAll();
+    closeBulkModal();
+    state.activeCategory = cat;
+    state.activeSubcategory = subcat;
     renderAll();
-    toast(`Loaded ${journeys.length} journeys from ${files.length} file${files.length>1?'s':''}.`, 'success', 4000);
-  } catch (err) {
+    toast(`Loaded ${journeys.length} journeys into ${cat} › ${subcat}.`, 'success', 4000);
+  } catch(err) {
     console.error(err);
     toast(err.message || 'Error parsing files.', 'error', 7000);
   }
 }
 
+function autoClassify(journeyName) {
+  const n = journeyName.toLowerCase();
 
-/* ====================================================================
-   F. DRAG-DROP OVERLAY + BUTTONS
-   ==================================================================== */
+  if (n.includes('shilajit'))
+    return { category: 'nutrition', subcategory: 'shilajit', confidence: 'high' };
+  if (n.includes('creatine'))
+    return { category: 'nutrition', subcategory: 'creatine', confidence: 'high' };
+  if (n.includes('beard') || /\bbg\b/.test(n) || n.startsWith('bg_') || n.includes('_bg_'))
+    return { category: 'beard', subcategory: 'all', confidence: 'high' };
+  if (n.includes('stage 1') || n.includes('stage1') || n.includes('_s1') || n.includes('s1_') || n.includes('stage_1'))
+    return { category: 'hair', subcategory: 'stage-1', confidence: 'high' };
+  if (n.includes('stage 2') || n.includes('stage2') || n.includes('_s2') || n.includes('s2_') || n.includes('stage_2') || /\bdas\b/.test(n) || /\bddrf\b/.test(n) || n.includes('tp_stage'))
+    return { category: 'hair', subcategory: 'stage-2', confidence: 'high' };
+  if (n.includes('stage 3') || n.includes('stage3') || n.includes('_s3') || n.includes('s3_') || n.includes('stage_3'))
+    return { category: 'hair', subcategory: 'stage-3', confidence: 'high' };
+  if (n.includes('gumm') || n.includes('biotin'))
+    return { category: 'hair', subcategory: 'gummies', confidence: 'high' };
+  if (n.includes('hair') || n.includes('hairfall') || n.includes('minox') || n.includes('dandruff') || n.includes('accu') || n.includes('hair rx'))
+    return { category: 'hair', subcategory: 'all', confidence: 'high' };
+  if (n.includes('gut') || n.includes('probiotic'))
+    return { category: 'nutrition', subcategory: 'creatine', confidence: 'low' };
+  if (n.includes('ht ') || n.includes('ht_') || n.includes('_ht'))
+    return { category: 'hair', subcategory: 'all', confidence: 'low' };
 
-let dragCounter = 0;
+  return { category: '', subcategory: '', confidence: 'none' };
+}
 
-window.addEventListener('dragenter', e => {
-  e.preventDefault();
-  dragCounter++;
-  if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) {
-    document.getElementById('drop-overlay').classList.add('active');
+async function handleBulkFiles(fileList) {
+  const files = Array.from(fileList).filter(f => f.name.toLowerCase().endsWith('.csv'));
+  if (!files.length) { toast('No CSV files found.', 'error'); return; }
+
+  toast(`Parsing ${files.length} file${files.length > 1 ? 's' : ''}…`, 'info', 2500);
+
+  try {
+    const parsed = await Promise.all(files.map(parseCsvFile));
+    const allJourneys = processRawRows(parsed);
+    if (!allJourneys.length) { toast('No journeys found in those files.', 'error'); return; }
+
+    bulkParsedJourneys = allJourneys.map(j => {
+      const cls = autoClassify(j.name);
+      return { journey: j, ...cls };
+    });
+
+    renderBulkReviewTable();
+    showBulkStep('review');
+
+  } catch(err) {
+    console.error(err);
+    toast(err.message || 'Error parsing files.', 'error', 7000);
   }
-});
-window.addEventListener('dragover', e => e.preventDefault());
-window.addEventListener('dragleave', e => {
-  e.preventDefault();
-  dragCounter--;
-  if (dragCounter <= 0) {
-    dragCounter = 0;
-    document.getElementById('drop-overlay').classList.remove('active');
-  }
-});
-window.addEventListener('drop', e => {
-  e.preventDefault();
-  dragCounter = 0;
-  document.getElementById('drop-overlay').classList.remove('active');
-  if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-    handleFiles(e.dataTransfer.files);
-  }
-});
+}
 
-document.getElementById('upload-btn').addEventListener('click', () => {
-  document.getElementById('file-input').click();
-});
+function getCategoryOptions(selectedCat) {
+  return `
+    <option value="" ${!selectedCat ? 'selected' : ''}>— pick category —</option>
+    <option value="hair"      ${selectedCat==='hair'      ? 'selected':''}>Hair</option>
+    <option value="beard"     ${selectedCat==='beard'     ? 'selected':''}>Beard</option>
+    <option value="nutrition" ${selectedCat==='nutrition' ? 'selected':''}>Nutrition</option>
+  `;
+}
 
-document.getElementById('file-input').addEventListener('change', e => {
-  if (e.target.files && e.target.files.length) handleFiles(e.target.files);
-  e.target.value = '';   // allow re-uploading the same file
-});
+function getSubcategoryOptions(cat, selectedSub) {
+  const opts = {
+    hair:      [['all','All Hair'],['stage-1','Stage 1 Kit'],['stage-2','Stage 2 Kit'],['stage-3','Stage 3 Kit'],['gummies','Hair Gummies']],
+    beard:     [['all','All Beard']],
+    nutrition: [['all','All Nutrition'],['creatine','Creatine'],['shilajit','Shilajit']],
+  };
+  if (!cat || !opts[cat]) return '<option value="">— pick category first —</option>';
+  return opts[cat].map(([v,l]) => `<option value="${v}" ${v===selectedSub?'selected':''}>${l}</option>`).join('');
+}
 
-document.getElementById('reset-btn').addEventListener('click', () => {
-  if (!confirm('Reset to the Hair / Stage 2 demo data? Your uploaded data will be cleared from local storage.')) return;
-  state.mode = 'demo';
-  state.files = [];
-  state.journeys = window.DEMO_DATA || [];
-  state.loadedAt = null;
-  save();
-  renderAll();
-  toast('Reset to demo data.', 'info', 3000);
-});
+function renderBulkReviewTable() {
+  const sources = [...new Set(bulkParsedJourneys.map(r => r.journey._source || ''))];
+  document.getElementById('bulk-review-subtitle').textContent =
+    `${bulkParsedJourneys.length} journeys found across ${sources.length} file(s)`;
 
-document.getElementById('export-btn').addEventListener('click', () => {
-  const data = JSON.stringify(state.journeys, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = state.mode === 'demo'
-    ? 'demo_journeys.json'
-    : `journeys_export_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('Downloaded deduped JSON.', 'success', 3000);
-});
+  const confIcon  = { high: '✅', low: '⚠️', none: '❓' };
+  const confLabel = { high: 'High', low: 'Low — verify', none: 'Assign or delete' };
 
+  const tbody = document.getElementById('bulk-review-tbody');
+  tbody.innerHTML = bulkParsedJourneys.map((row, idx) => `
+    <tr class="conf-${row.confidence}" data-idx="${idx}">
+      <td class="jname">${escapeHTML(row.journey.name)}</td>
+      <td class="jid">${row.journey.id}</td>
+      <td>
+        <select class="cat-sel ${!row.category ? 'unset' : ''}" data-idx="${idx}" onchange="onBulkCatChange(this)">
+          ${getCategoryOptions(row.category)}
+        </select>
+      </td>
+      <td>
+        <select class="sub-sel ${!row.subcategory ? 'unset' : ''}" data-idx="${idx}" onchange="onBulkSubChange(this)">
+          ${getSubcategoryOptions(row.category, row.subcategory)}
+        </select>
+      </td>
+      <td><span class="conf-icon">${confIcon[row.confidence]}</span> <span style="font-size:11px;color:var(--ink-mute)">${confLabel[row.confidence]}</span></td>
+      <td><button class="bulk-row-delete" onclick="onBulkDelete(${idx})" title="Remove this journey">✕</button></td>
+    </tr>
+  `).join('');
 
-/* ====================================================================
-   G. RENDERING — DATASET BAR
-   ==================================================================== */
+  updateBulkWarning();
+}
 
-function renderDatasetBar() {
-  const modeEl   = document.getElementById('dataset-mode');
-  const filesEl  = document.getElementById('dataset-files');
-  const countsEl = document.getElementById('dataset-counts');
-  const resetBtn = document.getElementById('reset-btn');
+function onBulkCatChange(sel) {
+  const idx = Number(sel.dataset.idx);
+  const newCat = sel.value;
+  bulkParsedJourneys[idx].category = newCat;
+  bulkParsedJourneys[idx].subcategory = newCat ? (newCat === 'beard' ? 'all' : '') : '';
+  const row = sel.closest('tr');
+  const subSel = row.querySelector('.sub-sel');
+  subSel.innerHTML = getSubcategoryOptions(newCat, bulkParsedJourneys[idx].subcategory);
+  subSel.className = 'sub-sel' + (!bulkParsedJourneys[idx].subcategory ? ' unset' : '');
+  sel.className = 'cat-sel' + (!newCat ? ' unset' : '');
+  if (newCat) bulkParsedJourneys[idx].confidence = 'high';
+  updateBulkWarning();
+}
 
-  if (state.mode === 'demo') {
-    modeEl.textContent = 'DEMO';
-    modeEl.classList.remove('uploaded');
-    filesEl.textContent = 'Hair / Stage 2 sample data (5 source CSV files)';
-    resetBtn.style.display = 'none';
+function onBulkSubChange(sel) {
+  const idx = Number(sel.dataset.idx);
+  bulkParsedJourneys[idx].subcategory = sel.value;
+  sel.className = 'sub-sel' + (!sel.value ? ' unset' : '');
+  updateBulkWarning();
+}
+
+function onBulkDelete(idx) {
+  bulkParsedJourneys.splice(idx, 1);
+  renderBulkReviewTable();
+}
+
+function updateBulkWarning() {
+  const unclassified = bulkParsedJourneys.filter(r => !r.category || !r.subcategory);
+  const warn = document.getElementById('bulk-unclassified-warn');
+  const warnCount = document.getElementById('bulk-warn-count');
+  const confirmBtn = document.getElementById('bulk-confirm');
+  if (unclassified.length > 0) {
+    warn.style.display = 'block';
+    warnCount.textContent = unclassified.length;
+    warn.innerHTML = `❗ <span id="bulk-warn-count">${unclassified.length}</span> journey(s) still unclassified — assign a category or click ✕ to remove them.`;
+    confirmBtn.disabled = true;
   } else {
-    modeEl.textContent = 'UPLOADED';
-    modeEl.classList.add('uploaded');
-    const fileNames = state.files.map(f => f.name).join(' · ');
-    filesEl.textContent = fileNames;
-    filesEl.title = fileNames;
-    resetBtn.style.display = '';
+    warn.style.display = 'none';
+    confirmBtn.disabled = false;
   }
-  const nMsgNodes = state.journeys.reduce((a, j) => a + (j.msg_nodes || 0), 0);
-  countsEl.textContent = `${state.journeys.length} journeys · ${nMsgNodes} message nodes`;
+}
+
+function confirmBulkLoad() {
+  for (const [cat, subcats] of Object.entries(state.categoryData)) {
+    for (const subcat of Object.keys(subcats)) {
+      state.categoryData[cat][subcat] = [];
+    }
+  }
+  for (const row of bulkParsedJourneys) {
+    const { category: cat, subcategory: sub, journey: j } = row;
+    if (!cat || !sub) continue;
+    if (!state.categoryData[cat]) continue;
+    if (!state.categoryData[cat][sub]) state.categoryData[cat][sub] = [];
+    state.categoryData[cat][sub].push(j);
+  }
+
+  saveAll();
+  closeBulkModal();
+
+  const counts = [];
+  for (const [cat, subcats] of Object.entries(state.categoryData)) {
+    for (const [sub, jnys] of Object.entries(subcats)) {
+      if (jnys.length > 0) counts.push(`${jnys.length} ${cat}/${sub}`);
+    }
+  }
+
+  state.activeCategory = 'all';
+  state.activeSubcategory = 'all';
+  renderAll();
+  toast(`Loaded ${bulkParsedJourneys.length} journeys: ${counts.join(', ')}.`, 'success', 6000);
+}
+
+/* ====================================================================
+   F. BULK MODAL EVENT WIRING + CATEGORY NAV BUTTONS
+   ==================================================================== */
+
+document.getElementById('add-data-btn').addEventListener('click', openBulkModal);
+
+// Choice screen
+document.getElementById('bulk-close-0').addEventListener('click', closeBulkModal);
+document.getElementById('choose-bulk').addEventListener('click', () => showBulkStep('drop'));
+document.getElementById('choose-single').addEventListener('click', () => {
+  populateSubcatDropdown();
+  showBulkStep('single');
+});
+
+// Bulk flow
+document.getElementById('bulk-close-1').addEventListener('click', closeBulkModal);
+document.getElementById('bulk-close-2').addEventListener('click', closeBulkModal);
+document.getElementById('bulk-back').addEventListener('click', () => showBulkStep('choose'));
+document.getElementById('bulk-confirm').addEventListener('click', confirmBulkLoad);
+
+document.getElementById('bdz-browse').addEventListener('click', () =>
+  document.getElementById('bdz-file-input').click()
+);
+document.getElementById('bdz-file-input').addEventListener('change', e => {
+  if (e.target.files?.length) handleBulkFiles(e.target.files);
+  e.target.value = '';
+});
+
+const dropZone = document.getElementById('bulk-drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragging'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragging');
+  if (e.dataTransfer?.files?.length) handleBulkFiles(e.dataTransfer.files);
+});
+
+document.getElementById('bulk-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('bulk-modal')) closeBulkModal();
+});
+
+// Individual upload step
+document.getElementById('bulk-close-single').addEventListener('click', closeBulkModal);
+document.getElementById('single-back').addEventListener('click', () => showBulkStep('choose'));
+document.getElementById('um-cat').addEventListener('change', populateSubcatDropdown);
+document.getElementById('single-browse').addEventListener('click', () =>
+  document.getElementById('single-file-input').click()
+);
+document.getElementById('single-file-input').addEventListener('change', e => {
+  if (e.target.files?.length) handleSingleUpload(e.target.files);
+  e.target.value = '';
+});
+const singleDrop = document.getElementById('single-drop-zone');
+singleDrop.addEventListener('dragover', e => { e.preventDefault(); singleDrop.classList.add('dragging'); });
+singleDrop.addEventListener('dragleave', () => singleDrop.classList.remove('dragging'));
+singleDrop.addEventListener('drop', e => {
+  e.preventDefault();
+  singleDrop.classList.remove('dragging');
+  if (e.dataTransfer?.files?.length) handleSingleUpload(e.dataTransfer.files);
+});
+
+// Category nav clicks
+document.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.activeCategory = btn.dataset.cat;
+    state.activeSubcategory = 'all';
+    renderAll();
+  });
+});
+
+
+/* ====================================================================
+   G. RENDERING — CATEGORY NAV + CONTEXT BANNER
+   ==================================================================== */
+
+function renderCategoryNav() {
+  // Highlight active cat-btn
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === state.activeCategory);
+  });
+
+  // Sub-category nav
+  const subcatNav = document.getElementById('subcat-nav');
+  if (state.activeCategory === 'all') {
+    subcatNav.style.display = 'none';
+  } else {
+    const cat = CATEGORIES.find(c => c.id === state.activeCategory);
+    if (cat && cat.subcategories.length > 1) {
+      subcatNav.style.display = 'flex';
+      subcatNav.innerHTML = cat.subcategories.map(sc =>
+        `<button class="subcat-btn ${sc.id === state.activeSubcategory ? 'active' : ''}" data-subcat="${sc.id}">${sc.label}</button>`
+      ).join('');
+      subcatNav.querySelectorAll('.subcat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeSubcategory = btn.dataset.subcat;
+          renderAll();
+        });
+      });
+    } else {
+      subcatNav.style.display = 'none';
+    }
+  }
+
+  renderContextBanner();
+}
+
+function renderContextBanner() {
+  const banner = document.getElementById('context-banner');
+  const journeys = getActiveJourneys();
+
+  let path = 'All Categories';
+  if (state.activeCategory !== 'all') {
+    const cat = CATEGORIES.find(c => c.id === state.activeCategory);
+    path = cat ? cat.label : state.activeCategory;
+    if (state.activeSubcategory !== 'all') {
+      const subcat = cat?.subcategories.find(s => s.id === state.activeSubcategory);
+      path += ` → ${subcat ? subcat.label : state.activeSubcategory}`;
+    }
+  }
+
+  const totalNodes = journeys.reduce((a, j) => a + (j.msg_nodes || 0), 0);
+  banner.innerHTML = `
+    <span class="ctx-path">${path}</span>
+    <span class="ctx-count">${journeys.length} journey${journeys.length !== 1 ? 's' : ''} · ${totalNodes} message nodes</span>
+  `;
 }
 
 
@@ -1876,14 +2500,18 @@ function renderDatasetBar() {
 function renderTopline() {
   const grid = document.getElementById('topline-grid');
   const note = document.getElementById('topline-note');
+  const journeys = getActiveJourneys();
 
-  if (state.journeys.length === 0) {
-    grid.innerHTML = '<div class="empty-state"><strong>No data loaded.</strong>Drop CSV files anywhere on this page, or click "+ Load CSV files" in the bar above.</div>';
+  if (journeys.length === 0) {
+    const catLabel = state.activeCategory !== 'all'
+      ? CATEGORIES.find(c => c.id === state.activeCategory)?.label || state.activeCategory
+      : 'any category';
+    grid.innerHTML = `<div class="cat-empty"><div class="ce-title">No data loaded for ${catLabel}</div><div class="ce-sub">Upload CleverTap journey CSV exports to get started.</div><button class="ce-btn" onclick="openBulkModal()">+ Add journey data</button></div>`;
     note.textContent = '';
     return;
   }
 
-  const totals = state.journeys.reduce((a, j) => {
+  const totals = journeys.reduce((a, j) => {
     a.sent       += j.totals.sent;
     a.delivered  += j.totals.delivered;
     a.viewed     += j.totals.viewed;
@@ -1893,10 +2521,10 @@ function renderTopline() {
     return a;
   }, { sent:0, delivered:0, viewed:0, converted:0, influenced:0, inf_rev:0 });
 
-  const nRunning    = state.journeys.filter(j => j.status === 'Running').length;
-  const nPaused     = state.journeys.filter(j => j.status === 'Paused').length;
-  const nRestricted = state.journeys.filter(j => j.status === 'Restricted').length;
-  const nOther      = state.journeys.length - nRunning - nPaused - nRestricted;
+  const nRunning    = journeys.filter(j => j.status === 'Running').length;
+  const nPaused     = journeys.filter(j => j.status === 'Paused').length;
+  const nRestricted = journeys.filter(j => j.status === 'Restricted').length;
+  const nOther      = journeys.length - nRunning - nPaused - nRestricted;
 
   grid.innerHTML = `
     <div class="topline-card hero">
@@ -1926,7 +2554,7 @@ function renderTopline() {
     </div>
     <div class="topline-card">
       <div class="label">Status</div>
-      <div class="value">${nRunning}<span class="unit"> / ${state.journeys.length}</span></div>
+      <div class="value">${nRunning}<span class="unit"> / ${journeys.length}</span></div>
       <div class="note">${nRunning} running · ${nPaused} paused · ${nRestricted} restricted${nOther ? ' · ' + nOther + ' other' : ''}</div>
     </div>
   `;
@@ -1935,9 +2563,10 @@ function renderTopline() {
 
 function renderStatusTable() {
   const tbody = document.querySelector('#status-table tbody');
-  if (state.journeys.length === 0) { tbody.innerHTML = ''; return; }
+  const journeys = getActiveJourneys();
+  if (journeys.length === 0) { tbody.innerHTML = ''; return; }
   const buckets = {};
-  for (const j of state.journeys) {
+  for (const j of journeys) {
     const s = j.status || 'Unknown';
     if (!buckets[s]) buckets[s] = { count:0, sent:0, conv:0, inf:0, rev:0 };
     buckets[s].count++;
@@ -1965,13 +2594,14 @@ function renderStatusTable() {
 function renderTopPerformers() {
   const revTbody = document.querySelector('#top-rev-table tbody');
   const cvrTbody = document.querySelector('#top-cvr-table tbody');
-  if (state.journeys.length === 0) {
+  const journeys = getActiveJourneys();
+  if (journeys.length === 0) {
     revTbody.innerHTML = '';
     cvrTbody.innerHTML = '';
     return;
   }
 
-  const byRev = [...state.journeys].sort((a, b) => b.totals.inf_rev - a.totals.inf_rev).slice(0, 10);
+  const byRev = [...journeys].sort((a, b) => b.totals.inf_rev - a.totals.inf_rev).slice(0, 10);
   revTbody.innerHTML = byRev.map(j => `
     <tr>
       <td class="id">${j.id}</td>
@@ -1984,7 +2614,7 @@ function renderTopPerformers() {
     </tr>
   `).join('');
 
-  const byCvr = state.journeys
+  const byCvr = journeys
     .filter(j => j.totals.delivered >= 1000)
     .map(j => ({ ...j, cvr: j.totals.converted / j.totals.delivered }))
     .sort((a, b) => b.cvr - a.cvr)
@@ -2148,9 +2778,12 @@ function buildFlowHTML(nodes) {
 function renderAnalytics() {
   const root = document.getElementById('analytics-root');
   if (!root) return;
-  const js = state.journeys;
+  const js = getActiveJourneys();
   if (!js || js.length === 0) {
-    root.innerHTML = '<div class="empty-state"><strong>No data loaded.</strong> Drop CSV files anywhere on this page to load data.</div>';
+    const catLabel = state.activeCategory !== 'all'
+      ? CATEGORIES.find(c => c.id === state.activeCategory)?.label || state.activeCategory
+      : 'any category';
+    root.innerHTML = `<div class="cat-empty"><div class="ce-title">No data loaded for ${catLabel}</div><div class="ce-sub">Upload CleverTap journey CSV exports to get started.</div><button class="ce-btn" onclick="openBulkModal()">+ Add journey data</button></div>`;
     return;
   }
 
@@ -2336,14 +2969,65 @@ function renderJourneyCard(j) {
 let journeyFilter = 'all';
 let journeyQuery = '';
 
+function renderInspiration() {
+  if (state.activeCategory === 'all') return '';
+
+  const otherJourneys = Object.entries(state.categoryData)
+    .filter(([cat]) => cat !== state.activeCategory)
+    .flatMap(([cat, subcats]) => {
+      const catConfig = CATEGORIES.find(c => c.id === cat);
+      return Object.entries(subcats).flatMap(([subcat, journeys]) =>
+        journeys.slice(0, 2).map(j => ({ ...j, _cat: cat, _catLabel: catConfig?.label || cat, _subcat: subcat }))
+      );
+    })
+    .slice(0, 6);
+
+  if (!otherJourneys.length) return '';
+
+  return `
+    <div class="section" style="margin-top: 40px; padding-top: 28px; border-top: 1px solid var(--rule);">
+      <h3>Inspiration from other categories</h3>
+      <p class="lede" style="margin-bottom:16px">Journeys from the rest of Man Matters — click to jump to that category.</p>
+      <div class="inspiration-grid">
+        ${otherJourneys.map(j => `
+          <div class="inspo-card" onclick="jumpToJourney('${j._cat}', '${j._subcat}', ${j.id})">
+            <div class="ic-cat">${escapeHTML(j._catLabel)}${j._subcat !== 'all' ? ' → ' + j._subcat : ''}</div>
+            <div class="ic-name">${escapeHTML(j.name)}</div>
+            <div class="ic-meta">
+              <span>${escapeHTML(j.status)}</span>
+              <span>Sent ${fmt(j.totals.sent)}</span>
+              <span>${Object.keys(j.by_channel).join(' · ')}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function jumpToJourney(cat, subcat, journeyId) {
+  state.activeCategory = cat;
+  state.activeSubcategory = subcat;
+  state.activeTab = 'journeys';
+  renderAll();
+  setTimeout(() => {
+    const el = document.querySelector(`.journey[data-id="${journeyId}"]`);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.classList.add('open'); }
+  }, 200);
+}
+
 function renderJourneys() {
   const container = document.getElementById('journeys-list');
-  if (state.journeys.length === 0) {
-    container.innerHTML = '<div class="empty-state"><strong>No journeys loaded.</strong>Drop CSV files anywhere on this page to load data.</div>';
+  const journeys = getActiveJourneys();
+  if (journeys.length === 0) {
+    const catLabel = state.activeCategory !== 'all'
+      ? CATEGORIES.find(c => c.id === state.activeCategory)?.label || state.activeCategory
+      : 'any category';
+    container.innerHTML = `<div class="cat-empty"><div class="ce-title">No data loaded for ${catLabel}</div><div class="ce-sub">Upload CleverTap journey CSV exports to get started.</div><button class="ce-btn" onclick="openBulkModal()">+ Add journey data</button></div>`;
     return;
   }
 
-  const sorted = [...state.journeys].sort((a, b) => {
+  const sorted = [...journeys].sort((a, b) => {
     if (a.status !== b.status) {
       const order = { Running: 0, Restricted: 1, Paused: 2 };
       return (order[a.status] ?? 9) - (order[b.status] ?? 9);
@@ -2363,7 +3047,7 @@ function renderJourneys() {
     return;
   }
 
-  container.innerHTML = filtered.map(renderJourneyCard).join('');
+  container.innerHTML = filtered.map(renderJourneyCard).join('') + renderInspiration();
 }
 
 document.getElementById('j-search').addEventListener('input', e => {
@@ -2401,9 +3085,10 @@ document.addEventListener('click', e => {
 function generateFlags() {
   if (!window.FLAG_RULES) return [];
   const flags = [];
+  const journeys = getActiveJourneys();
   for (const rule of window.FLAG_RULES) {
     try {
-      const result = rule(state.journeys);
+      const result = rule(journeys);
       if (result) flags.push(result);
     } catch (e) {
       console.error('Flag rule error:', rule.name, e);
@@ -2414,8 +3099,12 @@ function generateFlags() {
 
 function renderFlags() {
   const container = document.getElementById('flags-list');
-  if (state.journeys.length === 0) {
-    container.innerHTML = '<div class="empty-state"><strong>No data loaded.</strong>Drop CSV files anywhere on this page to load data.</div>';
+  const journeys = getActiveJourneys();
+  if (journeys.length === 0) {
+    const catLabel = state.activeCategory !== 'all'
+      ? CATEGORIES.find(c => c.id === state.activeCategory)?.label || state.activeCategory
+      : 'any category';
+    container.innerHTML = `<div class="cat-empty"><div class="ce-title">No data loaded for ${catLabel}</div><div class="ce-sub">Upload CleverTap journey CSV exports to get started.</div><button class="ce-btn" onclick="openBulkModal()">+ Add journey data</button></div>`;
     return;
   }
   const flags = generateFlags();
@@ -2445,14 +3134,15 @@ function renderFlags() {
    ==================================================================== */
 
 function renderTabs() {
-  document.getElementById('tabs').innerHTML = TABS.map((t, i) => {
+  const journeys = getActiveJourneys();
+  document.getElementById('tabs').innerHTML = TABS.map(t => {
     let count = '';
-    if (t.id === 'journeys') count = `<span class="count">${state.journeys.length}</span>`;
+    if (t.id === 'journeys') count = `<span class="count">${journeys.length}</span>`;
     if (t.id === 'quality') {
       const n = generateFlags().length;
       count = n ? `<span class="count">${n}</span>` : '';
     }
-    return `<button class="tab ${i===0?'active':''}" data-tab="${t.id}">${t.label}${count}</button>`;
+    return `<button class="tab ${t.id === state.activeTab ? 'active' : ''}" data-tab="${t.id}">${t.label}${count}</button>`;
   }).join('');
   document.querySelectorAll('.tab').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -2460,6 +3150,7 @@ function renderTabs() {
 }
 
 function switchTab(id) {
+  state.activeTab = id;
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
   document.querySelectorAll('.tabpanel').forEach(p => p.classList.toggle('active', p.dataset.tab === id));
   window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2467,14 +3158,17 @@ function switchTab(id) {
 }
 
 function renderAll() {
+  renderCategoryNav();
   renderTabs();
-  renderDatasetBar();
   renderTopline();
   renderStatusTable();
   renderTopPerformers();
   renderJourneys();
-  renderFlags();
   renderAnalytics();
+  renderFlags();
+  // Restore active tab panel visibility
+  document.querySelectorAll('.tabpanel').forEach(p => p.classList.toggle('active', p.dataset.tab === state.activeTab));
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === state.activeTab));
 }
 
 
@@ -2482,11 +3176,11 @@ function renderAll() {
    L. INIT
    ==================================================================== */
 
-loadFromStorage();
+loadAllFromStorage();
+const initial = (location.hash || '#overview').slice(1);
+state.activeTab = TABS.find(t => t.id === initial) ? initial : 'overview';
 renderAll();
-const initial = (location.hash || '#about').slice(1);
-if (TABS.find(t => t.id === initial)) switchTab(initial);
-else switchTab('about');
+switchTab(state.activeTab);
 
 </script>
 
