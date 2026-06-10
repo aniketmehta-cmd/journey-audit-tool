@@ -1715,7 +1715,8 @@ function buildDocsHtml(productId){
     const{months,actual,extra,total}=ctx.retention;
     h+=`<h2 style="${H2}">Retention Cohorts</h2>`;
     h+=`<table style="${T}"><thead><tr>`;
-    ['','M0','M0','M1','M2','M3','M4','M5'].forEach((x,i)=>h+=`<th style="${i?TH:TH+'text-align:left;'">${x}</th>`);
+    const THl=TH+'text-align:left;';
+    ['','M0','M0','M1','M2','M3','M4','M5'].forEach((x,i)=>h+=`<th style="${i?TH:THl}">${x}</th>`);
     h+=`</tr></thead><tbody>`;
     months.forEach((r,i)=>{
       const bg=i%2===0?'background:#fff;':'background:#f5f7ff;';
