@@ -275,6 +275,7 @@ table.trends tr:hover td{background:var(--paper2);}
     <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,0.7);">
       <span>Scaling ≥ ₹</span><input type="number" id="tier-hit" value="100000" step="10000" style="width:90px;padding:5px 8px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;font-size:12px;font-family:var(--sans);background:rgba(255,255,255,0.1);color:#fff;">
     </div>
+    <button class="btn btn-ghost" onclick="openSheetSettings()">☁ Sheet Log</button>
     <button class="btn btn-ghost" onclick="refreshSheet()">↻ Refresh Sheet</button>
     <button class="btn btn-ghost" onclick="document.getElementById('perf-input').click()">⬆ Upload CSV</button>
     <button class="btn btn-ghost" onclick="openPasteModal('monthly')">📋 Paste Data</button>
@@ -424,7 +425,10 @@ table.trends tr:hover td{background:var(--paper2);}
     <div class="email-container">
       <div class="email-toolbar">
         <div><h3>Category Manager Update</h3><div class="hint">Auto-generated · review then copy</div></div>
-        <button class="copy-btn" id="copy-email-btn" onclick="copyEmail()">📋 Copy to Clipboard</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="copy-btn" id="copy-email-btn" onclick="copyEmail()">📋 Copy to Clipboard</button>
+          <button class="copy-btn" id="save-to-sheet-btn" onclick="saveToSheet()" style="display:none;background:var(--green,#1a8a4a);color:#fff;border-color:var(--green,#1a8a4a);">☁ Save to Sheet</button>
+        </div>
       </div>
       <div class="email-body" id="email-body"></div>
     </div>
@@ -437,6 +441,33 @@ table.trends tr:hover td{background:var(--paper2);}
 </div>
 
 </div><!-- /.wrap -->
+
+<!-- Sheet Settings Modal -->
+<div class="overlay" id="sheet-settings-overlay" onclick="if(event.target===this)closeSheetSettings()">
+  <div class="modal" style="max-width:580px;">
+    <h2>Connect Google Sheet</h2>
+    <p>Paste your <strong>Apps Script Web App URL</strong> below. This lets the tool append a log row every time you click <em>Save to Sheet</em>.</p>
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:0 0 16px;font-size:12px;line-height:1.7;color:var(--ink2);">
+      <strong style="color:var(--ink);">One-time setup (takes ~2 min):</strong><br>
+      1. Open <strong>script.google.com</strong> → New project<br>
+      2. Paste the Apps Script code (copy button below) → Save<br>
+      3. Click <strong>Deploy → New deployment → Web app</strong><br>
+      4. Set <em>Execute as: Me</em> · <em>Who has access: Anyone</em> → Deploy<br>
+      5. Copy the Web App URL → paste here
+    </div>
+    <div style="margin-bottom:12px;">
+      <button class="btn btn-ghost" style="font-size:12px;" onclick="copyAppsScript()">📋 Copy Apps Script Code</button>
+      <span id="as-copy-confirm" style="font-size:12px;color:var(--green,#1a8a4a);margin-left:8px;display:none;">✅ Copied!</span>
+    </div>
+    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px;">Web App URL</label>
+    <input id="sheet-url-input" type="url" placeholder="https://script.google.com/macros/s/…/exec"
+      style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;font-family:var(--sans);background:var(--bg);color:var(--ink);box-sizing:border-box;margin-bottom:16px;">
+    <div class="modal-btns">
+      <button class="btn" onclick="closeSheetSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSheetSettings()">Save & Connect</button>
+    </div>
+  </div>
+</div>
 
 <!-- Paste Modal -->
 <div class="overlay" id="paste-overlay" onclick="if(event.target===this)closePasteModal()">
@@ -1186,6 +1217,9 @@ function renderDailyDigest(){
     `<div class="qs-item"><div class="qs-lbl">CTR</div><div class="qs-val">${fmtP(wCTR)}</div></div>`;
   document.getElementById('daily-quick-stats').style.display='block';
   document.getElementById('email-body').textContent=generateEmail(rows,p.label,d.label,{ts,tncs,wRoas,wCAC,wAOV,wCTR,wHook,wATC,wPurch,wPrep});
+  // Show save button
+  const saveBtn=document.getElementById('save-to-sheet-btn');
+  if(saveBtn)saveBtn.style.display='inline-flex';
 }
 
 function generateEmail(rows,productLabel,periodLabel,m){
@@ -1346,6 +1380,149 @@ function markStep2Done(total,matched,parsed){document.getElementById('step2-card
 ['f-source_funnel','f-int_inf','f-ad_type','f-language','f-narrative','f-ad_format','f-funnel_type','f-search'].forEach(id=>{const e=document.getElementById(id);if(e){e.addEventListener('input',()=>renderDrill());e.addEventListener('change',()=>renderDrill());}});
 document.querySelectorAll('#ads th').forEach(th=>{th.onclick=()=>{const k=th.dataset.k;if(!k)return;if(sortKey===k)sortDir=-sortDir;else{sortKey=k;sortDir=(k==='spend'||k==='ncs'||k==='roas')?-1:1;}renderDrill();};});
 document.getElementById('tier-hit').addEventListener('change',()=>{if(currentRows.length)renderAll();});
+
+// ═══════════════════════════════════════════════
+// SHEET LOG — APPS SCRIPT INTEGRATION
+// ═══════════════════════════════════════════════
+const APPS_SCRIPT_CODE=`// ── Mosaic Creative Audit — Sheet Logger ──────────────────────────
+// Deploy as: Web App · Execute as: Me · Access: Anyone
+// Sheet gets two tabs: "Daily Log" (one row per digest save) and
+// "Ad Rows" (one row per ad in that digest, for deep slicing).
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    appendDailyLog(ss, payload);
+    appendAdRows(ss, payload);
+    return ContentService.createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function appendDailyLog(ss, p) {
+  let sh = ss.getSheetByName('Daily Log');
+  if (!sh) {
+    sh = ss.insertSheet('Daily Log');
+    sh.appendRow(['Saved At','Product','Period','Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC%','Purchase%','Prepaid%','Email Digest']);
+    sh.getRange(1,1,1,14).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  sh.appendRow([
+    p.savedAt, p.product, p.period,
+    p.spend, p.ncs, p.roas, p.cac, p.aov,
+    p.ctr, p.hookRate, p.atcPct, p.purchasePct, p.prepaidPct,
+    p.emailDigest
+  ]);
+}
+
+function appendAdRows(ss, p) {
+  let sh = ss.getSheetByName('Ad Rows');
+  if (!sh) {
+    sh = ss.insertSheet('Ad Rows');
+    sh.appendRow(['Saved At','Product','Period','Ad Name','Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC%','Purchase%','Prepaid%','Narrative','Language','Person','Ad Format','Ad Type','Int/Inf','Funnel','Source']);
+    sh.getRange(1,1,1,22).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
+  (p.adRows||[]).forEach(r => {
+    sh.appendRow([
+      p.savedAt, p.product, p.period,
+      r.name, r.spend, r.ncs, r.roas, r.cac, r.aov,
+      r.ctr, r.hook_rate, r.atc_pct, r.purchase_pct, r.prepaid,
+      r.narrative, r.language, r.person, r.ad_format,
+      r.ad_type, r.int_inf, r.funnel_type, r.source_funnel
+    ]);
+  });
+}`;
+
+function openSheetSettings(){
+  const url=localStorage.getItem('mm_sheet_url')||'';
+  document.getElementById('sheet-url-input').value=url;
+  document.getElementById('sheet-settings-overlay').style.display='flex';
+}
+function closeSheetSettings(){
+  document.getElementById('sheet-settings-overlay').style.display='none';
+}
+function saveSheetSettings(){
+  const url=document.getElementById('sheet-url-input').value.trim();
+  if(url&&!url.startsWith('https://script.google.com')){
+    alert('That doesn\'t look like an Apps Script URL. It should start with https://script.google.com/macros/s/…');
+    return;
+  }
+  localStorage.setItem('mm_sheet_url',url);
+  closeSheetSettings();
+  alert(url?'Connected! The "Save to Sheet" button will now log to your Google Sheet.':'URL cleared.');
+}
+function copyAppsScript(){
+  navigator.clipboard.writeText(APPS_SCRIPT_CODE).then(()=>{
+    const c=document.getElementById('as-copy-confirm');
+    c.style.display='inline';
+    setTimeout(()=>c.style.display='none',2500);
+  }).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=APPS_SCRIPT_CODE;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);
+    const c=document.getElementById('as-copy-confirm');
+    c.style.display='inline';setTimeout(()=>c.style.display='none',2500);
+  });
+}
+
+async function saveToSheet(){
+  const url=localStorage.getItem('mm_sheet_url')||'';
+  if(!url){
+    if(confirm('No Google Sheet connected yet. Set it up now?'))openSheetSettings();
+    return;
+  }
+  const d=dailyData[activeProduct];
+  if(!d||!d.rows.length){alert('No digest data to save.');return;}
+  const rows=d.rows;
+  const ts=rows.reduce((a,r)=>a+(r.spend||0),0);
+  const tncs=rows.reduce((a,r)=>a+(r.ncs||0),0);
+  const p=PRODUCTS.find(x=>x.id===activeProduct);
+  const btn=document.getElementById('save-to-sheet-btn');
+  btn.textContent='Saving…';btn.disabled=true;
+  const payload={
+    savedAt:new Date().toISOString(),
+    product:p.label,
+    period:d.label,
+    spend:Math.round(ts),
+    ncs:tncs,
+    roas:wAvg(rows,'roas','spend')?.toFixed(2)||null,
+    cac:totalCAC(rows)?.toFixed(0)||null,
+    aov:wAvgAOV(rows)?.toFixed(0)||null,
+    ctr:(wAvg(rows,'ctr','spend')*100)?.toFixed(2)||null,
+    hookRate:(wAvg(rows,'hook_rate','spend')*100)?.toFixed(2)||null,
+    atcPct:(wAvg(rows,'atc_pct','spend')*100)?.toFixed(2)||null,
+    purchasePct:(wAvg(rows,'purchase_pct','spend')*100)?.toFixed(2)||null,
+    prepaidPct:(wAvg(rows,'prepaid','spend')*100)?.toFixed(2)||null,
+    emailDigest:document.getElementById('email-body').textContent||'',
+    adRows:rows.map(r=>({
+      name:r.name,spend:Math.round(r.spend||0),ncs:r.ncs||null,
+      roas:r.roas?.toFixed(2)||null,cac:r.cac?.toFixed(0)||null,
+      aov:r.aov?.toFixed(0)||null,ctr:r.ctr?.toFixed(4)||null,
+      hook_rate:r.hook_rate?.toFixed(4)||null,atc_pct:r.atc_pct?.toFixed(4)||null,
+      purchase_pct:r.purchase_pct?.toFixed(4)||null,prepaid:r.prepaid?.toFixed(4)||null,
+      narrative:r.narrative,language:r.language,person:r.person,
+      ad_format:r.ad_format,ad_type:r.ad_type,int_inf:r.int_inf,
+      funnel_type:r.funnel_type,source_funnel:r.source_funnel
+    }))
+  };
+  try{
+    const res=await fetch(url,{method:'POST',body:JSON.stringify(payload)});
+    const json=await res.json().catch(()=>({ok:true}));
+    if(json.ok===false)throw new Error(json.error||'Apps Script returned an error');
+    btn.textContent='✅ Saved!';
+    setTimeout(()=>{btn.textContent='☁ Save to Sheet';btn.disabled=false;},2500);
+  }catch(err){
+    console.error('Save to sheet failed:',err);
+    alert('Save failed: '+err.message+'\n\nCheck that your Apps Script URL is correct and the deployment is live.');
+    btn.textContent='☁ Save to Sheet';btn.disabled=false;
+  }
+}
 
 // ═══════════════════════════════════════════════
 // PASTE MODAL
