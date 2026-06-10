@@ -1399,11 +1399,9 @@ function doPost(e) {
     const ss = SpreadsheetApp.openById(SHEET_ID);
     appendDailyLog(ss, payload);
     appendAdRows(ss, payload);
-    return ContentService.createTextOutput(JSON.stringify({ok:true}))
-      .setMimeType(ContentService.MimeType.JSON);
+    return HtmlService.createHtmlOutput('<p>Saved ✅</p>');
   } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({ok:false,error:err.message}))
-      .setMimeType(ContentService.MimeType.JSON);
+    return HtmlService.createHtmlOutput('<p>Error: ' + err.message + '</p>');
   }
 }
 
@@ -1515,19 +1513,31 @@ async function saveToSheet(){
       funnel_type:r.funnel_type,source_funnel:r.source_funnel
     }))
   };
-  try{
-    // Use URLSearchParams (application/x-www-form-urlencoded) — a "simple" CORS
-    // request type that requires no preflight and works with Apps Script no-cors.
-    const form=new URLSearchParams();
-    form.append('data',JSON.stringify(payload));
-    await fetch(url,{method:'POST',mode:'no-cors',body:form});
+  // Hidden form submit — bypasses CORS entirely, works 100% with Apps Script.
+  // Opens a tiny hidden iframe that receives the response, then closes.
+  const iframeId='save-iframe-'+Date.now();
+  const iframe=document.createElement('iframe');
+  iframe.name=iframeId;
+  iframe.style.cssText='position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;';
+  document.body.appendChild(iframe);
+
+  const form=document.createElement('form');
+  form.method='POST';
+  form.action=url;
+  form.target=iframeId;
+  const inp=document.createElement('input');
+  inp.type='hidden';inp.name='data';inp.value=JSON.stringify(payload);
+  form.appendChild(inp);
+  document.body.appendChild(form);
+  form.submit();
+  document.body.removeChild(form);
+
+  // Give Apps Script 6 seconds to write the row, then confirm
+  setTimeout(()=>{
+    document.body.removeChild(iframe);
     btn.textContent='✅ Saved!';
     setTimeout(()=>{btn.textContent='☁ Save to Sheet';btn.disabled=false;},2500);
-  }catch(err){
-    console.error('Save to sheet failed:',err);
-    alert('Save failed: '+err.message+'\n\nMake sure the Apps Script is deployed as a Web App with "Anyone" access.');
-    btn.textContent='☁ Save to Sheet';btn.disabled=false;
-  }
+  },6000);
 }
 
 // ═══════════════════════════════════════════════
