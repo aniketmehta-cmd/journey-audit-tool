@@ -602,10 +602,14 @@ const dailyData={biotin:null,s1:null,s2:null};
 let currentRows=[], currentCombined=[];
 let pendingPerfRows=null, pendingPerfHeaders=null, pendingMapperTarget='monthly';
 
-// Context sheets
-const CTX_NCRC_ID='1XFJMcu0lHpXvmJBskTgn5KQivRoowhM5kOfNktThowE';
-const CTX_RET_ID='194FznzY5rPd52MMAfpTdlhHewE9dbjmuHP-CORFnAZM';
-const contextData={ncrc:null,retention:null,lastFetched:null};
+// Per-product context sheets (user's import-ranged copies)
+const CTX_SHEETS={
+  biotin:'1YAjLVmzB2SCn8vRMBNR9bftl6l6MVwjqfYN5QroISOI',
+  s1:'1k0_P0OWTBn88a8yei1MZGAgyxUlwnTT_dXEkY_rlHeY',
+  s2:'1Pm-RyfQpxOaDuMVbNxgZIDJBP84I0N_BZFkoGxDaYic'
+};
+// contextData[productId] = { ncrc: [{label,nc,ncAov,rc,rcAov}], retention: {months,actual,extra} }
+const contextData={biotin:null,s1:null,s2:null,lastFetched:null};
 
 // ═══════════════════════════════════════════════
 // FORMATTERS
@@ -1284,12 +1288,9 @@ function generateEmail(rows,productLabel,periodLabel,m){
 
   // NC / RC TRACKER CONTEXT
   const productId=PRODUCTS.find(p=>p.label===productLabel)?.id||null;
-  if(productId&&contextData.ncrc&&contextData.ncrc[productId]){
-    const ncrcText=fmtNCRC(contextData.ncrc,productId);
-    if(ncrcText){
-      out+=LINE+'\n'+'NC / RC TRACKER\n\n';
-      out+=ncrcText+'\n';
-    }
+  if(productId){
+    const ncrcText=fmtNCRC(productId);
+    if(ncrcText){out+=LINE+'\n'+'NC / RC TRACKER\n\n';out+=ncrcText+'\n';}
   }
 
   // WHAT DROVE PERFORMANCE
@@ -1356,12 +1357,9 @@ function generateEmail(rows,productLabel,periodLabel,m){
   }
 
   // RETENTION CONTEXT
-  if(productId&&contextData.retention&&contextData.retention[productId]){
-    const retText=fmtRetention(contextData.retention,productId);
-    if(retText){
-      out+=LINE+'\n'+'RETENTION COHORTS\n\n';
-      out+=retText+'\n';
-    }
+  if(productId){
+    const retText=fmtRetention(productId);
+    if(retText){out+=LINE+'\n'+'RETENTION COHORTS\n\n';out+=retText+'\n';}
   }
 
   out+=LINE+'\n';
@@ -1581,185 +1579,160 @@ function copyAppsScript(){
 // ═══════════════════════════════════════════════
 // COPY FOR GOOGLE DOCS
 // ═══════════════════════════════════════════════
-function copyForDocs(){
-  const d=dailyData[activeProduct];
-  if(!d||!d.rows.length)return;
+// ── Shared HTML builder (used by copyForDocs + Gmail) ──────────────
+function buildDocsHtml(productId){
+  const pid=productId||activeProduct;
+  const d=dailyData[pid];if(!d||!d.rows.length)return'';
   const rows=d.rows;
-  const p=PRODUCTS.find(x=>x.id===activeProduct);
+  const p=PRODUCTS.find(x=>x.id===pid);
   const ts=rows.reduce((a,r)=>a+(r.spend||0),0);
   const tncs=rows.reduce((a,r)=>a+(r.ncs||0),0);
-  const wRoas=wAvg(rows,'roas','spend');
-  const wCAC=totalCAC(rows);
-  const wAOV=wAvgAOV(rows);
-  const wCTR=wAvg(rows,'ctr','spend');
-  const wHook=wAvg(rows,'hook_rate','spend');
-  const wATC=wAvg(rows,'atc_pct','spend');
-  const wPurch=wAvg(rows,'purchase_pct','spend');
-  const wPrep=wAvg(rows,'prepaid','spend');
+  const wRoas=wAvg(rows,'roas','spend'),wCAC=totalCAC(rows),wAOV=wAvgAOV(rows);
+  const wCTR=wAvg(rows,'ctr','spend'),wHook=wAvg(rows,'hook_rate','spend');
+  const wATC=wAvg(rows,'atc_pct','spend'),wPurch=wAvg(rows,'purchase_pct','spend'),wPrep=wAvg(rows,'prepaid','spend');
 
-  // Shared table styles
-  const tbl=`border-collapse:collapse;width:100%;margin-bottom:18px;font-family:Arial,sans-serif;font-size:13px;`;
-  const th=`background:#1a1a2e;color:#ffffff;padding:8px 12px;text-align:left;font-weight:bold;border:1px solid #ddd;`;
-  const td=`padding:7px 12px;border:1px solid #ddd;vertical-align:top;`;
-  const tdR=td+`text-align:right;`;
-  const trAlt=`background:#f9f9f9;`;
+  const T=`border-collapse:collapse;width:100%;margin-bottom:16px;font-family:Arial,sans-serif;font-size:13px;`;
+  const TH=`background:#1a1a2e;color:#fff;padding:7px 11px;text-align:left;font-weight:bold;border:1px solid #ccc;`;
+  const TD=`padding:6px 11px;border:1px solid #ddd;vertical-align:middle;`;
+  const TDR=TD+`text-align:right;`;
+  const H2=`font-family:Arial,sans-serif;font-size:15px;font-weight:bold;margin:22px 0 8px;color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:3px;`;
+  const H3=`font-family:Arial,sans-serif;font-size:13px;font-weight:bold;margin:16px 0 5px;color:#1a1a2e;`;
 
-  function metricRow(label,val,sub){
-    return`<tr><td style="${td}">${label}</td><td style="${tdR}"><strong>${val}</strong>${sub?`<br><span style="font-size:11px;color:#888;">${sub}</span>`:''}</td></tr>`;
-  }
-  function dimTable(title,dimKey){
-    const items=_dimBreakdown(rows,dimKey,ts).slice(0,10);
-    if(!items.length)return'';
-    let html=`<h3 style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin:20px 0 6px;color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:4px;">${title}</h3>`;
-    html+=`<table style="${tbl}"><thead><tr>`;
-    html+=`<th style="${th}">${title}</th><th style="${th}">Spend</th><th style="${th}">Share</th><th style="${th}">NCs</th><th style="${th}">ROAS</th><th style="${th}">CAC</th><th style="${th}">AOV</th><th style="${th}">CTR%</th><th style="${th}">Hook%</th>`;
-    html+=`</tr></thead><tbody>`;
+  function dimTbl(title,dimKey){
+    const items=_dimBreakdown(rows,dimKey,ts).slice(0,10);if(!items.length)return'';
+    let h=`<h3 style="${H3}">${title}</h3><table style="${T}"><thead><tr>`;
+    ['Label','Spend','Share','NCs','ROAS','CAC','AOV','CTR%','Hook%'].forEach(x=>h+=`<th style="${TH}">${x}</th>`);
+    h+=`</tr></thead><tbody>`;
     items.forEach((x,i)=>{
-      const bg=i%2===0?'':'background:#f4f6fb;';
-      html+=`<tr style="${bg}">`;
-      html+=`<td style="${td}"><strong>${x.label}</strong></td>`;
-      html+=`<td style="${tdR}">${fmtS(x.spend)}</td>`;
-      html+=`<td style="${tdR}">${x.spendShare!=null?x.spendShare+'%':'—'}</td>`;
-      html+=`<td style="${tdR}">${x.ncs!=null?x.ncs:'—'}</td>`;
-      html+=`<td style="${tdR}">${x.roas!=null?x.roas+'x':'—'}</td>`;
-      html+=`<td style="${tdR}">${x.cac!=null?fmtC(x.cac):'—'}</td>`;
-      html+=`<td style="${tdR}">${x.aov!=null?fmtC(x.aov):'—'}</td>`;
-      html+=`<td style="${tdR}">${x.ctr!=null?x.ctr+'%':'—'}</td>`;
-      html+=`<td style="${tdR}">${x.hookRate!=null?x.hookRate+'%':'—'}</td>`;
-      html+=`</tr>`;
+      const bg=i%2?'background:#f5f7ff;':'';
+      h+=`<tr style="${bg}"><td style="${TD}"><strong>${x.label}</strong></td>`;
+      h+=`<td style="${TDR}">${fmtS(x.spend)}</td><td style="${TDR}">${x.spendShare!=null?x.spendShare+'%':'—'}</td>`;
+      h+=`<td style="${TDR}">${x.ncs??'—'}</td><td style="${TDR}">${x.roas!=null?x.roas+'x':'—'}</td>`;
+      h+=`<td style="${TDR}">${x.cac!=null?fmtC(x.cac):'—'}</td><td style="${TDR}">${x.aov!=null?fmtC(x.aov):'—'}</td>`;
+      h+=`<td style="${TDR}">${x.ctr!=null?x.ctr+'%':'—'}</td><td style="${TDR}">${x.hookRate!=null?x.hookRate+'%':'—'}</td></tr>`;
     });
-    html+=`</tbody></table>`;
-    return html;
+    return h+`</tbody></table>`;
   }
 
-  let html=`<html><body style="font-family:Arial,sans-serif;color:#1a1a2e;max-width:900px;">`;
+  let h=`<div style="font-family:Arial,sans-serif;color:#1a1a2e;max-width:920px;">`;
+  h+=`<h1 style="font-size:20px;font-weight:bold;margin-bottom:2px;">${p.label}</h1>`;
+  h+=`<p style="font-size:13px;color:#666;margin:0 0 16px;">${d.label} · Creative Performance Update</p>`;
+  h+=`<hr style="border:none;border-top:3px solid #1a1a2e;margin-bottom:18px;">`;
 
-  // Header
-  html+=`<h1 style="font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#1a1a2e;margin-bottom:2px;">${p.label}</h1>`;
-  html+=`<p style="font-size:13px;color:#555;margin-top:0;margin-bottom:20px;">${d.label} &nbsp;·&nbsp; Creative Performance Update</p>`;
-  html+=`<hr style="border:none;border-top:3px solid #1a1a2e;margin-bottom:20px;">`;
-
-  // Headline metrics — two side-by-side tables
-  html+=`<h2 style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;margin-bottom:10px;color:#1a1a2e;">Period in Numbers</h2>`;
-  html+=`<table style="${tbl}"><thead><tr>`;
-  ['Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC','Purchase','Prepaid'].forEach(h=>{
-    html+=`<th style="${th}">${h}</th>`;
-  });
-  html+=`</tr></thead><tbody><tr>`;
+  // Period metrics
+  h+=`<h2 style="${H2}">Period in Numbers</h2>`;
+  h+=`<table style="${T}"><thead><tr>`;
+  ['Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC','Purchase','Prepaid'].forEach(x=>h+=`<th style="${TH}">${x}</th>`);
+  h+=`</tr></thead><tbody><tr>`;
   [fmtS(ts),fmtI(tncs)||'—',fmtR(wRoas),fmtC(wCAC),fmtC(wAOV),fmtP(wCTR),fmtP(wHook),fmtP(wATC),fmtP(wPurch),fmtP(wPrep)].forEach(v=>{
-    html+=`<td style="${tdR}"><strong>${v}</strong></td>`;
+    h+=`<td style="${TDR}"><strong>${v}</strong></td>`;
   });
-  html+=`</tr></tbody></table>`;
+  h+=`</tr></tbody></table>`;
+  h+=`<p style="font-size:12px;color:#666;margin:-8px 0 18px;">Funnel: CTR ${fmtP(wCTR)} → Hook ${fmtP(wHook)} → ATC ${fmtP(wATC)} → Purchase ${fmtP(wPurch)}</p>`;
 
-  // Funnel summary
-  html+=`<p style="font-size:12px;color:#555;margin:-10px 0 20px;font-family:Arial,sans-serif;">`;
-  html+=`Funnel: &nbsp;CTR ${fmtP(wCTR)} &nbsp;→&nbsp; Hook ${fmtP(wHook)} &nbsp;→&nbsp; ATC ${fmtP(wATC)} &nbsp;→&nbsp; Purchase ${fmtP(wPurch)}</p>`;
+  // NC/RC tracker
+  const ctx=contextData[pid];
+  if(ctx&&ctx.ncrc&&ctx.ncrc.length){
+    h+=`<h2 style="${H2}">NC / RC Tracker</h2>`;
+    h+=`<table style="${T}"><thead><tr>`;
+    ['Period','NC','NC AOV','RC','RC AOV'].forEach(x=>h+=`<th style="${TH}">${x}</th>`);
+    h+=`</tr></thead><tbody>`;
+    ctx.ncrc.forEach((r,i)=>{
+      const bg=i%2?'background:#f5f7ff;':'';
+      h+=`<tr style="${bg}"><td style="${TD}"><strong>${r.label}</strong></td>`;
+      h+=`<td style="${TDR}">${r.nc}</td><td style="${TDR}">${r.ncAov}</td><td style="${TDR}">${r.rc}</td><td style="${TDR}">${r.rcAov}</td></tr>`;
+    });
+    h+=`</tbody></table>`;
+  }
 
-  // ── What Drove Performance ──
-  html+=`<h2 style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;margin:24px 0 4px;color:#1a1a2e;">What Drove Performance</h2>`;
+  // What drove performance
+  h+=`<h2 style="${H2}">What Drove Performance</h2>`;
 
-  // Top ads FIRST — ad#, person, language, format, links
+  // Top ads — ad#, person, lang, format, spend, NCs, ROAS, CAC, watch links
   const topAds=[...rows].filter(r=>r.spend>=scalingThreshold()).sort((a,b)=>(b.spend||0)-(a.spend||0)).slice(0,12);
   if(!topAds.length)topAds.push(...[...rows].sort((a,b)=>(b.spend||0)-(a.spend||0)).slice(0,10));
-  html+=`<h3 style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin:16px 0 6px;color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:4px;">Top Ads — Watch List</h3>`;
-  html+=`<table style="${tbl}"><thead><tr>`;
-  ['#','Person / Influencer','Language','Format','Spend','NCs','ROAS','CAC','Watch'].forEach(h=>html+=`<th style="${th}">${h}</th>`);
-  html+=`</tr></thead><tbody>`;
+  h+=`<h3 style="${H3}">Top Ads — Watch List</h3>`;
+  h+=`<table style="${T}"><thead><tr>`;
+  ['#','Person / Influencer','Language','Format','Spend','NCs','ROAS','CAC','Watch'].forEach(x=>h+=`<th style="${TH}">${x}</th>`);
+  h+=`</tr></thead><tbody>`;
   topAds.forEach((r,i)=>{
-    const bg=i%2===0?'':'background:#f4f6fb;';
+    const bg=i%2?'background:#f5f7ff;':'';
     const num=extractAdNum(r.name)||`#${i+1}`;
     const person=r.person&&r.person!=='Unknown'&&r.person!=='Internal'?r.person:'—';
     const lang=r.language&&r.language!=='Unknown'?r.language:'—';
     const fmt=r.ad_format&&r.ad_format!=='Unknown'?r.ad_format:'—';
-    let watchLinks='—';
     const links=[];
-    if(r.link916)links.push(`<a href="${r.link916}" style="color:#4285f4;text-decoration:none;font-size:11px;">▶ 9:16</a>`);
-    if(r.link45&&r.link45!==r.link916)links.push(`<a href="${r.link45}" style="color:#4285f4;text-decoration:none;font-size:11px;">▶ 4:5</a>`);
-    if(links.length)watchLinks=links.join(' &nbsp;');
-    html+=`<tr style="${bg}">`;
-    html+=`<td style="${td}"><strong>${num}</strong></td>`;
-    html+=`<td style="${td}">${person}</td>`;
-    html+=`<td style="${td}">${lang}</td>`;
-    html+=`<td style="${td}">${fmt}</td>`;
-    html+=`<td style="${tdR}">${fmtS(r.spend)}</td>`;
-    html+=`<td style="${tdR}">${r.ncs!=null?r.ncs:'—'}</td>`;
-    html+=`<td style="${tdR}">${r.roas!=null?fmtR(r.roas):'—'}</td>`;
-    html+=`<td style="${tdR}">${r.cac!=null?fmtC(r.cac):'—'}</td>`;
-    html+=`<td style="${td}">${watchLinks}</td>`;
-    html+=`</tr>`;
+    if(r.link916)links.push(`<a href="${r.link916}" style="color:#1a73e8;">▶ 9:16</a>`);
+    if(r.link45&&r.link45!==r.link916)links.push(`<a href="${r.link45}" style="color:#1a73e8;">▶ 4:5</a>`);
+    h+=`<tr style="${bg}">`;
+    h+=`<td style="${TD}"><strong>${num}</strong></td><td style="${TD}">${person}</td>`;
+    h+=`<td style="${TD}">${lang}</td><td style="${TD}">${fmt}</td>`;
+    h+=`<td style="${TDR}">${fmtS(r.spend)}</td><td style="${TDR}">${r.ncs??'—'}</td>`;
+    h+=`<td style="${TDR}">${r.roas!=null?fmtR(r.roas):'—'}</td><td style="${TDR}">${r.cac!=null?fmtC(r.cac):'—'}</td>`;
+    h+=`<td style="${TD}">${links.length?links.join(' &nbsp;'):'—'}</td></tr>`;
   });
-  html+=`</tbody></table>`;
+  h+=`</tbody></table>`;
 
-  // Dimension breakdowns
-  html+=dimTable('Narrative','narrative');
-  html+=dimTable('Language','language');
-  html+=dimTable('Person / Influencer','person');
-  html+=dimTable('Ad Format','ad_format');
-  html+=dimTable('Ad Type','ad_type');
-  html+=dimTable('Funnel Stage','funnel_type');
+  h+=dimTbl('Narrative','narrative');
+  h+=dimTbl('Language','language');
+  h+=dimTbl('Person / Influencer','person');
+  h+=dimTbl('Ad Format','ad_format');
+  h+=dimTbl('Ad Type','ad_type');
+  h+=dimTbl('Funnel Stage','funnel_type');
 
-  // NC/RC context table
-  if(contextData.ncrc&&contextData.ncrc[p.id]&&contextData.ncrc[p.id].length){
-    html+=`<h2 style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;margin:24px 0 6px;color:#1a1a2e;">NC / RC Tracker</h2>`;
-    html+=`<table style="${tbl}"><thead><tr>`;
-    ['Period','NC','NC AOV','RC','RC AOV'].forEach(h=>html+=`<th style="${th}">${h}</th>`);
-    html+=`</tr></thead><tbody>`;
-    contextData.ncrc[p.id].forEach((r,i)=>{
-      const bg=i%2===0?'':'background:#f4f6fb;';
-      html+=`<tr style="${bg}"><td style="${td}"><strong>${r.label}</strong></td><td style="${tdR}">${r.nc||'—'}</td><td style="${tdR}">${r.ncAov||'—'}</td><td style="${tdR}">${r.rc||'—'}</td><td style="${tdR}">${r.rcAov||'—'}</td></tr>`;
+  // Retention cohorts
+  if(ctx&&ctx.retention&&ctx.retention.months.length){
+    const{months,actual,extra}=ctx.retention;
+    h+=`<h2 style="${H2}">Retention Cohorts</h2>`;
+    h+=`<table style="${T}"><thead><tr>`;
+    ['Month','Total','M0%','M1%','M2%','M3%','M4%','M5%'].forEach(x=>h+=`<th style="${TH}">${x}</th>`);
+    h+=`</tr></thead><tbody>`;
+    months.forEach((r,i)=>{
+      const bg=i%2?'background:#f5f7ff;':'';
+      h+=`<tr style="${bg}">`+r.slice(0,8).map((v,ci)=>`<td style="${ci?TDR:TD}">${v||'—'}</td>`).join('')+`</tr>`;
     });
-    html+=`</tbody></table>`;
-  }
-
-  // Retention cohort table
-  if(contextData.retention&&contextData.retention[p.id]&&contextData.retention[p.id].months.length){
-    const sec=contextData.retention[p.id];
-    html+=`<h2 style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;margin:24px 0 6px;color:#1a1a2e;">Retention Cohorts</h2>`;
-    html+=`<table style="${tbl}"><thead><tr>`;
-    ['Month','Total','M0%','M1%','M2%','M3%','M4%','M5%'].forEach(h=>html+=`<th style="${th}">${h}</th>`);
-    html+=`</tr></thead><tbody>`;
-    sec.months.forEach((r,i)=>{
-      const bg=i%2===0?'':'background:#f4f6fb;';
-      html+=`<tr style="${bg}">`+r.slice(0,8).map((v,ci)=>`<td style="${ci===0?td:tdR}">${v||'—'}</td>`).join('')+`</tr>`;
-    });
-    if(sec.actual){
-      html+=`<tr style="background:#e8f4e8;font-weight:bold;"><td style="${td}" colspan="2">Actual</td>`+sec.actual.slice(1).map(v=>`<td style="${tdR}">${v||'—'}</td>`).join('')+`</tr>`;
+    if(actual){
+      const v=actual.filter(Boolean);
+      h+=`<tr style="background:#e6f4ea;font-weight:bold;"><td style="${TD}" colspan="2">Actual</td>`;
+      h+=`<td style="${TDR}">${v[2]||'—'}</td><td style="${TDR}">${v[4]||'—'}</td><td style="${TDR}">${v[6]||'—'}</td><td colspan="3"></td></tr>`;
     }
-    if(sec.extra){
-      html+=`<tr style="background:#fff8e1;font-weight:bold;"><td style="${td}" colspan="2">Extrapolated</td>`+sec.extra.slice(1).map(v=>`<td style="${tdR}">${v||'—'}</td>`).join('')+`</tr>`;
+    if(extra){
+      const v=extra.filter(Boolean);
+      h+=`<tr style="background:#fffde7;font-weight:bold;"><td style="${TD}" colspan="2">Extrapolated</td>`;
+      h+=`<td style="${TDR}">${v[2]||'—'}</td><td style="${TDR}">${v[4]||'—'}</td><td style="${TDR}">${v[6]||'—'}</td><td colspan="3"></td></tr>`;
     }
-    html+=`</tbody></table>`;
+    h+=`</tbody></table>`;
   }
 
-  html+=`<p style="font-size:11px;color:#aaa;font-family:Arial,sans-serif;margin-top:24px;">Generated by Mosaic Creative Audit · ${d.label}</p>`;
-  html+=`</body></html>`;
-
-  const btn=document.getElementById('copy-docs-btn');
-  // Use ClipboardItem with text/html so Google Docs renders tables on paste
-  if(navigator.clipboard&&window.ClipboardItem){
-    const blob=new Blob([html],{type:'text/html'});
-    navigator.clipboard.write([new ClipboardItem({'text/html':blob})]).then(()=>{
-      btn.textContent='✅ Copied — paste into Docs!';
-      setTimeout(()=>{btn.textContent='📄 Copy for Google Docs';},3000);
-    }).catch(()=>_fallbackDocsCopy(html,btn));
-  } else {
-    _fallbackDocsCopy(html,btn);
-  }
+  h+=`<p style="font-size:11px;color:#aaa;margin-top:20px;">Generated by Mosaic Creative Audit · ${d.label}</p></div>`;
+  return h;
 }
-function _fallbackDocsCopy(html,btn){
-  // Fallback: render into a hidden div, select it, execCommand copy
+
+function copyForDocs(){
+  const html=buildDocsHtml();
+  if(!html)return;
+  const btn=document.getElementById('copy-docs-btn');
+  _copyRichHtmlToClipboard(html).then(()=>{
+    btn.textContent='✅ Copied — paste into Docs or Gmail!';
+    setTimeout(()=>{btn.textContent='📄 Copy for Google Docs';},3000);
+  });
+}
+
+function _copyRichHtmlToClipboard(html){
+  const full=html.startsWith('<html')?html:`<html><body>${html}</body></html>`;
+  if(navigator.clipboard&&window.ClipboardItem){
+    const blob=new Blob([full],{type:'text/html'});
+    return navigator.clipboard.write([new ClipboardItem({'text/html':blob})]).catch(()=>_execCmdCopy(full));
+  }
+  return Promise.resolve(_execCmdCopy(full));
+}
+function _execCmdCopy(html){
   const div=document.createElement('div');
   div.style.cssText='position:fixed;left:-9999px;top:0;';
-  div.innerHTML=html;
-  document.body.appendChild(div);
+  div.innerHTML=html;document.body.appendChild(div);
   const sel=window.getSelection();sel.removeAllRanges();
-  const range=document.createRange();range.selectNodeContents(div);
-  sel.addRange(range);
-  document.execCommand('copy');
-  sel.removeAllRanges();
-  document.body.removeChild(div);
-  btn.textContent='✅ Copied — paste into Docs!';
-  setTimeout(()=>{btn.textContent='📄 Copy for Google Docs';},3000);
+  const r=document.createRange();r.selectNodeContents(div);sel.addRange(r);
+  document.execCommand('copy');sel.removeAllRanges();document.body.removeChild(div);
 }
 
 function _dimBreakdown(rows,dimKey,totalSpend){
@@ -1871,87 +1844,72 @@ async function saveToSheet(){
 // CONTEXT SHEET FETCHING (NC/RC + Retention)
 // ═══════════════════════════════════════════════
 async function fetchContextData(){
-  try{const csv=await fetchCsv(CTX_NCRC_ID,'MM');contextData.ncrc=parseNCRC(csv);}
-  catch(e){console.warn('NCRC fetch failed:',e.message);}
-  try{const csv=await fetchCsv(CTX_RET_ID,'Product level Retention - Hair');contextData.retention=parseRetention(csv);}
-  catch(e){console.warn('Retention fetch failed:',e.message);}
+  for(const p of PRODUCTS){
+    try{
+      const csv=await fetchCsv(CTX_SHEETS[p.id],null);
+      contextData[p.id]=parseProductContextSheet(csv);
+    }catch(e){console.warn('Context fetch failed for',p.id,e.message);}
+  }
   contextData.lastFetched=new Date();
 }
 
-function parseNCRC(csvText){
+// Single parser that handles all 3 product sheets (same structure)
+// NC/RC: rows where col B (index 1) is LD/L10/L30/MTD/Projection/Target/% Ach
+// Retention: rows where col B is a month like "Dec-25" or "Actual"/"Extrapolated"
+function parseProductContextSheet(csvText){
   const rows=parseCsv(csvText);
-  const result={biotin:null,s2:null};
-  let cur=null;
   const DATA_LABELS=['ld','l10','l30','month to date','mtd','projection','target','% ach'];
-  for(const row of rows){
-    const f=(row[0]||'').trim();
-    const fl=f.toLowerCase();
-    // Find numeric values anywhere in row from col 1 onwards
-    if(fl.includes('biotin')||fl.includes('hair gummies')||(fl==='hg')){cur='biotin';result.biotin=[];continue;}
-    if(fl.includes('hg stages')||fl.includes('stage 2')||(fl==='hg stages')){cur='s2';result.s2=[];continue;}
-    if(!cur||!f)continue;
-    const isData=DATA_LABELS.some(k=>fl.includes(k));
-    if(!isData)continue;
-    // Find 4 numeric-ish values in the row
-    const vals=row.slice(1).map(v=>(v||'').trim()).filter(v=>v&&v!=='-');
-    if(vals.length>=2){
-      result[cur].push({label:f,nc:vals[0],ncAov:vals[1],rc:vals[2]||null,rcAov:vals[3]||null});
-    }
-  }
-  return result;
-}
-
-function parseRetention(csvText){
-  const rows=parseCsv(csvText);
-  const result={biotin:null,s1:null,s2:null};
-  let cur=null,monthRows=[],actualRow=null,extraRow=null;
-  function flush(){if(cur)result[cur]={months:monthRows.slice(-6),actual:actualRow,extra:extraRow};}
   const MONTH_RE=/^[A-Za-z]{3}-\d{2}/;
+  const ncrc=[], monthRows=[];
+  let actualRow=null, extraRow=null;
   for(const row of rows){
-    const f=(row[0]||'').trim();
-    const fl=f.toLowerCase();
-    if(fl.includes('hg_30')||fl==='hg30'){flush();cur='biotin';monthRows=[];actualRow=null;extraRow=null;continue;}
-    if(fl.includes('s1_base')||fl.includes('s1 base')){flush();cur='s1';monthRows=[];actualRow=null;extraRow=null;continue;}
-    if(fl.includes('s2_base')||fl.includes('s2 base')){flush();cur='s2';monthRows=[];actualRow=null;extraRow=null;continue;}
-    if(!cur)continue;
-    if(fl.startsWith('actual')){actualRow=row;}
-    else if(fl.startsWith('extrapolat')){extraRow=row;}
-    else if(MONTH_RE.test(f)){monthRows.push(row);}
+    const b=(row[1]||'').trim();
+    const bl=b.toLowerCase();
+    // NC/RC data rows
+    if(DATA_LABELS.some(k=>bl.includes(k))){
+      const vals=row.slice(2,7).map(v=>(v||'').trim());
+      if(vals[0]&&vals[0]!=='-')ncrc.push({label:b,nc:vals[0],ncAov:vals[1]||'—',rc:vals[2]||'—',rcAov:vals[3]||'—'});
+    }
+    // Retention month rows
+    if(MONTH_RE.test(b)&&row[2]&&row[2].trim()&&row[2].trim()!=='-'){
+      monthRows.push(row.slice(1,9)); // [month, total, M0%, M1%, M2%, M3%, M4%, M5%]
+    }
+    if(bl==='actual')actualRow=row.slice(1);
+    if(bl.startsWith('extrapolat'))extraRow=row.slice(1);
   }
-  flush();
-  return result;
+  return{ncrc,retention:{months:monthRows.slice(-6),actual:actualRow,extra:extraRow}};
 }
 
-function fmtNCRC(d,productId){
-  if(!d||!d[productId]||!d[productId].length)return null;
-  const rows=d[productId];
-  const LINE='─────────────────────────────────────────────────────';
+function fmtNCRC(productId){
+  const d=contextData[productId];
+  if(!d||!d.ncrc||!d.ncrc.length)return null;
   let out='';
-  out+=`  ${''.padEnd(20)}  ${'NC'.padStart(8)}  ${'NC AOV'.padStart(8)}  ${'RC'.padStart(8)}  ${'RC AOV'.padStart(8)}\n`;
-  out+='  '+LINE+'\n';
-  rows.forEach(r=>{
-    out+=`  ${r.label.padEnd(20)}  ${(r.nc||'—').padStart(8)}  ${(r.ncAov||'—').padStart(8)}  ${(r.rc||'—').padStart(8)}  ${(r.rcAov||'—').padStart(8)}\n`;
+  out+=`  ${''.padEnd(20)}  ${'NC'.padStart(9)}  ${'NC AOV'.padStart(9)}  ${'RC'.padStart(9)}  ${'RC AOV'.padStart(9)}\n`;
+  out+='  '+'─'.repeat(62)+'\n';
+  d.ncrc.forEach(r=>{
+    out+=`  ${r.label.padEnd(20)}  ${(r.nc||'—').padStart(9)}  ${(r.ncAov||'—').padStart(9)}  ${(r.rc||'—').padStart(9)}  ${(r.rcAov||'—').padStart(9)}\n`;
   });
   return out;
 }
 
-function fmtRetention(d,productId){
-  if(!d||!d[productId])return null;
-  const sec=d[productId];
-  if(!sec.months||!sec.months.length)return null;
-  const hdrs=['Month','Total','M0%','M1%','M2%','M3%','M4%','M5%'];
+function fmtRetention(productId){
+  const d=contextData[productId];
+  if(!d||!d.retention||!d.retention.months.length)return null;
+  const{months,actual,extra}=d.retention;
   let out='';
-  out+='  '+hdrs.map((h,i)=>i===0?h.padEnd(10):h.padStart(8)).join('')+'\n';
-  out+='  '+'─'.repeat(74)+'\n';
-  sec.months.forEach(r=>{
-    out+='  '+(r[0]||'').padEnd(10)+r.slice(1,8).map(v=>(v||'').padStart(8)).join('')+'\n';
+  out+='  '+['Month','Total','M0%','M1%','M2%','M3%','M4%','M5%'].map((h,i)=>i===0?h.padEnd(10):h.padStart(9)).join('')+'\n';
+  out+='  '+'─'.repeat(82)+'\n';
+  months.forEach(r=>{
+    out+='  '+(r[0]||'').padEnd(10)+r.slice(1,8).map(v=>(v||'').padStart(9)).join('')+'\n';
   });
-  if(sec.actual){
-    out+='  '+'─'.repeat(74)+'\n';
-    out+='  Actual      '+sec.actual.slice(1).filter(Boolean).join('  ')+'\n';
+  if(actual){
+    const vals=actual.filter(Boolean);
+    out+='  '+'─'.repeat(82)+'\n';
+    out+=`  Actual         M1+M2+M3: ${vals[2]||'—'}   M0 Diff: ${vals[4]||'—'}   M1 to M6: ${vals[6]||'—'}\n`;
   }
-  if(sec.extra){
-    out+='  Extrapolated '+sec.extra.slice(1).filter(Boolean).join('  ')+'\n';
+  if(extra){
+    const vals=extra.filter(Boolean);
+    out+=`  Extrapolated   M1+M2+M3: ${vals[2]||'—'}   Delta: ${vals[4]||'—'}       M1 to M6: ${vals[6]||'—'}\n`;
   }
   return out;
 }
@@ -1969,20 +1927,35 @@ function extractAdNum(name){
 // GMAIL SEND
 // ═══════════════════════════════════════════════
 function sendViaGmail(){
+  // Gmail 400 = body too long in URL. Fix: copy rich HTML to clipboard, open compose with subject only.
   const d=dailyData[activeProduct];if(!d)return;
   const p=PRODUCTS.find(x=>x.id===activeProduct);
+  const btn=document.getElementById('gmail-btn');
   const subject=encodeURIComponent(`${p.label} · Creative Update · ${d.label}`);
-  const body=encodeURIComponent(document.getElementById('email-body').textContent||'');
-  window.open(`https://mail.google.com/mail/?view=cm&su=${subject}&body=${body}`,'_blank');
+  _copyRichHtmlToClipboard(buildDocsHtml()).then(()=>{
+    window.open(`https://mail.google.com/mail/?view=cm&su=${subject}`,'_blank');
+    btn.textContent='✅ Gmail opened — Cmd+V to paste!';
+    setTimeout(()=>{btn.textContent='✉ Send via Gmail';},4000);
+  });
 }
 function sendCombinedViaGmail(){
   const text=document.getElementById('combined-email-body').textContent||'';
   if(!text){alert('Generate the combined digest first.');return;}
-  const d=dailyData[PRODUCTS[0].id];
-  const period=d?d.label:'';
+  const btn=document.getElementById('gmail-combined-btn');
+  // Build combined HTML for all loaded products
+  let html='<html><body style="font-family:Arial,sans-serif;">';
+  for(const p of PRODUCTS){
+    const d=dailyData[p.id];if(!d||!d.rows.length)continue;
+    html+=buildDocsHtml(p.id)+'<hr style="margin:32px 0;">';
+  }
+  html+='</body></html>';
+  const period=(dailyData[PRODUCTS.find(p=>dailyData[p.id]?.rows?.length)?.id]||{}).label||'';
   const subject=encodeURIComponent(`Hair Creative Update · ${period}`);
-  const body=encodeURIComponent(text);
-  window.open(`https://mail.google.com/mail/?view=cm&su=${subject}&body=${body}`,'_blank');
+  _copyRichHtmlToClipboard(html).then(()=>{
+    window.open(`https://mail.google.com/mail/?view=cm&su=${subject}`,'_blank');
+    btn.textContent='✅ Gmail opened — Cmd+V to paste!';
+    setTimeout(()=>{btn.textContent='✉ Send via Gmail';},4000);
+  });
 }
 
 // ═══════════════════════════════════════════════
