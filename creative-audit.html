@@ -426,7 +426,8 @@ table.trends tr:hover td{background:var(--paper2);}
       <div class="email-toolbar">
         <div><h3>Category Manager Update</h3><div class="hint">Auto-generated · review then copy</div></div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <button class="copy-btn" id="copy-email-btn" onclick="copyEmail()">📋 Copy to Clipboard</button>
+          <button class="copy-btn" id="copy-email-btn" onclick="copyEmail()">📋 Copy as Text</button>
+          <button class="copy-btn" id="copy-docs-btn" onclick="copyForDocs()" style="display:none;background:#4285f4;color:#fff;border-color:#4285f4;">📄 Copy for Google Docs</button>
           <button class="copy-btn" id="save-to-sheet-btn" onclick="saveToSheet()" style="display:none;background:var(--green,#1a8a4a);color:#fff;border-color:var(--green,#1a8a4a);">☁ Save to Sheet</button>
         </div>
       </div>
@@ -1235,9 +1236,11 @@ function renderDailyDigest(){
     `<div class="qs-item"><div class="qs-lbl">CTR</div><div class="qs-val">${fmtP(wCTR)}</div></div>`;
   document.getElementById('daily-quick-stats').style.display='block';
   document.getElementById('email-body').textContent=generateEmail(rows,p.label,d.label,{ts,tncs,wRoas,wCAC,wAOV,wCTR,wHook,wATC,wPurch,wPrep});
-  // Show save button
+  // Show action buttons
   const saveBtn=document.getElementById('save-to-sheet-btn');
   if(saveBtn)saveBtn.style.display='inline-flex';
+  const docsBtn=document.getElementById('copy-docs-btn');
+  if(docsBtn)docsBtn.style.display='inline-flex';
 }
 
 function generateEmail(rows,productLabel,periodLabel,m){
@@ -1515,6 +1518,146 @@ function copyAppsScript(){
     const c=document.getElementById('as-copy-confirm');
     c.style.display='inline';setTimeout(()=>c.style.display='none',3000);
   });
+}
+
+// ═══════════════════════════════════════════════
+// COPY FOR GOOGLE DOCS
+// ═══════════════════════════════════════════════
+function copyForDocs(){
+  const d=dailyData[activeProduct];
+  if(!d||!d.rows.length)return;
+  const rows=d.rows;
+  const p=PRODUCTS.find(x=>x.id===activeProduct);
+  const ts=rows.reduce((a,r)=>a+(r.spend||0),0);
+  const tncs=rows.reduce((a,r)=>a+(r.ncs||0),0);
+  const wRoas=wAvg(rows,'roas','spend');
+  const wCAC=totalCAC(rows);
+  const wAOV=wAvgAOV(rows);
+  const wCTR=wAvg(rows,'ctr','spend');
+  const wHook=wAvg(rows,'hook_rate','spend');
+  const wATC=wAvg(rows,'atc_pct','spend');
+  const wPurch=wAvg(rows,'purchase_pct','spend');
+  const wPrep=wAvg(rows,'prepaid','spend');
+
+  // Shared table styles
+  const tbl=`border-collapse:collapse;width:100%;margin-bottom:18px;font-family:Arial,sans-serif;font-size:13px;`;
+  const th=`background:#1a1a2e;color:#ffffff;padding:8px 12px;text-align:left;font-weight:bold;border:1px solid #ddd;`;
+  const td=`padding:7px 12px;border:1px solid #ddd;vertical-align:top;`;
+  const tdR=td+`text-align:right;`;
+  const trAlt=`background:#f9f9f9;`;
+
+  function metricRow(label,val,sub){
+    return`<tr><td style="${td}">${label}</td><td style="${tdR}"><strong>${val}</strong>${sub?`<br><span style="font-size:11px;color:#888;">${sub}</span>`:''}</td></tr>`;
+  }
+  function dimTable(title,dimKey){
+    const items=_dimBreakdown(rows,dimKey,ts).slice(0,10);
+    if(!items.length)return'';
+    let html=`<h3 style="font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin:20px 0 6px;color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:4px;">${title}</h3>`;
+    html+=`<table style="${tbl}"><thead><tr>`;
+    html+=`<th style="${th}">${title}</th><th style="${th}">Spend</th><th style="${th}">Share</th><th style="${th}">NCs</th><th style="${th}">ROAS</th><th style="${th}">CAC</th><th style="${th}">AOV</th><th style="${th}">CTR%</th><th style="${th}">Hook%</th>`;
+    html+=`</tr></thead><tbody>`;
+    items.forEach((x,i)=>{
+      const bg=i%2===0?'':'background:#f4f6fb;';
+      html+=`<tr style="${bg}">`;
+      html+=`<td style="${td}"><strong>${x.label}</strong></td>`;
+      html+=`<td style="${tdR}">${fmtS(x.spend)}</td>`;
+      html+=`<td style="${tdR}">${x.spendShare!=null?x.spendShare+'%':'—'}</td>`;
+      html+=`<td style="${tdR}">${x.ncs!=null?x.ncs:'—'}</td>`;
+      html+=`<td style="${tdR}">${x.roas!=null?x.roas+'x':'—'}</td>`;
+      html+=`<td style="${tdR}">${x.cac!=null?fmtC(x.cac):'—'}</td>`;
+      html+=`<td style="${tdR}">${x.aov!=null?fmtC(x.aov):'—'}</td>`;
+      html+=`<td style="${tdR}">${x.ctr!=null?x.ctr+'%':'—'}</td>`;
+      html+=`<td style="${tdR}">${x.hookRate!=null?x.hookRate+'%':'—'}</td>`;
+      html+=`</tr>`;
+    });
+    html+=`</tbody></table>`;
+    return html;
+  }
+
+  let html=`<html><body style="font-family:Arial,sans-serif;color:#1a1a2e;max-width:900px;">`;
+
+  // Header
+  html+=`<h1 style="font-family:Arial,sans-serif;font-size:20px;font-weight:bold;color:#1a1a2e;margin-bottom:2px;">${p.label}</h1>`;
+  html+=`<p style="font-size:13px;color:#555;margin-top:0;margin-bottom:20px;">${d.label} &nbsp;·&nbsp; Creative Performance Update</p>`;
+  html+=`<hr style="border:none;border-top:3px solid #1a1a2e;margin-bottom:20px;">`;
+
+  // Headline metrics — two side-by-side tables
+  html+=`<h2 style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;margin-bottom:10px;color:#1a1a2e;">Period in Numbers</h2>`;
+  html+=`<table style="${tbl}"><thead><tr>`;
+  ['Spend','NCs','ROAS','CAC','AOV','CTR','Hook Rate','ATC','Purchase','Prepaid'].forEach(h=>{
+    html+=`<th style="${th}">${h}</th>`;
+  });
+  html+=`</tr></thead><tbody><tr>`;
+  [fmtS(ts),fmtI(tncs)||'—',fmtR(wRoas),fmtC(wCAC),fmtC(wAOV),fmtP(wCTR),fmtP(wHook),fmtP(wATC),fmtP(wPurch),fmtP(wPrep)].forEach(v=>{
+    html+=`<td style="${tdR}"><strong>${v}</strong></td>`;
+  });
+  html+=`</tr></tbody></table>`;
+
+  // Funnel summary
+  html+=`<p style="font-size:12px;color:#555;margin:-10px 0 20px;font-family:Arial,sans-serif;">`;
+  html+=`Funnel: &nbsp;CTR ${fmtP(wCTR)} &nbsp;→&nbsp; Hook ${fmtP(wHook)} &nbsp;→&nbsp; ATC ${fmtP(wATC)} &nbsp;→&nbsp; Purchase ${fmtP(wPurch)}</p>`;
+
+  // Dimension tables
+  html+=`<h2 style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;margin:24px 0 4px;color:#1a1a2e;">What Drove Performance</h2>`;
+  html+=dimTable('Narrative','narrative');
+  html+=dimTable('Language','language');
+  html+=dimTable('Person / Influencer','person');
+  html+=dimTable('Ad Format','ad_format');
+  html+=dimTable('Ad Type','ad_type');
+  html+=dimTable('Funnel Stage','funnel_type');
+
+  // Top ads table
+  const topAds=[...rows].sort((a,b)=>(b.spend||0)-(a.spend||0)).slice(0,15);
+  html+=`<h2 style="font-family:Arial,sans-serif;font-size:15px;font-weight:bold;margin:24px 0 6px;color:#1a1a2e;">Top Ads by Spend</h2>`;
+  html+=`<table style="${tbl}"><thead><tr>`;
+  ['Ad Name','Narrative','Person','Format','Spend','NCs','ROAS','CAC','CTR%','Hook%'].forEach(h=>html+=`<th style="${th}">${h}</th>`);
+  html+=`</tr></thead><tbody>`;
+  topAds.forEach((r,i)=>{
+    const bg=i%2===0?'':'background:#f4f6fb;';
+    html+=`<tr style="${bg}">`;
+    html+=`<td style="${td};max-width:220px;word-break:break-word;">${r.name}</td>`;
+    html+=`<td style="${td}">${r.narrative||'—'}</td>`;
+    html+=`<td style="${td}">${r.person||'—'}</td>`;
+    html+=`<td style="${td}">${r.ad_format||'—'}</td>`;
+    html+=`<td style="${tdR}">${fmtS(r.spend)}</td>`;
+    html+=`<td style="${tdR}">${r.ncs!=null?r.ncs:'—'}</td>`;
+    html+=`<td style="${tdR}">${r.roas!=null?fmtR(r.roas):'—'}</td>`;
+    html+=`<td style="${tdR}">${r.cac!=null?fmtC(r.cac):'—'}</td>`;
+    html+=`<td style="${tdR}">${r.ctr!=null?fmtP(r.ctr):'—'}</td>`;
+    html+=`<td style="${tdR}">${r.hook_rate!=null?fmtP(r.hook_rate):'—'}</td>`;
+    html+=`</tr>`;
+  });
+  html+=`</tbody></table>`;
+
+  html+=`<p style="font-size:11px;color:#aaa;font-family:Arial,sans-serif;margin-top:24px;">Generated by Mosaic Creative Audit · ${d.label}</p>`;
+  html+=`</body></html>`;
+
+  const btn=document.getElementById('copy-docs-btn');
+  // Use ClipboardItem with text/html so Google Docs renders tables on paste
+  if(navigator.clipboard&&window.ClipboardItem){
+    const blob=new Blob([html],{type:'text/html'});
+    navigator.clipboard.write([new ClipboardItem({'text/html':blob})]).then(()=>{
+      btn.textContent='✅ Copied — paste into Docs!';
+      setTimeout(()=>{btn.textContent='📄 Copy for Google Docs';},3000);
+    }).catch(()=>_fallbackDocsCopy(html,btn));
+  } else {
+    _fallbackDocsCopy(html,btn);
+  }
+}
+function _fallbackDocsCopy(html,btn){
+  // Fallback: render into a hidden div, select it, execCommand copy
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;left:-9999px;top:0;';
+  div.innerHTML=html;
+  document.body.appendChild(div);
+  const sel=window.getSelection();sel.removeAllRanges();
+  const range=document.createRange();range.selectNodeContents(div);
+  sel.addRange(range);
+  document.execCommand('copy');
+  sel.removeAllRanges();
+  document.body.removeChild(div);
+  btn.textContent='✅ Copied — paste into Docs!';
+  setTimeout(()=>{btn.textContent='📄 Copy for Google Docs';},3000);
 }
 
 function _dimBreakdown(rows,dimKey,totalSpend){
