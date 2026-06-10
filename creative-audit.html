@@ -277,6 +277,7 @@ table.trends tr:hover td{background:var(--paper2);}
     </div>
     <button class="btn btn-ghost" onclick="refreshSheet()">↻ Refresh Sheet</button>
     <button class="btn btn-ghost" onclick="document.getElementById('perf-input').click()">⬆ Upload CSV</button>
+    <button class="btn btn-ghost" onclick="openPasteModal('monthly')">📋 Paste Data</button>
     <input type="file" id="perf-input" accept=".csv,.tsv,.txt" style="display:none">
   </div>
 </div>
@@ -312,7 +313,8 @@ table.trends tr:hover td{background:var(--paper2);}
     <div class="step-title">Performance Data</div>
     <div class="step-body">Upload your daily-update CSV — columns: <code>Ads, Spends, NCs, CAC, AOV, ROAS, CTR, Hook Rate, ATC %, Purchase %, Prepaid %</code>. All averages are spend-weighted.</div>
     <div style="display:flex;gap:7px;flex-wrap:wrap;">
-      <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="document.getElementById('perf-input').click()">⬆ Upload Performance CSV</button>
+      <button class="btn btn-primary" style="font-size:12px;padding:7px 14px;" onclick="document.getElementById('perf-input').click()">⬆ Upload CSV</button>
+      <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openPasteModal('monthly')">📋 Paste Data</button>
     </div>
     <div class="step-done" id="step2-done"></div>
   </div>
@@ -413,6 +415,7 @@ table.trends tr:hover td{background:var(--paper2);}
       <label>Period</label>
       <input type="text" id="daily-period-label" placeholder="e.g. Apr 5, 2026  or  Apr 1–3, 2026"/>
       <button class="btn btn-primary" onclick="document.getElementById('daily-input').click()">⬆ Upload CSV</button>
+      <button class="btn btn-ghost" onclick="openPasteModal('daily')">📋 Paste Data</button>
       <input type="file" id="daily-input" accept=".csv,.tsv,.txt" style="display:none">
     </div>
   </div>
@@ -434,6 +437,19 @@ table.trends tr:hover td{background:var(--paper2);}
 </div>
 
 </div><!-- /.wrap -->
+
+<!-- Paste Modal -->
+<div class="overlay" id="paste-overlay" onclick="if(event.target===this)closePasteModal()">
+  <div class="modal" style="max-width:620px;">
+    <h2>Paste Performance Data</h2>
+    <p>Copy your data from Google Sheets or Excel and paste below. Accepts tab-separated (TSV) or comma-separated (CSV) formats.</p>
+    <textarea id="paste-area" placeholder="Paste your data here (Cmd+V)…" style="width:100%;height:220px;margin:4px 0 16px;padding:12px;font-size:12px;font-family:var(--mono,monospace);border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);resize:vertical;box-sizing:border-box;"></textarea>
+    <div class="modal-btns">
+      <button class="btn" onclick="closePasteModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitPaste()">Parse & Continue →</button>
+    </div>
+  </div>
+</div>
 
 <!-- Mapper Modal -->
 <div class="overlay" id="mapper-overlay">
@@ -1330,6 +1346,47 @@ function markStep2Done(total,matched,parsed){document.getElementById('step2-card
 ['f-source_funnel','f-int_inf','f-ad_type','f-language','f-narrative','f-ad_format','f-funnel_type','f-search'].forEach(id=>{const e=document.getElementById(id);if(e){e.addEventListener('input',()=>renderDrill());e.addEventListener('change',()=>renderDrill());}});
 document.querySelectorAll('#ads th').forEach(th=>{th.onclick=()=>{const k=th.dataset.k;if(!k)return;if(sortKey===k)sortDir=-sortDir;else{sortKey=k;sortDir=(k==='spend'||k==='ncs'||k==='roas')?-1:1;}renderDrill();};});
 document.getElementById('tier-hit').addEventListener('change',()=>{if(currentRows.length)renderAll();});
+
+// ═══════════════════════════════════════════════
+// PASTE MODAL
+// ═══════════════════════════════════════════════
+let _pasteTarget='monthly';
+function openPasteModal(target){
+  _pasteTarget=target||'monthly';
+  document.getElementById('paste-area').value='';
+  document.getElementById('paste-overlay').style.display='flex';
+  setTimeout(()=>document.getElementById('paste-area').focus(),80);
+}
+function closePasteModal(){
+  document.getElementById('paste-overlay').style.display='none';
+}
+function submitPaste(){
+  const raw=document.getElementById('paste-area').value.trim();
+  if(!raw){alert('Nothing pasted yet — paste your data first.');return;}
+  // Auto-detect delimiter: if any tab found, use TSV; else CSV
+  const delim=raw.includes('\t')?'\t':',';
+  // Normalise to CSV-like and reuse parseCsv
+  let text=raw;
+  if(delim==='\t'){
+    // Convert TSV to CSV — wrap fields that contain commas in quotes
+    text=raw.split('\n').map(line=>line.split('\t').map(cell=>{
+      const c=cell.trim();
+      return c.includes(',')||c.includes('"')?'"'+c.replace(/"/g,'""')+'"':c;
+    }).join(',')).join('\n');
+  }
+  const parsed=parseCsv(text);
+  if(parsed.length<2){alert('Could not parse the pasted data. Make sure you copied including the header row.');return;}
+  pendingPerfHeaders=parsed[0];
+  pendingPerfRows=parsed.slice(1);
+  pendingMapperTarget=_pasteTarget;
+  closePasteModal();
+  const det=null;
+  if(_pasteTarget==='daily'){
+    const labelEl=document.getElementById('daily-period-label');
+    if(labelEl&&!labelEl.value){labelEl.value='';}
+  }
+  showMapper(pendingPerfHeaders,autoDetectPerf(pendingPerfHeaders),det);
+}
 
 // ═══════════════════════════════════════════════
 // INIT
