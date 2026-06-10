@@ -1395,7 +1395,7 @@ const SHEET_ID = 'YOUR_SHEET_ID_HERE';
 
 function doPost(e) {
   try {
-    const payload = JSON.parse(e.postData.contents);
+    const payload = JSON.parse(e.parameter.data);
     const ss = SpreadsheetApp.openById(SHEET_ID);
     appendDailyLog(ss, payload);
     appendAdRows(ss, payload);
@@ -1516,9 +1516,11 @@ async function saveToSheet(){
     }))
   };
   try{
-    // Apps Script Web Apps don't send CORS headers, so we use no-cors.
-    // The POST still executes on the server; we just can't read the response.
-    await fetch(url,{method:'POST',mode:'no-cors',body:JSON.stringify(payload)});
+    // Use URLSearchParams (application/x-www-form-urlencoded) — a "simple" CORS
+    // request type that requires no preflight and works with Apps Script no-cors.
+    const form=new URLSearchParams();
+    form.append('data',JSON.stringify(payload));
+    await fetch(url,{method:'POST',mode:'no-cors',body:form});
     btn.textContent='✅ Saved!';
     setTimeout(()=>{btn.textContent='☁ Save to Sheet';btn.disabled=false;},2500);
   }catch(err){
