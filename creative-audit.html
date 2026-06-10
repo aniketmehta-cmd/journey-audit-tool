@@ -920,9 +920,22 @@ function getFuzzyIdx(productId){
 // Invalidate fuzzy index when catalogue updates
 function invalidateFuzzyIdx(){Object.keys(_fuzzyIdx).forEach(k=>delete _fuzzyIdx[k]);}
 
+function _getNumIdx(productId){
+  if(!_fuzzyIdx[productId+'_num']){
+    const cat=catalogue[productId]||{};
+    const idx=new Map();
+    for(const[,v]of Object.entries(cat)){
+      const m=v.ad_name.match(/(\d{3,})/g);
+      if(m)for(const n of m){if(!idx.has(n))idx.set(n,v);}
+    }
+    _fuzzyIdx[productId+'_num']=idx;
+  }
+  return _fuzzyIdx[productId+'_num'];
+}
 function buildRows(productId){
   const cat=catalogue[productId]||{};
   const fuzzy=getFuzzyIdx(productId);
+  const numIdx=_getNumIdx(productId);
   const rows=[];
   for(const[month,perfRows]of Object.entries(perfData[productId]||{})){
     for(const p of perfRows){
@@ -931,6 +944,8 @@ function buildRows(productId){
       let tagSrc=tag?'cat':null;
       // Fuzzy fallback: strip trailing ID + format, try again
       if(!tag){const bk=normNBase(p.adName);tag=fuzzy.get(bk);if(tag)tagSrc='fuzzy';}
+      // Number-based fallback: find catalogue entry sharing the same numeric ID
+      if(!tag){const nm=p.adName.match(/(\d{4,})/);if(nm){tag=numIdx.get(nm[1]);if(tag)tagSrc='numidx';}}
       if(!tag){tag=parseTagsFromName(p.adName);tagSrc='parse';}
       const ii=tag.int_inf||'Unknown',at=tag.ad_type||'Unknown';
       rows.push({name:p.adName,month,spend:p.spend||0,ncs:p.ncs,cac:p.cac,aov:p.aov,roas:p.roas,prepaid:p.prepaid,ctr:p.ctr,cpc:p.cpc,hook_rate:p.hook_rate,atc_pct:p.atc_pct,purchase_pct:p.purchase_pct,int_inf:ii,ad_type:at,language:tag.language||'Unknown',person:tag.person||'Unknown',narrative:normalizeNarrative(tag.narrative)||'Unknown',ad_format:tag.ad_format||'Unknown',source_funnel:deriveSource(ii,at),funnel_type:parseFunnelFromName(p.adName),link45:tag.link45||null,link916:tag.link916||null,_tagSrc:tagSrc});
@@ -1692,14 +1707,16 @@ function buildDocsHtml(productId){
       h+=`<tr style="${bg}">`+r.slice(0,8).map((v,ci)=>`<td style="${ci?TDR:TD}">${v||'—'}</td>`).join('')+`</tr>`;
     });
     if(actual){
-      const v=actual.filter(Boolean);
-      h+=`<tr style="background:#e6f4ea;font-weight:bold;"><td style="${TD}" colspan="2">Actual</td>`;
-      h+=`<td style="${TDR}">${v[2]||'—'}</td><td style="${TDR}">${v[4]||'—'}</td><td style="${TDR}">${v[6]||'—'}</td><td colspan="3"></td></tr>`;
+      h+=`<tr style="background:#e6f4ea;font-weight:bold;">`;
+      h+=`<td style="${TD}">Actual (${actual[1]||''})</td><td style="${TD}">${actual[2]||'M1+M2+M3'}: ${actual[3]||'—'}</td>`;
+      h+=`<td style="${TDR}">${actual[5]||'—'}</td><td style="${TD}">${actual[4]||'M0 Diff'}</td>`;
+      h+=`<td style="${TDR}">${actual[7]||'—'}</td><td style="${TD}">${actual[6]||'M1 to M6'}</td><td colspan="2"></td></tr>`;
     }
     if(extra){
-      const v=extra.filter(Boolean);
-      h+=`<tr style="background:#fffde7;font-weight:bold;"><td style="${TD}" colspan="2">Extrapolated</td>`;
-      h+=`<td style="${TDR}">${v[2]||'—'}</td><td style="${TDR}">${v[4]||'—'}</td><td style="${TDR}">${v[6]||'—'}</td><td colspan="3"></td></tr>`;
+      h+=`<tr style="background:#fffde7;font-weight:bold;">`;
+      h+=`<td style="${TD}">Extrap. (${extra[1]||''})</td><td style="${TD}">${extra[2]||'M1+M2+M3'}: ${extra[3]||'—'}</td>`;
+      h+=`<td style="${TDR}">${extra[5]||'—'}</td><td style="${TD}">${extra[4]||'Delta'}</td>`;
+      h+=`<td style="${TDR}">${extra[7]||'—'}</td><td style="${TD}">${extra[6]||'M1 to M6'}</td><td colspan="2"></td></tr>`;
     }
     h+=`</tbody></table>`;
   }
@@ -1903,13 +1920,12 @@ function fmtRetention(productId){
     out+='  '+(r[0]||'').padEnd(10)+r.slice(1,8).map(v=>(v||'').padStart(9)).join('')+'\n';
   });
   if(actual){
-    const vals=actual.filter(Boolean);
+    // actual = [label, month, metric1_label, metric1_val, metric2_label, metric2_val, metric3_label, metric3_val]
     out+='  '+'─'.repeat(82)+'\n';
-    out+=`  Actual         M1+M2+M3: ${vals[2]||'—'}   M0 Diff: ${vals[4]||'—'}   M1 to M6: ${vals[6]||'—'}\n`;
+    out+=`  Actual (${actual[1]||''}):   ${actual[2]||'M1+M2+M3'}: ${actual[3]||'—'}   ${actual[4]||'M0 Diff'}: ${actual[5]||'—'}   ${actual[6]||'M1 to M6'}: ${actual[7]||'—'}\n`;
   }
   if(extra){
-    const vals=extra.filter(Boolean);
-    out+=`  Extrapolated   M1+M2+M3: ${vals[2]||'—'}   Delta: ${vals[4]||'—'}       M1 to M6: ${vals[6]||'—'}\n`;
+    out+=`  Extrap. (${extra[1]||''}):   ${extra[2]||'M1+M2+M3'}: ${extra[3]||'—'}   ${extra[4]||'Delta'}: ${extra[5]||'—'}   ${extra[6]||'M1 to M6'}: ${extra[7]||'—'}\n`;
   }
   return out;
 }
@@ -1927,15 +1943,22 @@ function extractAdNum(name){
 // GMAIL SEND
 // ═══════════════════════════════════════════════
 function sendViaGmail(){
-  // Gmail 400 = body too long in URL. Fix: copy rich HTML to clipboard, open compose with subject only.
   const d=dailyData[activeProduct];if(!d)return;
   const p=PRODUCTS.find(x=>x.id===activeProduct);
   const btn=document.getElementById('gmail-btn');
   const subject=encodeURIComponent(`${p.label} · Creative Update · ${d.label}`);
-  _copyRichHtmlToClipboard(buildDocsHtml()).then(()=>{
-    window.open(`https://mail.google.com/mail/?view=cm&su=${subject}`,'_blank');
-    btn.textContent='✅ Gmail opened — Cmd+V to paste!';
-    setTimeout(()=>{btn.textContent='✉ Send via Gmail';},4000);
+  const html=buildDocsHtml();
+  // Copy first (while this tab has focus), then open Gmail
+  _copyRichHtmlToClipboard(html).then(()=>{
+    btn.textContent='📋 Copied! Opening Gmail…';
+    setTimeout(()=>{
+      window.open(`https://mail.google.com/mail/?view=cm&su=${subject}`,'_blank');
+      btn.textContent='✅ Paste into Gmail body (Cmd+V)';
+      setTimeout(()=>{btn.textContent='✉ Send via Gmail';},5000);
+    },300);
+  }).catch(()=>{
+    btn.textContent='⚠ Copy failed — try again';
+    setTimeout(()=>{btn.textContent='✉ Send via Gmail';},3000);
   });
 }
 function sendCombinedViaGmail(){
