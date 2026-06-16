@@ -322,6 +322,17 @@ table.trends tr:hover td{background:var(--paper2);}
 </div>
 </div><!-- /padding -->
 
+<!-- Loaded months manager -->
+<div id="loaded-months-panel" style="display:none;padding:0 28px 20px;">
+  <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">📁 Loaded Months</div>
+      <button onclick="clearAllPerf()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--red-soft);background:var(--red-bg);color:var(--red);cursor:pointer;font-family:var(--sans);">🗑 Clear All</button>
+    </div>
+    <div id="loaded-months-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+  </div>
+</div>
+
 <div id="analytics" style="display:none;">
 
   <!-- Hero: summary + funnel always visible -->
@@ -900,6 +911,7 @@ function applyPerf(){
   const matched=rows.filter(r=>catalogue[activeProduct][normN(r.adName)]).length;
   markStep2Done(rows.length,matched,rows.length-matched);
   setStatus('ok',`<strong>Performance data loaded</strong> · ${rows.length} ads for ${month} · ${matched} matched to catalogue`);
+  renderLoadedMonths();
   refreshAnalytics();
 }
 
@@ -1462,6 +1474,33 @@ function switchMainTab(name,btn){
   if(cb)cb.style.display=name==='daily'?'block':'none';
   if(name==='daily'&&!contextData.lastFetched)fetchContextData();
 }
+function renderLoadedMonths(){
+  const months=Object.keys(perfData[activeProduct]||{}).sort();
+  const panel=document.getElementById('loaded-months-panel');
+  const list=document.getElementById('loaded-months-list');
+  if(!months.length){panel.style.display='none';return;}
+  panel.style.display='block';
+  list.innerHTML=months.map(m=>`
+    <div style="display:flex;align-items:center;gap:6px;background:var(--blue-bg);border:1px solid var(--blue-soft);border-radius:8px;padding:5px 10px;">
+      <span style="font-size:12px;font-weight:600;color:var(--blue);">${m}</span>
+      <span style="font-size:11px;color:var(--ink2);">${(perfData[activeProduct][m]||[]).length} ads</span>
+      <button onclick="deleteMonth('${m}')" title="Delete this month" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px;padding:0 2px;line-height:1;">×</button>
+    </div>`).join('');
+}
+function deleteMonth(month){
+  if(!confirm(`Delete data for "${month}"?`))return;
+  delete perfData[activeProduct][month];
+  try{localStorage.setItem('mm_perf',JSON.stringify(perfData));}catch(_){}
+  renderLoadedMonths();
+  refreshAnalytics();
+}
+function clearAllPerf(){
+  if(!confirm('Clear ALL loaded months for this product?'))return;
+  perfData[activeProduct]={};
+  try{localStorage.setItem('mm_perf',JSON.stringify(perfData));}catch(_){}
+  renderLoadedMonths();
+  refreshAnalytics();
+}
 function switchProduct(id){
   activeProduct=id;
   document.querySelectorAll('.ptab').forEach(b=>{const p=PRODUCTS.find(x=>x.id===b.dataset.id);b.className='ptab '+p.cls+(b.dataset.id===id?' active':'');});
@@ -1471,6 +1510,7 @@ function switchProduct(id){
   document.getElementById('step1-done').textContent=hasCat?catSize+' creatives indexed':'';
   document.getElementById('step2-card').className='step-card'+(hasCat?' active-step':'')+(hasPerfMonths?' done':'');
   document.getElementById('step2-done').textContent=hasPerfMonths?Object.values(perfData[id]).flat().length+' ads · '+Object.keys(perfData[id]).length+' month(s) loaded':'';
+  renderLoadedMonths();
   refreshAnalytics();
 }
 
