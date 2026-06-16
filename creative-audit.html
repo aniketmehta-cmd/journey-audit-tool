@@ -327,7 +327,7 @@ table.trends tr:hover td{background:var(--paper2);}
   <div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);">📁 Loaded Months</div>
-      <button onclick="clearAllPerf()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--red-soft);background:var(--red-bg);color:var(--red);cursor:pointer;font-family:var(--sans);">🗑 Clear All</button>
+      <button id="clear-all-btn" onclick="clearAllPerf()" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--red-soft);background:var(--red-bg);color:var(--red);cursor:pointer;font-family:var(--sans);">🗑 Clear All</button>
     </div>
     <div id="loaded-months-list" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
   </div>
@@ -1481,25 +1481,44 @@ function renderLoadedMonths(){
   if(!months.length){panel.style.display='none';return;}
   panel.style.display='block';
   list.innerHTML=months.map(m=>`
-    <div style="display:flex;align-items:center;gap:6px;background:var(--blue-bg);border:1px solid var(--blue-soft);border-radius:8px;padding:5px 10px;">
+    <div id="mchip-${CSS.escape(m)}" style="display:flex;align-items:center;gap:6px;background:var(--blue-bg);border:1px solid var(--blue-soft);border-radius:8px;padding:5px 10px;">
       <span style="font-size:12px;font-weight:600;color:var(--blue);">${m}</span>
       <span style="font-size:11px;color:var(--ink2);">${(perfData[activeProduct][m]||[]).length} ads</span>
-      <button onclick="deleteMonth('${m}')" title="Delete this month" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:13px;padding:0 2px;line-height:1;">×</button>
+      <button onclick="confirmDeleteMonth(this,'${m}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;font-weight:700;padding:0 2px;line-height:1;">×</button>
     </div>`).join('');
 }
+function confirmDeleteMonth(btn,month){
+  // Inline confirm — change chip to red "confirm" state
+  const chip=btn.parentElement;
+  chip.style.background='var(--red-bg)';chip.style.borderColor='var(--red-soft)';
+  btn.style.display='none';
+  const yes=document.createElement('button');
+  yes.textContent='Delete';yes.style.cssText='background:var(--red);color:#fff;border:none;border-radius:5px;padding:2px 8px;font-size:11px;cursor:pointer;font-family:var(--sans);';
+  yes.onclick=()=>deleteMonth(month);
+  const no=document.createElement('button');
+  no.textContent='Cancel';no.style.cssText='background:none;border:none;font-size:11px;cursor:pointer;color:var(--ink2);font-family:var(--sans);';
+  no.onclick=()=>renderLoadedMonths();
+  chip.appendChild(yes);chip.appendChild(no);
+}
 function deleteMonth(month){
-  if(!confirm(`Delete data for "${month}"?`))return;
   delete perfData[activeProduct][month];
   try{localStorage.setItem('mm_perf',JSON.stringify(perfData));}catch(_){}
   renderLoadedMonths();
   refreshAnalytics();
 }
 function clearAllPerf(){
-  if(!confirm('Clear ALL loaded months for this product?'))return;
-  perfData[activeProduct]={};
-  try{localStorage.setItem('mm_perf',JSON.stringify(perfData));}catch(_){}
-  renderLoadedMonths();
-  refreshAnalytics();
+  const btn=document.getElementById('clear-all-btn');
+  if(btn.dataset.confirm==='1'){
+    perfData[activeProduct]={};
+    try{localStorage.setItem('mm_perf',JSON.stringify(perfData));}catch(_){}
+    renderLoadedMonths();
+    refreshAnalytics();
+  } else {
+    btn.dataset.confirm='1';
+    btn.textContent='⚠ Confirm Clear All';
+    btn.style.background='var(--red)';btn.style.color='#fff';btn.style.borderColor='var(--red)';
+    setTimeout(()=>{if(btn){btn.dataset.confirm='';btn.textContent='🗑 Clear All';btn.style.background='var(--red-bg)';btn.style.color='var(--red)';btn.style.borderColor='var(--red-soft)';}},3000);
+  }
 }
 function switchProduct(id){
   activeProduct=id;
