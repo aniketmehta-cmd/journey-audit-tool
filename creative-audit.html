@@ -2309,7 +2309,24 @@ function renderPlanning(){
   const formatRanked=rankDim('ad_format');
   const langRanked=rankDim('language');
   const narrativeRanked=rankDim('narrative');
-  const personRanked=rankDim('person').filter(r=>r.key!=='Internal');
+
+  // Person ranking — also track best ad link per person
+  function rankPerson(){
+    const map=new Map();
+    for(const r of allRows){
+      const k=r.person||'Unknown';
+      if(!k||k==='Unknown'||k==='-'||k==='Internal'||k==='None')continue;
+      if(!map.has(k))map.set(k,{key:k,spend:0,ncs:0,_wR:0,_bestRoas:-1,link45:null,link916:null});
+      const v=map.get(k);v.spend+=(r.spend||0);
+      if(r.ncs>0)v.ncs+=r.ncs;
+      if(r.roas!=null)v._wR+=(r.spend||0)*r.roas;
+      if((r.roas||0)>v._bestRoas&&(r.link45||r.link916)){v._bestRoas=r.roas||0;v.link45=r.link45||null;v.link916=r.link916||null;}
+    }
+    return[...map.values()].filter(v=>v.spend>500)
+      .map(v=>({...v,roas:v.spend>0?v._wR/v.spend:null,cac:v.ncs>0?v.spend/v.ncs:null}))
+      .sort((a,b)=>(b.roas||0)-(a.roas||0));
+  }
+  const personRanked=rankPerson();
 
   const CARD=`background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;`;
 
@@ -2341,16 +2358,50 @@ function renderPlanning(){
   });
   html+=`</div>`;
 
-  // 2×2 grid of tables
-  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">`;
+  // 2×2 grid of tables — align-items:start removes blank whitespace
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;align-items:start;">`;
   html+=miniTable('pt-creator',creatorRanked,'🎬 Creator Type',false);
   html+=miniTable('pt-format',formatRanked,'🎥 Ad Format',false);
   html+=miniTable('pt-language',langRanked,'🌐 Language',false);
   html+=miniTable('pt-narrative',narrativeRanked,'💬 Narrative',false);
   html+=`</div>`;
-  // Person table full-width
+  // Person table full-width with ad links
   if(personRanked.length){
-    html+=miniTable('pt-person',personRanked,'👤 Influencer / Creator Performance',true);
+    const TH2=`padding:4px 7px;font-size:9px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;`;
+    const TD2=`padding:3px 7px;font-size:11px;border-bottom:1px solid var(--line-soft);`;
+    const TDR2=TD2+'text-align:right;font-family:var(--mono);';
+    let ph=`<div style="background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;">`;
+    ph+=`<div style="padding:10px 12px 8px;font-size:12px;font-weight:700;color:var(--ink);border-bottom:1px solid var(--line);">👤 Influencer / Creator Performance</div>`;
+    ph+=`<div style="overflow-x:auto;"><table id="pt-person" style="width:100%;border-collapse:collapse;"><thead><tr>`;
+    ph+=`<th data-col="key" data-label="Name" style="${TH2}" onclick="_planSortTable('pt-person','key')">Name ↓</th>`;
+    ph+=`<th data-col="spend" data-label="Spend" style="${TH2}" onclick="_planSortTable('pt-person','spend')">Spend</th>`;
+    ph+=`<th data-col="ncs" data-label="NCs" style="${TH2}" onclick="_planSortTable('pt-person','ncs')">NCs</th>`;
+    ph+=`<th data-col="roas" data-label="ROAS" style="${TH2}" onclick="_planSortTable('pt-person','roas')">ROAS ↓</th>`;
+    ph+=`<th data-col="cac" data-label="CAC" style="${TH2}" onclick="_planSortTable('pt-person','cac')">CAC</th>`;
+    ph+=`<th style="${TH2}cursor:default;">Top Ad</th>`;
+    ph+=`<th style="${TH2}cursor:default;">Instagram</th>`;
+    ph+=`</tr></thead><tbody>`;
+    personRanked.forEach(r=>{
+      const same=r.link45&&r.link916&&r.link45===r.link916;
+      let adLink='<span style="color:var(--ink2);font-size:10px;">—</span>';
+      if(r.link45||r.link916){
+        if(same)adLink=`<a href="${esc(r.link45)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;">▶ Watch</a>`;
+        else{adLink='';if(r.link916)adLink+=`<a href="${esc(r.link916)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;margin-right:3px;">9:16</a>`;if(r.link45)adLink+=`<a href="${esc(r.link45)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;">4:5</a>`;}
+      }
+      const igUrl=personInsta[r.key.toLowerCase()];
+      const igLink=igUrl?`<a href="${esc(igUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8;text-decoration:none;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Profile</a>`:'<span style="color:var(--ink2);font-size:10px;">—</span>';
+      ph+=`<tr class="prow" data-key="${esc(r.key)}" data-spend="${r.spend}" data-ncs="${r.ncs||0}" data-roas="${r.roas||0}" data-cac="${r.cac||0}">`;
+      ph+=`<td style="${TD2}font-weight:500;">${esc(r.key)}</td>`;
+      ph+=`<td style="${TDR2}">${fmtS(r.spend)}</td>`;
+      ph+=`<td style="${TDR2}">${r.ncs||'—'}</td>`;
+      ph+=`<td style="${TDR2}">${fmtR(r.roas)}</td>`;
+      ph+=`<td style="${TDR2}">${fmtC(r.cac)}</td>`;
+      ph+=`<td style="${TD2}">${adLink}</td>`;
+      ph+=`<td style="${TD2}">${igLink}</td>`;
+      ph+=`</tr>`;
+    });
+    ph+=`</tbody></table></div></div>`;
+    html+=ph;
   }
   html+=`</div>`;
 
@@ -2363,13 +2414,15 @@ function copyPlanningDocs(){
   const p=PRODUCTS.find(x=>x.id===activeProduct);
   const totalSpend=allRows.reduce((a,r)=>a+(r.spend||0),0);
   const totalNCs=allRows.reduce((a,r)=>a+(r.ncs||0),0);
-  const months=Object.keys(perfData[activeProduct]||{});
+  const portfolioRoas=wAvg(allRows,'roas','spend');
+  const portfolioCAC=totalCAC(allRows);
+  const months=Object.keys(perfData[activeProduct]||{}).sort();
 
   function rankDim(dim){
     const map=new Map();
     for(const r of allRows){
       const k=r[dim]||'Unknown';
-      if(k==='Unknown'||k==='-'||k==='None'||!k)continue;
+      if(!k||k==='Unknown'||k==='-'||k==='None')continue;
       if(!map.has(k))map.set(k,{key:k,spend:0,ncs:0,_wR:0});
       const v=map.get(k);v.spend+=(r.spend||0);
       if(r.ncs>0)v.ncs+=r.ncs;
@@ -2379,28 +2432,105 @@ function copyPlanningDocs(){
       .map(v=>({...v,roas:v.spend>0?v._wR/v.spend:null,cac:v.ncs>0?v.spend/v.ncs:null}))
       .sort((a,b)=>(b.roas||0)-(a.roas||0));
   }
+  function rankPersonDocs(){
+    const map=new Map();
+    for(const r of allRows){
+      const k=r.person||'Unknown';
+      if(!k||k==='Unknown'||k==='-'||k==='Internal'||k==='None')continue;
+      if(!map.has(k))map.set(k,{key:k,spend:0,ncs:0,_wR:0,_bestRoas:-1,link45:null,link916:null});
+      const v=map.get(k);v.spend+=(r.spend||0);
+      if(r.ncs>0)v.ncs+=r.ncs;
+      if(r.roas!=null)v._wR+=(r.spend||0)*r.roas;
+      if((r.roas||0)>v._bestRoas&&(r.link45||r.link916)){v._bestRoas=r.roas||0;v.link45=r.link45||null;v.link916=r.link916||null;}
+    }
+    return[...map.values()].filter(v=>v.spend>500)
+      .map(v=>({...v,roas:v.spend>0?v._wR/v.spend:null,cac:v.ncs>0?v.spend/v.ncs:null}))
+      .sort((a,b)=>(b.roas||0)-(a.roas||0));
+  }
 
-  const TH=`padding:8px 12px;background:#1e293b;color:#fff;font-size:12px;font-weight:600;text-align:left;`;
-  const THR=TH+'text-align:right;';
-  const TD=`padding:7px 12px;font-size:12px;border-bottom:1px solid #e2e8f0;`;
-  const TDR=TD+'text-align:right;font-family:monospace;';
+  // Styles
+  const S={
+    page:`font-family:Arial,sans-serif;max-width:780px;margin:0 auto;color:#0f172a;`,
+    header:`background:#0f172a;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:20px;`,
+    h1:`margin:0 0 4px;font-size:20px;font-weight:700;`,
+    meta:`margin:0;font-size:12px;color:#94a3b8;`,
+    kpiRow:`display:flex;gap:12px;margin-bottom:20px;`,
+    kpi:`flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;text-align:center;`,
+    kpiL:`font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;margin-bottom:4px;`,
+    kpiV:`font-size:22px;font-weight:700;font-family:monospace;color:#0f172a;`,
+    grid2:`display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;`,
+    card:`background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;`,
+    cardH:`padding:8px 12px;background:#f1f5f9;font-size:12px;font-weight:700;color:#0f172a;border-bottom:1px solid #e2e8f0;`,
+    TH:`padding:6px 10px;background:#1e293b;color:#fff;font-size:11px;font-weight:600;text-align:left;white-space:nowrap;`,
+    THR:`padding:6px 10px;background:#1e293b;color:#fff;font-size:11px;font-weight:600;text-align:right;white-space:nowrap;`,
+    TD:`padding:5px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;color:#0f172a;`,
+    TDR:`padding:5px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;text-align:right;font-family:monospace;color:#0f172a;`,
+    TDalt:`padding:5px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;color:#0f172a;background:#f8fafc;`,
+    TDRalt:`padding:5px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;text-align:right;font-family:monospace;color:#0f172a;background:#f8fafc;`,
+  };
 
-  function dimHtml(rows,title){
+  function tbl2(rows,s){
     if(!rows.length)return'';
-    let h=`<h3 style="font-size:14px;font-weight:700;margin:20px 0 8px;">${title}</h3>`;
-    h+=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">`;
-    h+=`<tr><th style="${TH}">Name</th><th style="${THR}">Spend</th><th style="${THR}">NCs</th><th style="${THR}">ROAS</th><th style="${THR}">CAC</th></tr>`;
-    rows.forEach(r=>{h+=`<tr><td style="${TD}">${r.key}</td><td style="${TDR}">${fmtS(r.spend)}</td><td style="${TDR}">${r.ncs||'—'}</td><td style="${TDR}">${fmtR(r.roas)}</td><td style="${TDR}">${fmtC(r.cac)}</td></tr>`;});
+    let h=`<table style="width:100%;border-collapse:collapse;">`;
+    h+=`<tr><th style="${s.TH}">Name</th><th style="${s.THR}">Spend</th><th style="${s.THR}">NCs</th><th style="${s.THR}">ROAS</th><th style="${s.THR}">CAC</th></tr>`;
+    rows.forEach((r,i)=>{const td=i%2?s.TDalt:s.TD;const tdr=i%2?s.TDRalt:s.TDR;h+=`<tr><td style="${td}">${r.key}</td><td style="${tdr}">${fmtS(r.spend)}</td><td style="${tdr}">${r.ncs||'—'}</td><td style="${tdr}">${fmtR(r.roas)}</td><td style="${tdr}">${fmtC(r.cac)}</td></tr>`;});
     h+=`</table>`;return h;
   }
 
-  let html=`<div style="font-family:Arial,sans-serif;max-width:900px;">`;
-  html+=`<h2 style="font-size:18px;font-weight:700;margin-bottom:4px;">${p.label} — Creative Planning</h2>`;
-  html+=`<p style="font-size:12px;color:#64748b;">${months.length} month(s) · ${allRows.length} ads · ${fmtS(totalSpend)} · ${totalNCs} NCs</p>`;
-  html+=dimHtml(rankDim('int_inf'),'🎬 Creator Type');
-  html+=dimHtml(rankDim('ad_format'),'🎥 Ad Format');
-  html+=dimHtml(rankDim('language'),'🌐 Language');
-  html+=dimHtml(rankDim('narrative'),'💬 Narrative');
+  function card2(title,rows,s){
+    if(!rows.length)return'';
+    return`<div style="${s.card}"><div style="${s.cardH}">${title}</div>${tbl2(rows,s)}</div>`;
+  }
+
+  const creatorR=rankDim('int_inf');
+  const formatR=rankDim('ad_format');
+  const langR=rankDim('language');
+  const narrativeR=rankDim('narrative');
+  const personR=rankPersonDocs();
+
+  let html=`<div style="${S.page}">`;
+
+  // Header
+  html+=`<div style="${S.header}">
+    <h1 style="${S.h1}">${p.label} — Creative Performance Planning</h1>
+    <p style="${S.meta}">${months.join(', ')} &nbsp;·&nbsp; ${allRows.length} ads analysed &nbsp;·&nbsp; ${fmtS(totalSpend)} total spend &nbsp;·&nbsp; ${totalNCs} NCs</p>
+  </div>`;
+
+  // KPI strip
+  html+=`<div style="${S.kpiRow}">
+    <div style="${S.kpi}"><div style="${S.kpiL}">Portfolio ROAS</div><div style="${S.kpiV}">${fmtR(portfolioRoas)}</div></div>
+    <div style="${S.kpi}"><div style="${S.kpiL}">Portfolio CAC</div><div style="${S.kpiV}">${fmtC(portfolioCAC)}</div></div>
+    <div style="${S.kpi}"><div style="${S.kpiL}">Total Spend</div><div style="${S.kpiV}">${fmtS(totalSpend)}</div></div>
+    <div style="${S.kpi}"><div style="${S.kpiL}">Total NCs</div><div style="${S.kpiV}">${totalNCs}</div></div>
+    <div style="${S.kpi}"><div style="${S.kpiL}">Months</div><div style="${S.kpiV}">${months.length}</div></div>
+  </div>`;
+
+  // Page 1 — 2-col grid: Creator+Format | Language+Narrative
+  html+=`<div style="${S.grid2}">`;
+  html+=card2('🎬 Creator Type',creatorR,S);
+  html+=card2('🎥 Ad Format',formatR,S);
+  html+=card2('🌐 Language',langR,S);
+  html+=card2('💬 Narrative',narrativeR,S);
+  html+=`</div>`;
+
+  // Page 2 — Influencer table
+  if(personR.length){
+    html+=`<div style="${S.card}margin-bottom:16px;">`;
+    html+=`<div style="${S.cardH}">👤 Influencer / Creator Performance</div>`;
+    html+=`<table style="width:100%;border-collapse:collapse;">`;
+    html+=`<tr><th style="${S.TH}">Creator</th><th style="${S.THR}">Spend</th><th style="${S.THR}">NCs</th><th style="${S.THR}">ROAS</th><th style="${S.THR}">CAC</th><th style="${S.TH}">Top Ad</th><th style="${S.TH}">Instagram</th></tr>`;
+    personR.forEach((r,i)=>{
+      const td=i%2?S.TDalt:S.TD;const tdr=i%2?S.TDRalt:S.TDR;
+      const same=r.link45&&r.link916&&r.link45===r.link916;
+      let adCell='—';
+      if(r.link45||r.link916){if(same)adCell=`<a href="${r.link45}" style="color:#2563eb;">▶ Watch</a>`;else{adCell='';if(r.link916)adCell+=`<a href="${r.link916}" style="color:#2563eb;">9:16</a>`;if(r.link45)adCell+=(adCell?' · ':'')+`<a href="${r.link45}" style="color:#2563eb;">4:5</a>`;}}
+      const igUrl=personInsta[r.key.toLowerCase()];
+      const igCell=igUrl?`<a href="${igUrl}" style="color:#db2777;">Instagram</a>`:'—';
+      html+=`<tr><td style="${td}font-weight:600;">${r.key}</td><td style="${tdr}">${fmtS(r.spend)}</td><td style="${tdr}">${r.ncs||'—'}</td><td style="${tdr}">${fmtR(r.roas)}</td><td style="${tdr}">${fmtC(r.cac)}</td><td style="${td}">${adCell}</td><td style="${td}">${igCell}</td></tr>`;
+    });
+    html+=`</table></div>`;
+  }
+
   html+=`</div>`;
 
   const btn=document.querySelector('#planning-content button');
