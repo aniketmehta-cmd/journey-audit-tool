@@ -2273,8 +2273,8 @@ function renderPlanning(){
 
   function miniTable(id,rows,title,withInsta){
     if(!rows.length)return'';
-    const TH=`padding:5px 8px;font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;`;
-    const TD=`padding:5px 8px;font-size:12px;border-bottom:1px solid var(--line-soft);`;
+    const TH=`padding:4px 7px;font-size:9px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;`;
+    const TD=`padding:3px 7px;font-size:11px;border-bottom:1px solid var(--line-soft);`;
     const TDR=TD+'text-align:right;font-family:var(--mono);';
     let h=`<div style="background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;">`;
     h+=`<div style="padding:10px 12px 8px;font-size:12px;font-weight:700;color:var(--ink);border-bottom:1px solid var(--line);">${title}</div>`;
@@ -2285,7 +2285,6 @@ function renderPlanning(){
     h+=`<th data-col="ncs" data-label="NCs" style="${TH}" onclick="_planSortTable('${id}','ncs')">NCs</th>`;
     h+=`<th data-col="roas" data-label="ROAS" style="${TH}" onclick="_planSortTable('${id}','roas')">ROAS ↓</th>`;
     h+=`<th data-col="cac" data-label="CAC" style="${TH}" onclick="_planSortTable('${id}','cac')">CAC</th>`;
-    h+=`<th style="${TH}cursor:default;">Signal</th>`;
     h+=`</tr></thead><tbody>`;
     rows.forEach(r=>{
       const nameHtml=withInsta?personInstaHtml(r.key):esc(r.key);
@@ -2295,7 +2294,6 @@ function renderPlanning(){
       h+=`<td style="${TDR}">${r.ncs||'—'}</td>`;
       h+=`<td style="${TDR}">${fmtR(r.roas)}</td>`;
       h+=`<td style="${TDR}">${fmtC(r.cac)}</td>`;
-      h+=`<td style="${TD}">${badge(r.roas)}</td>`;
       h+=`</tr>`;
     });
     h+=`</tbody></table></div></div>`;
