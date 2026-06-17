@@ -2271,7 +2271,7 @@ function renderPlanning(){
     return'<span style="color:#991b1b;">✗ Weak</span>';
   }
 
-  function miniTable(id,rows,title){
+  function miniTable(id,rows,title,withInsta){
     if(!rows.length)return'';
     const TH=`padding:5px 8px;font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;`;
     const TD=`padding:5px 8px;font-size:12px;border-bottom:1px solid var(--line-soft);`;
@@ -2288,8 +2288,9 @@ function renderPlanning(){
     h+=`<th style="${TH}cursor:default;">Signal</th>`;
     h+=`</tr></thead><tbody>`;
     rows.forEach(r=>{
+      const nameHtml=withInsta?personInstaHtml(r.key):esc(r.key);
       h+=`<tr class="prow" data-key="${esc(r.key)}" data-spend="${r.spend}" data-ncs="${r.ncs||0}" data-roas="${r.roas||0}" data-cac="${r.cac||0}">`;
-      h+=`<td style="${TD}font-weight:500;">${esc(r.key)}</td>`;
+      h+=`<td style="${TD}font-weight:500;">${nameHtml}</td>`;
       h+=`<td style="${TDR}">${fmtS(r.spend)}</td>`;
       h+=`<td style="${TDR}">${r.ncs||'—'}</td>`;
       h+=`<td style="${TDR}">${fmtR(r.roas)}</td>`;
@@ -2310,6 +2311,7 @@ function renderPlanning(){
   const formatRanked=rankDim('ad_format');
   const langRanked=rankDim('language');
   const narrativeRanked=rankDim('narrative');
+  const personRanked=rankDim('person').filter(r=>r.key!=='Internal');
 
   const CARD=`background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;`;
 
@@ -2342,12 +2344,17 @@ function renderPlanning(){
   html+=`</div>`;
 
   // 2×2 grid of tables
-  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">`;
-  html+=miniTable('pt-creator',creatorRanked,'🎬 Creator Type');
-  html+=miniTable('pt-format',formatRanked,'🎥 Ad Format');
-  html+=miniTable('pt-language',langRanked,'🌐 Language');
-  html+=miniTable('pt-narrative',narrativeRanked,'💬 Narrative');
-  html+=`</div></div>`;
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">`;
+  html+=miniTable('pt-creator',creatorRanked,'🎬 Creator Type',false);
+  html+=miniTable('pt-format',formatRanked,'🎥 Ad Format',false);
+  html+=miniTable('pt-language',langRanked,'🌐 Language',false);
+  html+=miniTable('pt-narrative',narrativeRanked,'💬 Narrative',false);
+  html+=`</div>`;
+  // Person table full-width
+  if(personRanked.length){
+    html+=miniTable('pt-person',personRanked,'👤 Influencer / Creator Performance',true);
+  }
+  html+=`</div>`;
 
   content.innerHTML=html;
 }
