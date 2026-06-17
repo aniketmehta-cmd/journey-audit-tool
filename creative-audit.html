@@ -2426,7 +2426,8 @@ function renderPlanning(){
     ph+=`<th data-col="roas" style="${TH2}" onclick="_planSortTable('pt-person','roas')">ROAS</th>`;
     ph+=`<th data-col="cac" style="${TH2}" onclick="_planSortTable('pt-person','cac')">CAC</th>`;
     ph+=`<th style="${TH2L}">Top Ad</th>`;
-    ph+=`<th style="${TH2L}border-right:none;">Links</th>`;
+    ph+=`<th style="${TH2L}">Links</th>`;
+    ph+=`<th style="${TH2L}border-right:none;">Bio</th>`;
     ph+=`</tr></thead><tbody>`;
     personRanked.forEach((r,i)=>{
       const igUrl=personInsta[r.key.toLowerCase()];
@@ -2437,9 +2438,9 @@ function renderPlanning(){
       let adLink='<span style="color:var(--ink2);">—</span>';
       if(r.link45||r.link916){if(same)adLink=`<a href="${esc(r.link45)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;">▶ Watch</a>`;else{adLink='';if(r.link916)adLink+=`<a href="${esc(r.link916)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;margin-right:2px;">9:16</a>`;if(r.link45)adLink+=`<a href="${esc(r.link45)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;">4:5</a>`;}}
       const igPill=igUrl?`<a href="${esc(igUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8;text-decoration:none;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>IG</a>`:'';
-      const bio=igProf&&igProf.bio?`<div style="font-size:9px;color:var(--ink2);margin-top:2px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(igProf.bio)}">${esc(igProf.bio.slice(0,60))}${igProf.bio.length>60?'…':''}</div>`:'';
+      const bioText=igProf&&igProf.bio?igProf.bio:'';
       ph+=`<tr class="prow" style="${rowBg}" data-key="${esc(r.key)}" data-spend="${r.spend}" data-ncs="${r.ncs||0}" data-roas="${r.roas||0}" data-cac="${r.cac||0}">`;
-      ph+=`<td style="${TD2}font-weight:600;min-width:120px;">${esc(r.key)}${bio}</td>`;
+      ph+=`<td style="${TD2}font-weight:600;min-width:120px;">${esc(r.key)}</td>`;
       ph+=`<td style="${TD2}text-align:center;">${igProf?igTierBadge(igProf.tier):'<span style="color:var(--ink2);">—</span>'}</td>`;
       ph+=`<td style="${TDR2}">${igProf?fmtFollowers(igProf.followers):'—'}</td>`;
       ph+=`<td style="${TDR2}">${fmtS(r.spend)}</td>`;
@@ -2447,7 +2448,8 @@ function renderPlanning(){
       ph+=`<td style="${TDR2}">${fmtR(r.roas)}</td>`;
       ph+=`<td style="${TDR2}">${fmtC(r.cac)}</td>`;
       ph+=`<td style="${TD2}">${adLink}</td>`;
-      ph+=`<td style="${TD2}border-right:none;white-space:nowrap;">${igPill}</td>`;
+      ph+=`<td style="${TD2}white-space:nowrap;">${igPill}</td>`;
+      ph+=`<td style="${TD2}border-right:none;max-width:200px;font-size:10px;color:var(--ink2);" title="${esc(bioText)}">${bioText?esc(bioText.slice(0,80))+(bioText.length>80?'…':''):'—'}</td>`;
       ph+=`</tr>`;
     });
     ph+=`</tbody></table></div></div>`;
