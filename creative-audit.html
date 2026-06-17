@@ -954,7 +954,7 @@ async function enrichInfluencers(){
       else if(followers>=100000)tier='macro (100K–1M)';
       else if(followers>=10000)tier='mid (10K–100K)';
       else if(followers>=1000)tier='micro (1K–10K)';
-      igProfiles[username]={followers,tier,account_type:raw.isCreatorAccount?'creator':raw.isBusinessAccount?'brand':'personal',is_verified:raw.verified||raw.isVerified||false,category:raw.businessCategoryName||''};
+      igProfiles[username]={followers,tier,account_type:raw.isCreatorAccount?'creator':raw.isBusinessAccount?'brand':'personal',is_verified:raw.verified||raw.isVerified||false,category:raw.businessCategoryName||'',bio:raw.biography||raw.bio||''};
     });
     try{localStorage.setItem('mm_ig_profiles',JSON.stringify(igProfiles));}catch(_){}
     if(btn){btn.textContent='✅ Done!';btn.disabled=false;setTimeout(()=>{btn.textContent='🔍 Enrich IG';},2000);}
@@ -2408,44 +2408,46 @@ function renderPlanning(){
   html+=miniTable('pt-narrative',narrativeRanked,'💬 Narrative',false);
   html+=`</div>`;
   html+=`</div>`;
-  // Person table full-width with ad links
+  // Person table full-width — bordered, compact, bio under name
   if(personRanked.length){
-    const TH2=`padding:4px 7px;font-size:9px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;`;
-    const TD2=`padding:3px 7px;font-size:11px;border-bottom:1px solid var(--line-soft);`;
+    const BDR='1px solid var(--line-soft)';
+    const TH2=`padding:5px 8px;font-size:9px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;background:var(--paper3);border-bottom:2px solid var(--line);border-right:${BDR};cursor:pointer;white-space:nowrap;`;
+    const TH2L=TH2+'cursor:default;';
+    const TD2=`padding:5px 8px;font-size:11px;border-bottom:${BDR};border-right:${BDR};vertical-align:middle;`;
     const TDR2=TD2+'text-align:right;font-family:var(--mono);';
     let ph=`<div style="background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;">`;
-    ph+=`<div style="padding:10px 12px 8px;font-size:12px;font-weight:700;color:var(--ink);border-bottom:1px solid var(--line);">👤 Influencer / Creator Performance</div>`;
-    ph+=`<div style="overflow-x:auto;"><table id="pt-person" style="width:100%;border-collapse:collapse;"><thead><tr>`;
-    ph+=`<th data-col="key" data-label="Name" style="${TH2}" onclick="_planSortTable('pt-person','key')">Name ↓</th>`;
-    ph+=`<th style="${TH2}cursor:default;">Tier</th>`;
-    ph+=`<th style="${TH2}cursor:default;">Followers</th>`;
-    ph+=`<th data-col="spend" data-label="Spend" style="${TH2}" onclick="_planSortTable('pt-person','spend')">Spend</th>`;
-    ph+=`<th data-col="ncs" data-label="NCs" style="${TH2}" onclick="_planSortTable('pt-person','ncs')">NCs</th>`;
-    ph+=`<th data-col="roas" data-label="ROAS" style="${TH2}" onclick="_planSortTable('pt-person','roas')">ROAS ↓</th>`;
-    ph+=`<th data-col="cac" data-label="CAC" style="${TH2}" onclick="_planSortTable('pt-person','cac')">CAC</th>`;
-    ph+=`<th style="${TH2}cursor:default;">Top Ad</th>`;
-    ph+=`<th style="${TH2}cursor:default;">Instagram</th>`;
+    ph+=`<div style="padding:9px 12px;font-size:12px;font-weight:700;color:var(--ink);border-bottom:2px solid var(--line);">👤 Influencer / Creator Performance</div>`;
+    ph+=`<div style="overflow-x:auto;"><table id="pt-person" style="width:100%;border-collapse:collapse;border:1px solid var(--line);"><thead><tr>`;
+    ph+=`<th data-col="key" style="${TH2}" onclick="_planSortTable('pt-person','key')">Creator</th>`;
+    ph+=`<th style="${TH2L}">Tier</th>`;
+    ph+=`<th style="${TH2L}">Followers</th>`;
+    ph+=`<th data-col="spend" style="${TH2}" onclick="_planSortTable('pt-person','spend')">Spend ↓</th>`;
+    ph+=`<th data-col="ncs" style="${TH2}" onclick="_planSortTable('pt-person','ncs')">NCs</th>`;
+    ph+=`<th data-col="roas" style="${TH2}" onclick="_planSortTable('pt-person','roas')">ROAS</th>`;
+    ph+=`<th data-col="cac" style="${TH2}" onclick="_planSortTable('pt-person','cac')">CAC</th>`;
+    ph+=`<th style="${TH2L}">Top Ad</th>`;
+    ph+=`<th style="${TH2L}border-right:none;">Links</th>`;
     ph+=`</tr></thead><tbody>`;
-    personRanked.forEach(r=>{
-      const same=r.link45&&r.link916&&r.link45===r.link916;
-      let adLink='<span style="color:var(--ink2);font-size:10px;">—</span>';
-      if(r.link45||r.link916){
-        if(same)adLink=`<a href="${esc(r.link45)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;">▶ Watch</a>`;
-        else{adLink='';if(r.link916)adLink+=`<a href="${esc(r.link916)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;margin-right:3px;">9:16</a>`;if(r.link45)adLink+=`<a href="${esc(r.link45)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:4px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;">4:5</a>`;}
-      }
+    personRanked.forEach((r,i)=>{
       const igUrl=personInsta[r.key.toLowerCase()];
-      const igLink=igUrl?`<a href="${esc(igUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8;text-decoration:none;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Profile</a>`:'<span style="color:var(--ink2);font-size:10px;">—</span>';
-      ph+=`<tr class="prow" data-key="${esc(r.key)}" data-spend="${r.spend}" data-ncs="${r.ncs||0}" data-roas="${r.roas||0}" data-cac="${r.cac||0}">`;
-      const igHandle=igHandleFromUrl(personInsta[r.key.toLowerCase()]);
+      const igHandle=igHandleFromUrl(igUrl);
       const igProf=igHandle?igProfiles[igHandle]:null;
-      ph+=`<td style="${TD2}font-weight:500;">${esc(r.key)}</td>`;
-      ph+=`<td style="${TD2}">${igProf?igTierBadge(igProf.tier):'<span style="color:var(--ink2);font-size:10px;">—</span>'}</td>`;
+      const rowBg=i%2?'background:var(--paper2);':'';
+      const same=r.link45&&r.link916&&r.link45===r.link916;
+      let adLink='<span style="color:var(--ink2);">—</span>';
+      if(r.link45||r.link916){if(same)adLink=`<a href="${esc(r.link45)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;">▶ Watch</a>`;else{adLink='';if(r.link916)adLink+=`<a href="${esc(r.link916)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;margin-right:2px;">9:16</a>`;if(r.link45)adLink+=`<a href="${esc(r.link45)}" target="_blank" rel="noopener" style="font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-soft);text-decoration:none;">4:5</a>`;}}
+      const igPill=igUrl?`<a href="${esc(igUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 5px;border-radius:3px;background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8;text-decoration:none;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>IG</a>`:'';
+      const bio=igProf&&igProf.bio?`<div style="font-size:9px;color:var(--ink2);margin-top:2px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(igProf.bio)}">${esc(igProf.bio.slice(0,60))}${igProf.bio.length>60?'…':''}</div>`:'';
+      ph+=`<tr class="prow" style="${rowBg}" data-key="${esc(r.key)}" data-spend="${r.spend}" data-ncs="${r.ncs||0}" data-roas="${r.roas||0}" data-cac="${r.cac||0}">`;
+      ph+=`<td style="${TD2}font-weight:600;min-width:120px;">${esc(r.key)}${bio}</td>`;
+      ph+=`<td style="${TD2}text-align:center;">${igProf?igTierBadge(igProf.tier):'<span style="color:var(--ink2);">—</span>'}</td>`;
       ph+=`<td style="${TDR2}">${igProf?fmtFollowers(igProf.followers):'—'}</td>`;
+      ph+=`<td style="${TDR2}">${fmtS(r.spend)}</td>`;
       ph+=`<td style="${TDR2}">${r.ncs||'—'}</td>`;
       ph+=`<td style="${TDR2}">${fmtR(r.roas)}</td>`;
       ph+=`<td style="${TDR2}">${fmtC(r.cac)}</td>`;
       ph+=`<td style="${TD2}">${adLink}</td>`;
-      ph+=`<td style="${TD2}">${igLink}</td>`;
+      ph+=`<td style="${TD2}border-right:none;white-space:nowrap;">${igPill}</td>`;
       ph+=`</tr>`;
     });
     ph+=`</tbody></table></div></div>`;
