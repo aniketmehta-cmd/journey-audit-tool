@@ -2502,119 +2502,98 @@ function copyPlanningDocs(){
       .sort((a,b)=>(b.roas||0)-(a.roas||0));
   }
 
-  // Styles
-  const S={
-    page:`font-family:Arial,sans-serif;max-width:780px;margin:0 auto;color:#0f172a;`,
-    header:`background:#0f172a;color:#fff;padding:20px 24px;border-radius:8px;margin-bottom:20px;`,
-    h1:`margin:0 0 4px;font-size:20px;font-weight:700;`,
-    meta:`margin:0;font-size:12px;color:#94a3b8;`,
-    kpiRow:`display:flex;gap:12px;margin-bottom:20px;`,
-    kpi:`flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;text-align:center;`,
-    kpiL:`font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#64748b;margin-bottom:4px;`,
-    kpiV:`font-size:22px;font-weight:700;font-family:monospace;color:#0f172a;`,
-    grid2:`display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;`,
-    card:`background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;`,
-    cardH:`padding:8px 12px;background:#f1f5f9;font-size:12px;font-weight:700;color:#0f172a;border-bottom:1px solid #e2e8f0;`,
-    TH:`padding:6px 10px;background:#1e293b;color:#fff;font-size:11px;font-weight:600;text-align:left;white-space:nowrap;`,
-    THR:`padding:6px 10px;background:#1e293b;color:#fff;font-size:11px;font-weight:600;text-align:right;white-space:nowrap;`,
-    TD:`padding:5px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;color:#0f172a;`,
-    TDR:`padding:5px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;text-align:right;font-family:monospace;color:#0f172a;`,
-    TDalt:`padding:5px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;color:#0f172a;background:#f8fafc;`,
-    TDRalt:`padding:5px 10px;font-size:11px;border-bottom:1px solid #f1f5f9;text-align:right;font-family:monospace;color:#0f172a;background:#f8fafc;`,
-  };
+  // ── Sort everything by spend descending ──
+  const bySpend=(a,b)=>b.spend-a.spend;
+  const creatorR=rankDim('int_inf').sort(bySpend);
+  const formatR=rankDim('ad_format').sort(bySpend);
+  const langR=rankDim('language').sort(bySpend);
+  const narrativeR=rankDim('narrative').sort(bySpend);
+  const personR=rankPersonDocs().sort(bySpend);
 
-  function tbl2(rows,s){
+  // ── Doc styles — Times New Roman 12pt, full gridlines ──
+  const F=`font-family:'Times New Roman',Times,serif;font-size:12pt;`;
+  const BD='border:1px solid #333;';
+  const TH=`${F}${BD}padding:4pt 7pt;background:#1e293b;color:#fff;font-weight:bold;text-align:left;`;
+  const THR=TH+'text-align:right;';
+  const TD=`${F}${BD}padding:3pt 7pt;`;
+  const TDR=TD+'text-align:right;';
+  const TDsh=TD+'background:#f5f5f5;';
+  const TDRsh=TDR+'background:#f5f5f5;';
+
+  function dimTbl(title,rows){
     if(!rows.length)return'';
-    let h=`<table style="width:100%;border-collapse:collapse;">`;
-    h+=`<tr><th style="${s.TH}">Name</th><th style="${s.THR}">Spend</th><th style="${s.THR}">NCs</th><th style="${s.THR}">ROAS</th><th style="${s.THR}">CAC</th></tr>`;
-    rows.forEach((r,i)=>{const td=i%2?s.TDalt:s.TD;const tdr=i%2?s.TDRalt:s.TDR;h+=`<tr><td style="${td}">${r.key}</td><td style="${tdr}">${fmtS(r.spend)}</td><td style="${tdr}">${r.ncs||'—'}</td><td style="${tdr}">${fmtR(r.roas)}</td><td style="${tdr}">${fmtC(r.cac)}</td></tr>`;});
+    let h=`<p style="${F}font-weight:bold;font-size:13pt;margin:14pt 0 2pt;border-bottom:2pt solid #000;padding-bottom:2pt;">${title}</p>`;
+    h+=`<table style="width:100%;border-collapse:collapse;margin-bottom:10pt;">`;
+    h+=`<tr><th style="${TH}">Name</th><th style="${THR}">Spend ↓</th><th style="${THR}">NCs</th><th style="${THR}">ROAS</th><th style="${THR}">CAC</th></tr>`;
+    rows.forEach((r,i)=>{const td=i%2?TDsh:TD;const tdr=i%2?TDRsh:TDR;h+=`<tr><td style="${td}">${r.key}</td><td style="${tdr}">${fmtS(r.spend)}</td><td style="${tdr}">${r.ncs||'—'}</td><td style="${tdr}">${fmtR(r.roas)}</td><td style="${tdr}">${fmtC(r.cac)}</td></tr>`;});
     h+=`</table>`;return h;
   }
 
-  function card2(title,rows,s){
-    if(!rows.length)return'';
-    return`<div style="${s.card}"><div style="${s.cardH}">${title}</div>${tbl2(rows,s)}</div>`;
-  }
-
-  const creatorR=rankDim('int_inf');
-  const formatR=rankDim('ad_format');
-  const langR=rankDim('language');
-  const narrativeR=rankDim('narrative');
-  const personR=rankPersonDocs();
-
-  // Helper: top-N insight text for a dimension
+  // Helper: insight sentences
   function topLine(rows,label){
     if(!rows.length)return'';
-    const top=rows[0];
+    const top=rows.slice().sort((a,b)=>b.roas-a.roas)[0];
     const weak=rows.filter(r=>(r.roas||0)<portfolioRoas*0.85);
     let s=`<b>${top.key}</b> leads ${label} with ${fmtR(top.roas)} ROAS and ${fmtC(top.cac)} CAC (${fmtS(top.spend)} spent, ${top.ncs} NCs).`;
     if(weak.length)s+=` Consider scaling back: ${weak.slice(0,3).map(r=>r.key).join(', ')}.`;
     return s;
   }
 
-  let html=`<div style="${S.page}">`;
+  let html=`<div style="${F}max-width:760pt;margin:0 auto;color:#000;">`;
 
-  // ── HEADER ──
-  html+=`<div style="background:#0f172a;color:#fff;padding:22px 28px;border-radius:10px;margin-bottom:18px;">
-    <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Creative Performance Report</div>
-    <div style="font-size:22px;font-weight:800;margin-bottom:6px;">${p.label}</div>
-    <div style="font-size:12px;color:#cbd5e1;">Period: <b>${months.join(', ')}</b> &nbsp;·&nbsp; ${allRows.length} creatives analysed &nbsp;·&nbsp; ${fmtS(totalSpend)} total spend</div>
+  // ── TITLE BLOCK ──
+  html+=`<div style="border:2pt solid #000;padding:10pt 14pt;margin-bottom:10pt;">
+    <div style="${F}font-size:10pt;text-transform:uppercase;letter-spacing:0.06em;color:#555;margin-bottom:3pt;">Creative Performance Report</div>
+    <div style="${F}font-size:18pt;font-weight:bold;margin-bottom:3pt;">${p.label}</div>
+    <div style="${F}font-size:11pt;color:#333;">Period: ${months.join(', ')} &nbsp;|&nbsp; ${allRows.length} creatives &nbsp;|&nbsp; ${fmtS(totalSpend)} total spend</div>
   </div>`;
 
-  // ── KPI STRIP ──
-  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+  // ── KPI ROW ──
+  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:10pt;">
     <tr>
-      <td style="padding:14px 18px;text-align:center;border-right:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">ROAS</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${fmtR(portfolioRoas)}</div></td>
-      <td style="padding:14px 18px;text-align:center;border-right:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">CAC</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${fmtC(portfolioCAC)}</div></td>
-      <td style="padding:14px 18px;text-align:center;border-right:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">Total Spend</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${fmtS(totalSpend)}</div></td>
-      <td style="padding:14px 18px;text-align:center;border-right:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">New Customers</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${totalNCs}</div></td>
-      <td style="padding:14px 18px;text-align:center;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">Period</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${months.length}M</div></td>
+      <td style="${TD}text-align:center;"><div style="${F}font-size:9pt;font-weight:bold;text-transform:uppercase;color:#555;">ROAS</div><div style="${F}font-size:18pt;font-weight:bold;">${fmtR(portfolioRoas)}</div></td>
+      <td style="${TD}text-align:center;"><div style="${F}font-size:9pt;font-weight:bold;text-transform:uppercase;color:#555;">CAC</div><div style="${F}font-size:18pt;font-weight:bold;">${fmtC(portfolioCAC)}</div></td>
+      <td style="${TD}text-align:center;"><div style="${F}font-size:9pt;font-weight:bold;text-transform:uppercase;color:#555;">Total Spend</div><div style="${F}font-size:18pt;font-weight:bold;">${fmtS(totalSpend)}</div></td>
+      <td style="${TD}text-align:center;"><div style="${F}font-size:9pt;font-weight:bold;text-transform:uppercase;color:#555;">New Customers</div><div style="${F}font-size:18pt;font-weight:bold;">${totalNCs}</div></td>
+      <td style="${TD}text-align:center;"><div style="${F}font-size:9pt;font-weight:bold;text-transform:uppercase;color:#555;">Months</div><div style="${F}font-size:18pt;font-weight:bold;">${months.length}</div></td>
     </tr>
   </table>`;
 
   // ── KEY TAKEAWAYS ──
   const takeaways=[
-    creatorR.length?`<b>Creator:</b> ${topLine(creatorR,'creator types')}` : null,
-    formatR.length?`<b>Format:</b> ${topLine(formatR,'ad formats')}` : null,
-    langR.length?`<b>Language:</b> ${topLine(langR,'languages')}` : null,
-    narrativeR.length?`<b>Narrative:</b> ${topLine(narrativeR,'narratives')}` : null,
+    creatorR.length?`<b>Creator:</b> ${topLine(creatorR,'creator types')}`:null,
+    formatR.length?`<b>Format:</b> ${topLine(formatR,'ad formats')}`:null,
+    langR.length?`<b>Language:</b> ${topLine(langR,'languages')}`:null,
+    narrativeR.length?`<b>Narrative:</b> ${topLine(narrativeR,'narratives')}`:null,
   ].filter(Boolean);
   if(takeaways.length){
-    html+=`<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;margin-bottom:18px;">
-      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#1e40af;margin-bottom:10px;">Key Takeaways</div>
-      ${takeaways.map(t=>`<div style="font-size:12px;color:#1e293b;line-height:1.7;margin-bottom:4px;">• ${t}</div>`).join('')}
+    html+=`<div style="${BD}padding:7pt 10pt;margin-bottom:10pt;background:#f0f4ff;">
+      <div style="${F}font-weight:bold;font-size:10pt;text-transform:uppercase;margin-bottom:5pt;">Key Takeaways</div>
+      ${takeaways.map(t=>`<div style="${F}line-height:1.6;margin-bottom:3pt;">• ${t}</div>`).join('')}
     </div>`;
   }
 
-  // ── PAGE 1: 2-COL DIMENSION TABLES ──
-  function dimCard(title,rows){
-    if(!rows.length)return'<div></div>';
-    let h=`<div style="break-inside:avoid;">`;
-    h+=`<div style="font-size:13px;font-weight:700;color:#0f172a;border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:0;">${title}</div>`;
-    h+=`<table style="width:100%;border-collapse:collapse;">`;
-    h+=`<tr style="background:#1e293b;"><th style="${S.TH}">Name</th><th style="${S.THR}">Spend</th><th style="${S.THR}">NCs</th><th style="${S.THR}">ROAS</th><th style="${S.THR}">CAC</th></tr>`;
-    rows.forEach((r,i)=>{const bg=i%2?'#f8fafc':'#fff';h+=`<tr style="background:${bg};"><td style="${S.TD}">${r.key}</td><td style="${S.TDR}">${fmtS(r.spend)}</td><td style="${S.TDR}">${r.ncs||'—'}</td><td style="${S.TDR}">${fmtR(r.roas)}</td><td style="${S.TDR}">${fmtC(r.cac)}</td></tr>`;});
-    h+=`</table></div>`;return h;
-  }
-
-  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:20px;"><tr>
-    <td style="width:50%;padding-right:10px;vertical-align:top;">${dimCard('🎬 Creator Type',creatorR)}${dimCard('🌐 Language',langR)}</td>
-    <td style="width:50%;padding-left:10px;vertical-align:top;">${dimCard('🎥 Ad Format',formatR)}${dimCard('💬 Narrative',narrativeR)}</td>
+  // ── DIMENSION TABLES (2-col layout) ──
+  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:12pt;"><tr>
+    <td style="width:50%;padding-right:8pt;vertical-align:top;">${dimTbl('Creator Type',creatorR)}${dimTbl('Language',langR)}</td>
+    <td style="width:50%;padding-left:8pt;vertical-align:top;">${dimTbl('Ad Format',formatR)}${dimTbl('Narrative',narrativeR)}</td>
   </tr></table>`;
 
-  // ── PAGE 2: INFLUENCER TABLE ──
+  // ── INFLUENCER TABLE ──
   if(personR.length){
-    html+=`<div style="font-size:13px;font-weight:700;color:#0f172a;border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:0;">👤 Influencer / Creator Performance</div>`;
-    html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">`;
-    html+=`<tr style="background:#1e293b;"><th style="${S.TH}">Creator</th><th style="${S.THR}">Spend</th><th style="${S.THR}">NCs</th><th style="${S.THR}">ROAS</th><th style="${S.THR}">CAC</th><th style="${S.TH}">Top Ad</th><th style="${S.TH}">Instagram</th></tr>`;
+    html+=`<p style="${F}font-weight:bold;font-size:13pt;margin:14pt 0 2pt;border-bottom:2pt solid #000;padding-bottom:2pt;">Influencer / Creator Performance (by Spend)</p>`;
+    html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:12pt;">`;
+    html+=`<tr><th style="${TH}">Creator</th><th style="${THR}">Spend ↓</th><th style="${THR}">NCs</th><th style="${THR}">ROAS</th><th style="${THR}">CAC</th><th style="${TH}">Tier</th><th style="${TH}">Followers</th><th style="${TH}">Top Ad</th><th style="${TH}">Instagram</th></tr>`;
     personR.forEach((r,i)=>{
-      const bg=i%2?'#f8fafc':'#fff';
+      const td=i%2?TDsh:TD;const tdr=i%2?TDRsh:TDR;
+      const igHandle=igHandleFromUrl(personInsta[r.key.toLowerCase()]);
+      const igProf=igHandle?igProfiles[igHandle]:null;
       const same=r.link45&&r.link916&&r.link45===r.link916;
       let adCell='—';
-      if(r.link45||r.link916){if(same)adCell=`<a href="${r.link45}" style="color:#2563eb;font-weight:600;">▶ Watch</a>`;else{adCell='';if(r.link916)adCell+=`<a href="${r.link916}" style="color:#2563eb;font-weight:600;">9:16</a>`;if(r.link45)adCell+=(adCell?' · ':'')+`<a href="${r.link45}" style="color:#2563eb;font-weight:600;">4:5</a>`;}}
+      if(r.link45||r.link916){if(same)adCell=`<a href="${r.link45}" style="color:#1a56db;">Watch</a>`;else{if(r.link916)adCell=`<a href="${r.link916}" style="color:#1a56db;">9:16</a>`;if(r.link45)adCell+=(adCell&&adCell!=='—'?' / ':'')+`<a href="${r.link45}" style="color:#1a56db;">4:5</a>`;}}
       const igUrl=personInsta[r.key.toLowerCase()];
-      const igCell=igUrl?`<a href="${igUrl}" style="color:#db2777;font-weight:600;">↗ Profile</a>`:'—';
-      html+=`<tr style="background:${bg};"><td style="${S.TD}font-weight:600;">${r.key}</td><td style="${S.TDR}">${fmtS(r.spend)}</td><td style="${S.TDR}">${r.ncs||'—'}</td><td style="${S.TDR}">${fmtR(r.roas)}</td><td style="${S.TDR}">${fmtC(r.cac)}</td><td style="${S.TD}">${adCell}</td><td style="${S.TD}">${igCell}</td></tr>`;
+      const igCell=igUrl?`<a href="${igUrl}" style="color:#be185d;">Profile</a>`:'—';
+      html+=`<tr><td style="${td}font-weight:bold;">${r.key}</td><td style="${tdr}">${fmtS(r.spend)}</td><td style="${tdr}">${r.ncs||'—'}</td><td style="${tdr}">${fmtR(r.roas)}</td><td style="${tdr}">${fmtC(r.cac)}</td><td style="${td}">${igProf?igProf.tier:'—'}</td><td style="${tdr}">${igProf?fmtFollowers(igProf.followers):'—'}</td><td style="${td}">${adCell}</td><td style="${td}">${igCell}</td></tr>`;
     });
     html+=`</table>`;
   }
