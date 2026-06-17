@@ -2449,7 +2449,7 @@ function renderPlanning(){
       ph+=`<td style="${TDR2}">${fmtC(r.cac)}</td>`;
       ph+=`<td style="${TD2}">${adLink}</td>`;
       ph+=`<td style="${TD2}white-space:nowrap;">${igPill}</td>`;
-      ph+=`<td style="${TD2}border-right:none;max-width:200px;font-size:10px;color:var(--ink2);" title="${esc(bioText)}">${bioText?esc(bioText.slice(0,80))+(bioText.length>80?'…':''):'—'}</td>`;
+      ph+=`<td style="${TD2}border-right:none;font-size:10px;color:var(--ink2);min-width:180px;max-width:260px;word-break:break-word;white-space:pre-wrap;">${bioText?esc(bioText):'—'}</td>`;
       ph+=`</tr>`;
     });
     ph+=`</tbody></table></div></div>`;
