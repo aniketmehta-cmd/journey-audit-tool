@@ -2573,11 +2573,11 @@ function copyPlanningDocs(){
     </div>`;
   }
 
-  // ── DIMENSION TABLES (2-col layout) ──
-  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:12pt;"><tr>
-    <td style="width:50%;padding-right:8pt;vertical-align:top;">${dimTbl('Creator Type',creatorR)}${dimTbl('Language',langR)}</td>
-    <td style="width:50%;padding-left:8pt;vertical-align:top;">${dimTbl('Ad Format',formatR)}${dimTbl('Narrative',narrativeR)}</td>
-  </tr></table>`;
+  // ── DIMENSION TABLES (full-width, stacked) ──
+  html+=dimTbl('Creator Type',creatorR);
+  html+=dimTbl('Ad Format',formatR);
+  html+=dimTbl('Language',langR);
+  html+=dimTbl('Narrative',narrativeR);
 
   // ── INFLUENCER TABLE ──
   if(personR.length){
