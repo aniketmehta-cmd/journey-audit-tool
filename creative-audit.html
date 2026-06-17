@@ -2332,8 +2332,8 @@ function renderPlanning(){
 
   let html=`<div style="max-width:1300px;">`;
 
-  // Top bar
-  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+  // Top bar — tight margin
+  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:10px;">
     <div>
       <div style="font-size:18px;font-weight:700;margin-bottom:2px;">${p.label} — Creative Planning</div>
       <div style="font-size:12px;color:var(--ink2);">${months.length} month(s) · ${allRows.length} ads · ${fmtS(totalSpend)} · ${totalNCs} NCs</div>
@@ -2351,20 +2351,25 @@ function renderPlanning(){
     </div>
   </div>`;
 
-  // Insights strip
-  html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">`;
-  [{dim:'int_inf',icon:'🎬',label:'Best Creator'},{dim:'ad_format',icon:'🎥',label:'Best Format'},{dim:'language',icon:'🌐',label:'Best Language'},{dim:'narrative',icon:'💬',label:'Best Narrative'}].forEach(({dim,icon,label})=>{
-    html+=`<div style="${CARD}"><div style="font-size:10px;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">${icon} ${label}</div><div style="font-size:12px;">${topInsight(dim)}</div></div>`;
-  });
-  html+=`</div>`;
+  // Insight cards as compact chips (single line each, no extra height)
+  const insightChips=[
+    {dim:'int_inf',icon:'🎬',label:'Best Creator'},
+    {dim:'ad_format',icon:'🎥',label:'Best Format'},
+    {dim:'language',icon:'🌐',label:'Best Language'},
+    {dim:'narrative',icon:'💬',label:'Best Narrative'}
+  ].map(({dim,icon,label})=>{
+    const r=rankDim(dim);if(!r.length)return'';
+    return`<div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 11px;display:flex;gap:6px;align-items:baseline;min-width:0;"><span style="font-size:10px;color:var(--ink2);white-space:nowrap;">${icon} ${label}:</span><span style="font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;">${r[0].key}</span><span style="font-size:11px;color:var(--ink2);white-space:nowrap;">${fmtR(r[0].roas)} · ${fmtC(r[0].cac)}</span></div>`;
+  }).join('');
 
-  // Two independent flex columns — each card only as tall as its content
-  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">`;
-  html+=`<div style="display:flex;flex-direction:column;gap:14px;">`;
+  // Two independent flex columns — insight chips sit below Language in left col
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">`;
+  html+=`<div style="display:flex;flex-direction:column;gap:12px;">`;
   html+=miniTable('pt-creator',creatorRanked,'🎬 Creator Type',false);
   html+=miniTable('pt-language',langRanked,'🌐 Language',false);
+  html+=`<div style="display:flex;flex-direction:column;gap:6px;">${insightChips}</div>`;
   html+=`</div>`;
-  html+=`<div style="display:flex;flex-direction:column;gap:14px;">`;
+  html+=`<div style="display:flex;flex-direction:column;gap:12px;">`;
   html+=miniTable('pt-format',formatRanked,'🎥 Ad Format',false);
   html+=miniTable('pt-narrative',narrativeRanked,'💬 Narrative',false);
   html+=`</div>`;
