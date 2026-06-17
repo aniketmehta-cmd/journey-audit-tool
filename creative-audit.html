@@ -2182,6 +2182,25 @@ function submitPaste(){
 // ═══════════════════════════════════════════════
 // PLANNING TAB
 // ═══════════════════════════════════════════════
+// Planning sort state
+const _planSort={};
+function _planSortTable(tableId,col){
+  const st=_planSort[tableId]||{col:'roas',dir:-1};
+  if(st.col===col)st.dir*=-1; else{st.col=col;st.dir=col==='key'?1:-1;}
+  _planSort[tableId]=st;
+  const tbl=document.getElementById(tableId);if(!tbl)return;
+  const rows=[...tbl.querySelectorAll('tr.prow')];
+  rows.sort((a,b)=>{
+    const av=a.dataset[col],bv=b.dataset[col];
+    if(col==='key')return st.dir*(av||'').localeCompare(bv||'');
+    return st.dir*((parseFloat(av)||0)-(parseFloat(bv)||0));
+  });
+  rows.forEach(r=>tbl.appendChild(r));
+  tbl.querySelectorAll('th[data-col]').forEach(th=>{
+    th.textContent=th.dataset.label+(th.dataset.col===col?(st.dir===-1?' ↓':' ↑'):'');
+  });
+}
+
 function renderPlanning(){
   const months=Object.keys(perfData[activeProduct]||{});
   const empty=document.getElementById('planning-empty');
@@ -2202,61 +2221,57 @@ function renderPlanning(){
     const map=new Map();
     for(const r of allRows){
       const k=r[dim]||'Unknown';
-      if(k==='Unknown'||k==='-'||k==='None')continue;
+      if(k==='Unknown'||k==='-'||k==='None'||!k)continue;
       if(!map.has(k))map.set(k,{key:k,spend:0,ncs:0,_wR:0});
-      const v=map.get(k);
-      v.spend+=(r.spend||0);
+      const v=map.get(k);v.spend+=(r.spend||0);
       if(r.ncs>0)v.ncs+=r.ncs;
       if(r.roas!=null)v._wR+=(r.spend||0)*r.roas;
     }
-    return[...map.values()]
-      .filter(v=>v.spend>1000)
-      .map(v=>({...v,roas:v.spend>0?v._wR/v.spend:null,cac:v.ncs>0?v.spend/v.ncs:null,spendShare:v.spend/totalSpend}))
+    return[...map.values()].filter(v=>v.spend>500)
+      .map(v=>({...v,roas:v.spend>0?v._wR/v.spend:null,cac:v.ncs>0?v.spend/v.ncs:null}))
       .sort((a,b)=>(b.roas||0)-(a.roas||0));
   }
 
-  const SECTION=`margin-bottom:32px;`;
-  const H2=`font-size:16px;font-weight:700;color:var(--ink);margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid var(--line);`;
-  const H3=`font-size:13px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px;`;
-  const CARD=`background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;`;
-
-  function perfBadge(roas){
-    if(roas==null)return'';
-    if(roas>=2)return`<span style="background:#dcfce7;color:#166534;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;">★ Top</span>`;
-    if(roas>=1)return`<span style="background:#fef9c3;color:#854d0e;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;">✓ OK</span>`;
-    return`<span style="background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;">✗ Weak</span>`;
+  function badge(roas){
+    if(roas==null)return'—';
+    if(roas>=2)return'<span style="color:#166534;font-weight:700;">★ Top</span>';
+    if(roas>=1)return'<span style="color:#854d0e;font-weight:600;">✓ Good</span>';
+    return'<span style="color:#991b1b;">✗ Weak</span>';
   }
 
-  function dimTable(rows,title,icon){
+  function miniTable(id,rows,title){
     if(!rows.length)return'';
-    const top=rows.slice(0,8);
-    const maxSpend=Math.max(...top.map(r=>r.spend));
-    let h=`<div style="${CARD}margin-bottom:16px;"><div style="${H3}">${icon} ${title}</div>`;
-    h+=`<table style="width:100%;border-collapse:collapse;font-size:13px;">`;
-    h+=`<tr style="color:var(--ink2);font-size:11px;"><td style="padding:4px 8px 8px 0;font-weight:600;">Name</td><td style="padding:4px 8px 8px;text-align:right;font-weight:600;">Spend</td><td style="padding:4px 8px 8px;text-align:right;font-weight:600;">NCs</td><td style="padding:4px 8px 8px;text-align:right;font-weight:600;">ROAS</td><td style="padding:4px 8px 8px;text-align:right;font-weight:600;">CAC</td><td style="padding:4px 8px 8px;font-weight:600;">Signal</td></tr>`;
-    top.forEach((r,i)=>{
-      const bar=`<div style="background:var(--blue);height:4px;border-radius:2px;width:${Math.round(r.spend/maxSpend*100)}%;margin-top:3px;opacity:0.4;"></div>`;
-      h+=`<tr style="${i%2?'background:#f8fafc;':''}">`;
-      h+=`<td style="padding:6px 8px 6px 0;font-weight:${i===0?'700':'500'}">${r.key}</td>`;
-      h+=`<td style="padding:6px 8px;text-align:right;font-family:var(--mono);">${fmtS(r.spend)}${bar}</td>`;
-      h+=`<td style="padding:6px 8px;text-align:right;font-family:var(--mono);">${r.ncs||'—'}</td>`;
-      h+=`<td style="padding:6px 8px;text-align:right;font-family:var(--mono);">${fmtR(r.roas)}</td>`;
-      h+=`<td style="padding:6px 8px;text-align:right;font-family:var(--mono);">${fmtC(r.cac)}</td>`;
-      h+=`<td style="padding:6px 8px;">${perfBadge(r.roas)}</td>`;
+    const TH=`padding:5px 8px;font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;`;
+    const TD=`padding:5px 8px;font-size:12px;border-bottom:1px solid var(--line-soft);`;
+    const TDR=TD+'text-align:right;font-family:var(--mono);';
+    let h=`<div style="background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;">`;
+    h+=`<div style="padding:10px 12px 8px;font-size:12px;font-weight:700;color:var(--ink);border-bottom:1px solid var(--line);">${title}</div>`;
+    h+=`<div style="overflow-x:auto;"><table id="${id}" style="width:100%;border-collapse:collapse;">`;
+    h+=`<thead><tr>`;
+    h+=`<th data-col="key" data-label="Name" style="${TH}" onclick="_planSortTable('${id}','key')">Name ↓</th>`;
+    h+=`<th data-col="spend" data-label="Spend" style="${TH}" onclick="_planSortTable('${id}','spend')">Spend</th>`;
+    h+=`<th data-col="ncs" data-label="NCs" style="${TH}" onclick="_planSortTable('${id}','ncs')">NCs</th>`;
+    h+=`<th data-col="roas" data-label="ROAS" style="${TH}" onclick="_planSortTable('${id}','roas')">ROAS ↓</th>`;
+    h+=`<th data-col="cac" data-label="CAC" style="${TH}" onclick="_planSortTable('${id}','cac')">CAC</th>`;
+    h+=`<th style="${TH}cursor:default;">Signal</th>`;
+    h+=`</tr></thead><tbody>`;
+    rows.forEach(r=>{
+      h+=`<tr class="prow" data-key="${esc(r.key)}" data-spend="${r.spend}" data-ncs="${r.ncs||0}" data-roas="${r.roas||0}" data-cac="${r.cac||0}">`;
+      h+=`<td style="${TD}font-weight:500;">${esc(r.key)}</td>`;
+      h+=`<td style="${TDR}">${fmtS(r.spend)}</td>`;
+      h+=`<td style="${TDR}">${r.ncs||'—'}</td>`;
+      h+=`<td style="${TDR}">${fmtR(r.roas)}</td>`;
+      h+=`<td style="${TDR}">${fmtC(r.cac)}</td>`;
+      h+=`<td style="${TD}">${badge(r.roas)}</td>`;
       h+=`</tr>`;
     });
-    h+=`</table></div>`;
+    h+=`</tbody></table></div></div>`;
     return h;
   }
 
-  function insight(dim,label){
-    const ranked=rankDim(dim);
-    if(!ranked.length)return'';
-    const top=ranked[0];
-    const weak=ranked.filter(r=>r.roas!=null&&r.roas<1);
-    let txt=`<b>${top.key}</b> is your best-performing ${label} (${fmtR(top.roas)} ROAS, ${fmtC(top.cac)} CAC, ${fmtS(top.spend)} spent).`;
-    if(weak.length)txt+=` Consider reducing spend on: ${weak.map(r=>r.key).join(', ')}.`;
-    return txt;
+  function topInsight(dim){
+    const r=rankDim(dim);if(!r.length)return'—';
+    return`<b>${r[0].key}</b> (${fmtR(r[0].roas)} ROAS · ${fmtC(r[0].cac)} CAC)`;
   }
 
   const creatorRanked=rankDim('int_inf');
@@ -2264,57 +2279,97 @@ function renderPlanning(){
   const langRanked=rankDim('language');
   const narrativeRanked=rankDim('narrative');
 
-  let html=`<div style="max-width:1200px;">`;
+  const CARD=`background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;`;
 
-  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+  let html=`<div style="max-width:1300px;">`;
+
+  // Top bar
+  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
     <div>
-      <h2 style="font-size:20px;font-weight:700;margin:0 0 4px;">${p.label} — Creative Planning</h2>
-      <div style="font-size:13px;color:var(--ink2);">Based on ${months.length} month(s) of data · ${allRows.length} ads · ${fmtS(totalSpend)} total spend · ${totalNCs} NCs</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:2px;">${p.label} — Creative Planning</div>
+      <div style="font-size:12px;color:var(--ink2);">${months.length} month(s) · ${allRows.length} ads · ${fmtS(totalSpend)} · ${totalNCs} NCs</div>
     </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 16px;text-align:center;">
-        <div style="font-size:11px;color:var(--ink2);margin-bottom:2px;">Portfolio ROAS</div>
-        <div style="font-size:18px;font-weight:700;font-family:var(--mono);">${fmtR(portfolioRoas)}</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div style="${CARD}text-align:center;padding:8px 14px;">
+        <div style="font-size:10px;color:var(--ink2);">ROAS</div>
+        <div style="font-size:16px;font-weight:700;font-family:var(--mono);">${fmtR(portfolioRoas)}</div>
       </div>
-      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 16px;text-align:center;">
-        <div style="font-size:11px;color:var(--ink2);margin-bottom:2px;">Portfolio CAC</div>
-        <div style="font-size:18px;font-weight:700;font-family:var(--mono);">${fmtC(portfolioCAC)}</div>
+      <div style="${CARD}text-align:center;padding:8px 14px;">
+        <div style="font-size:10px;color:var(--ink2);">CAC</div>
+        <div style="font-size:16px;font-weight:700;font-family:var(--mono);">${fmtC(portfolioCAC)}</div>
       </div>
+      <button onclick="copyPlanningDocs()" style="padding:8px 14px;border-radius:8px;border:1px solid #4285f4;background:#4285f4;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">📄 Copy for Docs</button>
     </div>
   </div>`;
 
-  html+=`<div style="${CARD}margin-bottom:24px;background:linear-gradient(135deg,#eff6ff,#f0fdf4);">
-    <div style="${H3}">💡 Key Insights</div>
-    <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.6;">`;
-  if(creatorRanked.length)html+=`<div>🎬 <b>Creator Type:</b> ${insight('int_inf','creator type')}</div>`;
-  if(formatRanked.length)html+=`<div>🎥 <b>Ad Format:</b> ${insight('ad_format','format')}</div>`;
-  if(langRanked.length)html+=`<div>🌐 <b>Language:</b> ${insight('language','language')}</div>`;
+  // Insights strip
+  html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">`;
+  [{dim:'int_inf',icon:'🎬',label:'Best Creator'},{dim:'ad_format',icon:'🎥',label:'Best Format'},{dim:'language',icon:'🌐',label:'Best Language'},{dim:'narrative',icon:'💬',label:'Best Narrative'}].forEach(({dim,icon,label})=>{
+    html+=`<div style="${CARD}"><div style="font-size:10px;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">${icon} ${label}</div><div style="font-size:12px;">${topInsight(dim)}</div></div>`;
+  });
+  html+=`</div>`;
+
+  // 2×2 grid of tables
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">`;
+  html+=miniTable('pt-creator',creatorRanked,'🎬 Creator Type');
+  html+=miniTable('pt-format',formatRanked,'🎥 Ad Format');
+  html+=miniTable('pt-language',langRanked,'🌐 Language');
+  html+=miniTable('pt-narrative',narrativeRanked,'💬 Narrative');
   html+=`</div></div>`;
 
-  html+=`<div style="${SECTION}">`;
-  html+=`<h2 style="${H2}">🎬 Creator Type Performance</h2>`;
-  html+=dimTable(creatorRanked,'Int / Inf / Affluence breakdown','');
-  html+=`</div>`;
+  content.innerHTML=html;
+}
 
-  html+=`<div style="${SECTION}">`;
-  html+=`<h2 style="${H2}">🎥 Ad Format Performance</h2>`;
-  html+=dimTable(formatRanked,'Formats ranked by ROAS','');
-  html+=`</div>`;
+function copyPlanningDocs(){
+  const allRows=buildRows(activeProduct);
+  if(!allRows.length)return;
+  const p=PRODUCTS.find(x=>x.id===activeProduct);
+  const totalSpend=allRows.reduce((a,r)=>a+(r.spend||0),0);
+  const totalNCs=allRows.reduce((a,r)=>a+(r.ncs||0),0);
+  const months=Object.keys(perfData[activeProduct]||{});
 
-  html+=`<div style="${SECTION}">`;
-  html+=`<h2 style="${H2}">🌐 Language Performance</h2>`;
-  html+=dimTable(langRanked,'Languages ranked by ROAS','');
-  html+=`</div>`;
-
-  if(narrativeRanked.length){
-    html+=`<div style="${SECTION}">`;
-    html+=`<h2 style="${H2}">💬 Narrative / Angle Performance</h2>`;
-    html+=dimTable(narrativeRanked,'Narratives ranked by ROAS','');
-    html+=`</div>`;
+  function rankDim(dim){
+    const map=new Map();
+    for(const r of allRows){
+      const k=r[dim]||'Unknown';
+      if(k==='Unknown'||k==='-'||k==='None'||!k)continue;
+      if(!map.has(k))map.set(k,{key:k,spend:0,ncs:0,_wR:0});
+      const v=map.get(k);v.spend+=(r.spend||0);
+      if(r.ncs>0)v.ncs+=r.ncs;
+      if(r.roas!=null)v._wR+=(r.spend||0)*r.roas;
+    }
+    return[...map.values()].filter(v=>v.spend>500)
+      .map(v=>({...v,roas:v.spend>0?v._wR/v.spend:null,cac:v.ncs>0?v.spend/v.ncs:null}))
+      .sort((a,b)=>(b.roas||0)-(a.roas||0));
   }
 
+  const TH=`padding:8px 12px;background:#1e293b;color:#fff;font-size:12px;font-weight:600;text-align:left;`;
+  const THR=TH+'text-align:right;';
+  const TD=`padding:7px 12px;font-size:12px;border-bottom:1px solid #e2e8f0;`;
+  const TDR=TD+'text-align:right;font-family:monospace;';
+
+  function dimHtml(rows,title){
+    if(!rows.length)return'';
+    let h=`<h3 style="font-size:14px;font-weight:700;margin:20px 0 8px;">${title}</h3>`;
+    h+=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">`;
+    h+=`<tr><th style="${TH}">Name</th><th style="${THR}">Spend</th><th style="${THR}">NCs</th><th style="${THR}">ROAS</th><th style="${THR}">CAC</th></tr>`;
+    rows.forEach(r=>{h+=`<tr><td style="${TD}">${r.key}</td><td style="${TDR}">${fmtS(r.spend)}</td><td style="${TDR}">${r.ncs||'—'}</td><td style="${TDR}">${fmtR(r.roas)}</td><td style="${TDR}">${fmtC(r.cac)}</td></tr>`;});
+    h+=`</table>`;return h;
+  }
+
+  let html=`<div style="font-family:Arial,sans-serif;max-width:900px;">`;
+  html+=`<h2 style="font-size:18px;font-weight:700;margin-bottom:4px;">${p.label} — Creative Planning</h2>`;
+  html+=`<p style="font-size:12px;color:#64748b;">${months.length} month(s) · ${allRows.length} ads · ${fmtS(totalSpend)} · ${totalNCs} NCs</p>`;
+  html+=dimHtml(rankDim('int_inf'),'🎬 Creator Type');
+  html+=dimHtml(rankDim('ad_format'),'🎥 Ad Format');
+  html+=dimHtml(rankDim('language'),'🌐 Language');
+  html+=dimHtml(rankDim('narrative'),'💬 Narrative');
   html+=`</div>`;
-  content.innerHTML=html;
+
+  const btn=document.querySelector('#planning-content button');
+  _copyRichHtmlToClipboard(html).then(()=>{
+    if(btn){btn.textContent='✅ Copied!';setTimeout(()=>{btn.textContent='📄 Copy for Docs';},2500);}
+  });
 }
 
 // ═══════════════════════════════════════════════
