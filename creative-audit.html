@@ -637,6 +637,7 @@ const CTX_SHEETS={
 };
 // contextData[productId] = { ncrc: [{label,nc,ncAov,rc,rcAov}], retention: {months,actual,extra} }
 const contextData={biotin:null,s1:null,s2:null,lastFetched:null};
+const igProfiles={}; // handle → {followers, tier, account_type, is_verified, category}
 
 // ═══════════════════════════════════════════════
 // FORMATTERS
@@ -872,6 +873,95 @@ function parseBucketsSheet(csvText){
     if(name&&insta&&insta.startsWith('http')){
       personInsta[name.toLowerCase()]=insta;
     }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// APIFY INSTAGRAM SCRAPER INTEGRATION
+// ═══════════════════════════════════════════════
+function getApifyToken(){return localStorage.getItem('mm_apify_token')||'';}
+function setApifyToken(t){localStorage.setItem('mm_apify_token',t.trim());}
+
+function igHandleFromUrl(url){
+  if(!url)return null;
+  try{const m=url.match(/instagram\.com\/([^/?#]+)/);return m?m[1].replace(/\/$|^@/,'').toLowerCase():null;}catch(_){return null;}
+}
+
+function igTierBadge(tier){
+  const map={'mega (1M+)':['#7c3aed','#ede9fe'],'macro (100K–1M)':['#2563eb','#dbeafe'],'mid (10K–100K)':['#0891b2','#cffafe'],'micro (1K–10K)':['#059669','#d1fae5'],'nano (<1K)':['#64748b','#f1f5f9']};
+  const [fg,bg]=map[tier]||['#64748b','#f1f5f9'];
+  const short=tier?tier.split(' ')[0]:'?';
+  return`<span style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:700;background:${bg};color:${fg};text-transform:capitalize;">${short}</span>`;
+}
+
+function fmtFollowers(n){if(!n)return'—';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(0)+'K';return String(n);}
+
+async function enrichInfluencers(){
+  const token=getApifyToken();
+  if(!token){
+    const t=prompt('Enter your Apify API token (stored locally, never sent anywhere else):');
+    if(!t)return;
+    setApifyToken(t);
+  }
+  const apifyToken=getApifyToken();
+  // Collect all handles that have IG URLs from personInsta
+  const allRows=buildRows(activeProduct);
+  const people=[...new Set(allRows.map(r=>r.person).filter(p=>p&&p!=='Internal'&&p!=='Unknown'))];
+  const toFetch=people.map(name=>{
+    const url=personInsta[name.toLowerCase()];
+    const handle=igHandleFromUrl(url);
+    return handle&&!igProfiles[handle]?{name,handle}:null;
+  }).filter(Boolean);
+
+  if(!toFetch.length){
+    const btn=document.getElementById('enrich-btn');
+    if(btn){btn.textContent='✅ Already enriched';setTimeout(()=>{btn.textContent='🔍 Enrich IG';},2000);}
+    return;
+  }
+
+  const btn=document.getElementById('enrich-btn');
+  if(btn){btn.textContent='⏳ Fetching…';btn.disabled=true;}
+
+  const handles=toFetch.map(x=>x.handle);
+  const APIFY_BASE='https://api.apify.com/v2';
+  try{
+    // Start run
+    const startResp=await fetch(`${APIFY_BASE}/acts/apify~instagram-profile-scraper/runs?token=${encodeURIComponent(apifyToken)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usernames:handles})});
+    if(!startResp.ok)throw new Error('Apify start failed: '+startResp.status);
+    const runId=(await startResp.json()).data.id;
+    if(btn)btn.textContent=`⏳ Running (${handles.length} profiles)…`;
+
+    // Poll
+    let datasetId=null;
+    for(let i=0;i<60;i++){
+      await new Promise(r=>setTimeout(r,3000));
+      const pollResp=await fetch(`${APIFY_BASE}/actor-runs/${runId}?token=${encodeURIComponent(apifyToken)}`);
+      const pollData=(await pollResp.json()).data;
+      if(pollData.status==='SUCCEEDED'){datasetId=pollData.defaultDatasetId;break;}
+      if(['FAILED','ABORTED','TIMED-OUT'].includes(pollData.status))throw new Error('Apify run '+pollData.status);
+    }
+    if(!datasetId)throw new Error('Timed out waiting for Apify');
+
+    // Fetch results
+    const resResp=await fetch(`${APIFY_BASE}/datasets/${datasetId}/items?token=${encodeURIComponent(apifyToken)}&format=json&clean=true`);
+    const items=await resResp.json();
+    items.forEach(raw=>{
+      const username=(raw.username||'').toLowerCase();
+      if(!username)return;
+      const followers=raw.followersCount||raw.followers||0;
+      let tier='nano (<1K)';
+      if(followers>=1e6)tier='mega (1M+)';
+      else if(followers>=100000)tier='macro (100K–1M)';
+      else if(followers>=10000)tier='mid (10K–100K)';
+      else if(followers>=1000)tier='micro (1K–10K)';
+      igProfiles[username]={followers,tier,account_type:raw.isCreatorAccount?'creator':raw.isBusinessAccount?'brand':'personal',is_verified:raw.verified||raw.isVerified||false,category:raw.businessCategoryName||''};
+    });
+    try{localStorage.setItem('mm_ig_profiles',JSON.stringify(igProfiles));}catch(_){}
+    if(btn){btn.textContent='✅ Done!';btn.disabled=false;setTimeout(()=>{btn.textContent='🔍 Enrich IG';},2000);}
+    renderPlanning();
+  }catch(e){
+    if(btn){btn.textContent='❌ Error';btn.disabled=false;setTimeout(()=>{btn.textContent='🔍 Enrich IG';},3000);}
+    alert('Enrichment failed: '+e.message);
   }
 }
 
@@ -2290,6 +2380,7 @@ function renderPlanning(){
         <div style="font-size:10px;color:var(--ink2);">CAC</div>
         <div style="font-size:16px;font-weight:700;font-family:var(--mono);">${fmtC(portfolioCAC)}</div>
       </div>
+      <button id="enrich-btn" onclick="enrichInfluencers()" style="padding:8px 14px;border-radius:8px;border:1px solid #7c3aed;background:#7c3aed;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">🔍 Enrich IG</button>
       <button onclick="copyPlanningDocs()" style="padding:8px 14px;border-radius:8px;border:1px solid #4285f4;background:#4285f4;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">📄 Copy for Docs</button>
     </div>
   </div>`;
@@ -2326,6 +2417,8 @@ function renderPlanning(){
     ph+=`<div style="padding:10px 12px 8px;font-size:12px;font-weight:700;color:var(--ink);border-bottom:1px solid var(--line);">👤 Influencer / Creator Performance</div>`;
     ph+=`<div style="overflow-x:auto;"><table id="pt-person" style="width:100%;border-collapse:collapse;"><thead><tr>`;
     ph+=`<th data-col="key" data-label="Name" style="${TH2}" onclick="_planSortTable('pt-person','key')">Name ↓</th>`;
+    ph+=`<th style="${TH2}cursor:default;">Tier</th>`;
+    ph+=`<th style="${TH2}cursor:default;">Followers</th>`;
     ph+=`<th data-col="spend" data-label="Spend" style="${TH2}" onclick="_planSortTable('pt-person','spend')">Spend</th>`;
     ph+=`<th data-col="ncs" data-label="NCs" style="${TH2}" onclick="_planSortTable('pt-person','ncs')">NCs</th>`;
     ph+=`<th data-col="roas" data-label="ROAS" style="${TH2}" onclick="_planSortTable('pt-person','roas')">ROAS ↓</th>`;
@@ -2343,8 +2436,11 @@ function renderPlanning(){
       const igUrl=personInsta[r.key.toLowerCase()];
       const igLink=igUrl?`<a href="${esc(igUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:#fce7f3;color:#9d174d;border:1px solid #fbcfe8;text-decoration:none;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>Profile</a>`:'<span style="color:var(--ink2);font-size:10px;">—</span>';
       ph+=`<tr class="prow" data-key="${esc(r.key)}" data-spend="${r.spend}" data-ncs="${r.ncs||0}" data-roas="${r.roas||0}" data-cac="${r.cac||0}">`;
+      const igHandle=igHandleFromUrl(personInsta[r.key.toLowerCase()]);
+      const igProf=igHandle?igProfiles[igHandle]:null;
       ph+=`<td style="${TD2}font-weight:500;">${esc(r.key)}</td>`;
-      ph+=`<td style="${TDR2}">${fmtS(r.spend)}</td>`;
+      ph+=`<td style="${TD2}">${igProf?igTierBadge(igProf.tier):'<span style="color:var(--ink2);font-size:10px;">—</span>'}</td>`;
+      ph+=`<td style="${TDR2}">${igProf?fmtFollowers(igProf.followers):'—'}</td>`;
       ph+=`<td style="${TDR2}">${r.ncs||'—'}</td>`;
       ph+=`<td style="${TDR2}">${fmtR(r.roas)}</td>`;
       ph+=`<td style="${TDR2}">${fmtC(r.cac)}</td>`;
@@ -2530,7 +2626,7 @@ function copyPlanningDocs(){
 // ═══════════════════════════════════════════════
 const bar=document.getElementById('product-bar');
 PRODUCTS.forEach(p=>{const btn=document.createElement('button');btn.className='ptab '+p.cls+(p.id===activeProduct?' active':'');btn.dataset.id=p.id;btn.textContent=p.label;btn.onclick=()=>switchProduct(p.id);bar.appendChild(btn);});
-try{const saved=localStorage.getItem('mm_cat');if(saved){const parsed=JSON.parse(saved);Object.assign(catalogue.biotin,parsed.biotin||{});Object.assign(catalogue.s1,parsed.s1||{});Object.assign(catalogue.s2,parsed.s2||{});invalidateFuzzyIdx();}const savedInsta=localStorage.getItem('mm_insta');if(savedInsta){Object.assign(personInsta,JSON.parse(savedInsta));}const savedP=localStorage.getItem('mm_perf');if(savedP){const parsed=JSON.parse(savedP);Object.assign(perfData.biotin,parsed.biotin||{});Object.assign(perfData.s1,parsed.s1||{});Object.assign(perfData.s2,parsed.s2||{});}markStep1Done();refreshAnalytics();}catch(_){}
+try{const saved=localStorage.getItem('mm_cat');if(saved){const parsed=JSON.parse(saved);Object.assign(catalogue.biotin,parsed.biotin||{});Object.assign(catalogue.s1,parsed.s1||{});Object.assign(catalogue.s2,parsed.s2||{});invalidateFuzzyIdx();}const savedInsta=localStorage.getItem('mm_insta');if(savedInsta){Object.assign(personInsta,JSON.parse(savedInsta));}const savedIg=localStorage.getItem('mm_ig_profiles');if(savedIg){Object.assign(igProfiles,JSON.parse(savedIg));}const savedP=localStorage.getItem('mm_perf');if(savedP){const parsed=JSON.parse(savedP);Object.assign(perfData.biotin,parsed.biotin||{});Object.assign(perfData.s1,parsed.s1||{});Object.assign(perfData.s2,parsed.s2||{});}markStep1Done();refreshAnalytics();}catch(_){}
 refreshSheet();
 </script>
 </body>
