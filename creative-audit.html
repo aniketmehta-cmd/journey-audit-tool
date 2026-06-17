@@ -2314,11 +2314,11 @@ function renderPlanning(){
     h+=`<div style="padding:9px 12px;font-size:12px;font-weight:700;color:var(--ink);border-bottom:2px solid var(--line);">${title}</div>`;
     h+=`<div style="overflow-x:auto;"><table id="${id}" style="width:100%;border-collapse:collapse;border:1px solid var(--line);">`;
     h+=`<thead><tr>`;
-    h+=`<th data-col="key" style="${TH}" onclick="_planSortTable('${id}','key')">Name ↓</th>`;
-    h+=`<th data-col="spend" style="${TH}" onclick="_planSortTable('${id}','spend')">Spend</th>`;
-    h+=`<th data-col="ncs" style="${TH}" onclick="_planSortTable('${id}','ncs')">NCs</th>`;
-    h+=`<th data-col="roas" style="${TH}" onclick="_planSortTable('${id}','roas')">ROAS ↓</th>`;
-    h+=`<th data-col="cac" style="${TH}border-right:none;" onclick="_planSortTable('${id}','cac')">CAC</th>`;
+    h+=`<th data-col="key" data-label="Name" style="${TH}" onclick="_planSortTable('${id}','key')">Name ↓</th>`;
+    h+=`<th data-col="spend" data-label="Spend" style="${TH}" onclick="_planSortTable('${id}','spend')">Spend</th>`;
+    h+=`<th data-col="ncs" data-label="NCs" style="${TH}" onclick="_planSortTable('${id}','ncs')">NCs</th>`;
+    h+=`<th data-col="roas" data-label="ROAS" style="${TH}" onclick="_planSortTable('${id}','roas')">ROAS ↓</th>`;
+    h+=`<th data-col="cac" data-label="CAC" style="${TH}border-right:none;" onclick="_planSortTable('${id}','cac')">CAC</th>`;
     h+=`</tr></thead><tbody>`;
     rows.forEach((r,i)=>{
       const rowBg=i%2?'background:var(--paper2);':'';
@@ -2420,13 +2420,13 @@ function renderPlanning(){
     let ph=`<div style="background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;">`;
     ph+=`<div style="padding:9px 12px;font-size:12px;font-weight:700;color:var(--ink);border-bottom:2px solid var(--line);">👤 Influencer / Creator Performance</div>`;
     ph+=`<div style="overflow-x:auto;"><table id="pt-person" style="width:100%;border-collapse:collapse;border:1px solid var(--line);"><thead><tr>`;
-    ph+=`<th data-col="key" style="${TH2}" onclick="_planSortTable('pt-person','key')">Creator</th>`;
+    ph+=`<th data-col="key" data-label="Creator" style="${TH2}" onclick="_planSortTable('pt-person','key')">Creator</th>`;
     ph+=`<th style="${TH2L}">Tier</th>`;
     ph+=`<th style="${TH2L}">Followers</th>`;
-    ph+=`<th data-col="spend" style="${TH2}" onclick="_planSortTable('pt-person','spend')">Spend ↓</th>`;
-    ph+=`<th data-col="ncs" style="${TH2}" onclick="_planSortTable('pt-person','ncs')">NCs</th>`;
-    ph+=`<th data-col="roas" style="${TH2}" onclick="_planSortTable('pt-person','roas')">ROAS</th>`;
-    ph+=`<th data-col="cac" style="${TH2}" onclick="_planSortTable('pt-person','cac')">CAC</th>`;
+    ph+=`<th data-col="spend" data-label="Spend" style="${TH2}" onclick="_planSortTable('pt-person','spend')">Spend ↓</th>`;
+    ph+=`<th data-col="ncs" data-label="NCs" style="${TH2}" onclick="_planSortTable('pt-person','ncs')">NCs</th>`;
+    ph+=`<th data-col="roas" data-label="ROAS" style="${TH2}" onclick="_planSortTable('pt-person','roas')">ROAS</th>`;
+    ph+=`<th data-col="cac" data-label="CAC" style="${TH2}" onclick="_planSortTable('pt-person','cac')">CAC</th>`;
     ph+=`<th style="${TH2L}">Top Ad</th>`;
     ph+=`<th style="${TH2L}">Links</th>`;
     ph+=`<th style="${TH2L}border-right:none;">Bio</th>`;
