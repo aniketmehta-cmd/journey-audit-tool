@@ -232,14 +232,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .email-body{padding:20px 22px;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--ink);white-space:pre-wrap;word-break:break-word;max-height:680px;overflow-y:auto;background:#fafaf9;}
 
 /* ── TRENDS ── */
-.trends-empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:13.5px;}
-table.trends{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--paper);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);}
-table.trends th{text-align:left;padding:9px 14px;border-bottom:2px solid var(--line);color:var(--ink);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:0.07em;background:var(--paper3);}
-table.trends th.mc{text-align:center;min-width:110px;}
-table.trends td{padding:8px 14px;border-bottom:1px solid var(--line-soft);color:var(--ink);}
-table.trends td.mn{font-weight:600;color:var(--ink2);font-size:12px;}
-table.trends td.mv{text-align:center;font-variant-numeric:tabular-nums;}
-table.trends tr:hover td{background:var(--paper2);}
 .tr-up{color:var(--green);font-size:11px;margin-left:3px;}.tr-dn{color:var(--red);font-size:11px;margin-left:3px;}.tr-eq{color:var(--muted);font-size:11px;margin-left:3px;}
 .tr-best{background:var(--green-bg)!important;font-weight:700;}
 .trends-section{margin-bottom:32px;}
@@ -289,7 +281,6 @@ table.trends tr:hover td{background:var(--paper2);}
   <div class="main-nav">
     <button class="mnav-btn active" onclick="switchMainTab('analytics',this)">📊 Monthly Analysis</button>
     <button class="mnav-btn" onclick="switchMainTab('daily',this)">📅 Daily Digest</button>
-    <button class="mnav-btn" onclick="switchMainTab('trends',this)">📈 Trends</button>
     <button class="mnav-btn" onclick="switchMainTab('planning',this)">🎯 Planning</button>
   </div>
 </div>
@@ -486,10 +477,6 @@ table.trends tr:hover td{background:var(--paper2);}
 </div>
 
 <!-- ═══ TAB: TRENDS ═══ -->
-<div id="main-tab-trends" class="main-tab">
-  <div id="trends-content"><div class="trends-empty">Upload at least 1 month of data in Monthly Analysis to see trends.</div></div>
-</div>
-
 <!-- ═══ TAB: PLANNING ═══ -->
 <div id="main-tab-planning" class="main-tab">
   <div style="padding:28px;">
@@ -1334,7 +1321,6 @@ function refreshAnalytics(){
   document.getElementById('dim-tabs').innerHTML='';document.getElementById('dim-panels').innerHTML='';
   document.getElementById('analytics').style.display='block';
   renderAll();
-  if(document.getElementById('main-tab-trends').classList.contains('active'))renderTrends();
 }
 
 // ═══════════════════════════════════════════════
@@ -1468,48 +1454,6 @@ function copyEmail(){
 // ═══════════════════════════════════════════════
 // TRENDS
 // ═══════════════════════════════════════════════
-function renderTrends(){
-  const months=Object.keys(perfData[activeProduct]||{}).sort();
-  const container=document.getElementById('trends-content');
-  const p=PRODUCTS.find(x=>x.id===activeProduct);
-  if(!months.length){container.innerHTML='<div class="trends-empty">No performance data uploaded yet for '+p.label+'.</div>';return;}
-  const agg=months.map(month=>{
-    const rows=buildRows_month(activeProduct,month);
-    const ts=rows.reduce((a,r)=>a+(r.spend||0),0);
-    const tncs=rows.reduce((a,r)=>a+(r.ncs||0),0);
-    return{month,spend:ts,ncs:tncs,roas:wAvg(rows,'roas','spend'),cac:totalCAC(rows),aov:wAvgAOV(rows),ctr:wAvg(rows,'ctr','spend'),hook:wAvg(rows,'hook_rate','spend'),atc:wAvg(rows,'atc_pct','spend'),purch:wAvg(rows,'purchase_pct','spend'),prepaid:wAvg(rows,'prepaid','spend'),total:rows.length};
-  });
-  const METRICS=[{k:'spend',l:'Total Spend',f:fmtS,hb:true},{k:'ncs',l:'NCs',f:fmtI,hb:true},{k:'roas',l:'ROAS',f:fmtR,hb:true},{k:'cac',l:'CAC',f:fmtC,hb:false},{k:'aov',l:'AOV',f:fmtC,hb:true},{k:'ctr',l:'CTR',f:fmtP,hb:true},{k:'hook',l:'Hook Rate',f:fmtP,hb:true},{k:'atc',l:'ATC%',f:fmtP,hb:true},{k:'purch',l:'Purchase%',f:fmtP,hb:true},{k:'prepaid',l:'Prepaid%',f:fmtP,hb:true},{k:'total',l:'Total Creatives',f:n=>n==null?'—':String(n),hb:null}];
-  let html=`<div class="trends-section"><h2>${p.label} · Month-over-Month</h2><div style="overflow-x:auto"><table class="trends"><thead><tr><th>Metric</th>`;
-  months.forEach(m=>html+=`<th class="mc">${m}</th>`);html+='</tr></thead><tbody>';
-  for(const met of METRICS){
-    const vals=agg.map(a=>a[met.k]);const vv=vals.filter(v=>v!=null&&!isNaN(v));const best=vv.length?(met.hb?Math.max(...vv):Math.min(...vv)):null;
-    html+=`<tr><td class="mn">${met.l}</td>`;
-    vals.forEach((v,i)=>{const isB=best!=null&&v===best&&met.hb!=null;const prev=i>0?vals[i-1]:null;let arrow='';if(prev!=null&&v!=null){const delta=met.hb?v-prev:prev-v;if(delta>Math.abs(prev||1)*0.03)arrow='<span class="tr-up">↑</span>';else if(delta<-Math.abs(prev||1)*0.03)arrow='<span class="tr-dn">↓</span>';else arrow='<span class="tr-eq">→</span>';}html+=`<td class="mv${isB?' tr-best':''}">${v!=null?met.f(v):'—'}${arrow}</td>`;});html+='</tr>';
-  }
-  html+='</tbody></table></div></div>';
-  // Recurring creatives
-  const adMonths=new Map();
-  for(const month of months){const rows=buildRows_month(activeProduct,month);for(const r of rows){if(!adMonths.has(r.name))adMonths.set(r.name,[]);adMonths.get(r.name).push({month,spend:r.spend,roas:r.roas,ncs:r.ncs});}}
-  const recurring=[...adMonths.entries()].filter(([,v])=>v.length>=2).sort((a,b)=>b[1].reduce((x,r)=>x+(r.spend||0),0)-a[1].reduce((x,r)=>x+(r.spend||0),0)).slice(0,20);
-  if(recurring.length&&months.length>=2){
-    html+=`<div class="trends-section"><h2>Recurring Creatives · Active Across Multiple Months</h2><div style="overflow-x:auto"><table class="trends"><thead><tr><th>Creative</th>`;
-    months.forEach(m=>html+=`<th class="mc">${m}</th>`);html+='<th class="mc">Total</th></tr></thead><tbody>';
-    for(const[name,entries]of recurring){
-      const em=Object.fromEntries(entries.map(e=>[e.month,e]));const total=entries.reduce((a,e)=>a+(e.spend||0),0);const short=name.length>50?name.slice(0,47)+'…':name;
-      html+=`<tr><td class="mn" title="${esc(name)}">${esc(short)}</td>`;
-      months.forEach(m=>{const e=em[m];if(!e){html+='<td class="mv" style="color:var(--muted)">—</td>';return;}html+=`<td class="mv" title="ROAS: ${fmtR(e.roas)} · NCs: ${e.ncs||0}">${fmtS(e.spend)}</td>`;});
-      html+=`<td class="mv"><strong>${fmtS(total)}</strong></td></tr>`;
-    }
-    html+='</tbody></table></div></div>';
-  }
-  container.innerHTML=html;
-}
-
-function buildRows_month(productId,month){
-  const cat=catalogue[productId]||{};
-  return(perfData[productId][month]||[]).map(p=>{const key=normN(p.adName);let tag=cat[key];if(!tag)tag=parseTagsFromName(p.adName);const ii=tag.int_inf||'Unknown',at=tag.ad_type||'Unknown';return{name:p.adName,month,spend:p.spend||0,ncs:p.ncs,cac:p.cac,aov:p.aov,roas:p.roas,prepaid:p.prepaid,ctr:p.ctr,hook_rate:p.hook_rate,atc_pct:p.atc_pct,purchase_pct:p.purchase_pct,int_inf:ii,ad_type:at,source_funnel:deriveSource(ii,at),link45:tag.link45||null,link916:tag.link916||null};});
-}
 
 // ═══════════════════════════════════════════════
 // MAIN TAB + PRODUCT SWITCHING
@@ -1519,7 +1463,6 @@ function switchMainTab(name,btn){
   document.querySelectorAll('.mnav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('main-tab-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
-  if(name==='trends')renderTrends();
   if(name==='planning')renderPlanning();
   const cb=document.getElementById('combined-digest-box');
   if(cb)cb.style.display=name==='daily'?'block':'none';
