@@ -2358,12 +2358,16 @@ function renderPlanning(){
   });
   html+=`</div>`;
 
-  // 2×2 grid of tables — align-items:start removes blank whitespace
-  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;align-items:start;">`;
+  // Two independent flex columns — each card only as tall as its content
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">`;
+  html+=`<div style="display:flex;flex-direction:column;gap:14px;">`;
   html+=miniTable('pt-creator',creatorRanked,'🎬 Creator Type',false);
-  html+=miniTable('pt-format',formatRanked,'🎥 Ad Format',false);
   html+=miniTable('pt-language',langRanked,'🌐 Language',false);
+  html+=`</div>`;
+  html+=`<div style="display:flex;flex-direction:column;gap:14px;">`;
+  html+=miniTable('pt-format',formatRanked,'🎥 Ad Format',false);
   html+=miniTable('pt-narrative',narrativeRanked,'💬 Narrative',false);
+  html+=`</div>`;
   html+=`</div>`;
   // Person table full-width with ad links
   if(personRanked.length){
@@ -2488,47 +2492,81 @@ function copyPlanningDocs(){
   const narrativeR=rankDim('narrative');
   const personR=rankPersonDocs();
 
+  // Helper: top-N insight text for a dimension
+  function topLine(rows,label){
+    if(!rows.length)return'';
+    const top=rows[0];
+    const weak=rows.filter(r=>(r.roas||0)<portfolioRoas*0.85);
+    let s=`<b>${top.key}</b> leads ${label} with ${fmtR(top.roas)} ROAS and ${fmtC(top.cac)} CAC (${fmtS(top.spend)} spent, ${top.ncs} NCs).`;
+    if(weak.length)s+=` Consider scaling back: ${weak.slice(0,3).map(r=>r.key).join(', ')}.`;
+    return s;
+  }
+
   let html=`<div style="${S.page}">`;
 
-  // Header
-  html+=`<div style="${S.header}">
-    <h1 style="${S.h1}">${p.label} — Creative Performance Planning</h1>
-    <p style="${S.meta}">${months.join(', ')} &nbsp;·&nbsp; ${allRows.length} ads analysed &nbsp;·&nbsp; ${fmtS(totalSpend)} total spend &nbsp;·&nbsp; ${totalNCs} NCs</p>
+  // ── HEADER ──
+  html+=`<div style="background:#0f172a;color:#fff;padding:22px 28px;border-radius:10px;margin-bottom:18px;">
+    <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:6px;">Creative Performance Report</div>
+    <div style="font-size:22px;font-weight:800;margin-bottom:6px;">${p.label}</div>
+    <div style="font-size:12px;color:#cbd5e1;">Period: <b>${months.join(', ')}</b> &nbsp;·&nbsp; ${allRows.length} creatives analysed &nbsp;·&nbsp; ${fmtS(totalSpend)} total spend</div>
   </div>`;
 
-  // KPI strip
-  html+=`<div style="${S.kpiRow}">
-    <div style="${S.kpi}"><div style="${S.kpiL}">Portfolio ROAS</div><div style="${S.kpiV}">${fmtR(portfolioRoas)}</div></div>
-    <div style="${S.kpi}"><div style="${S.kpiL}">Portfolio CAC</div><div style="${S.kpiV}">${fmtC(portfolioCAC)}</div></div>
-    <div style="${S.kpi}"><div style="${S.kpiL}">Total Spend</div><div style="${S.kpiV}">${fmtS(totalSpend)}</div></div>
-    <div style="${S.kpi}"><div style="${S.kpiL}">Total NCs</div><div style="${S.kpiV}">${totalNCs}</div></div>
-    <div style="${S.kpi}"><div style="${S.kpiL}">Months</div><div style="${S.kpiV}">${months.length}</div></div>
-  </div>`;
+  // ── KPI STRIP ──
+  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+    <tr>
+      <td style="padding:14px 18px;text-align:center;border-right:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">ROAS</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${fmtR(portfolioRoas)}</div></td>
+      <td style="padding:14px 18px;text-align:center;border-right:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">CAC</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${fmtC(portfolioCAC)}</div></td>
+      <td style="padding:14px 18px;text-align:center;border-right:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">Total Spend</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${fmtS(totalSpend)}</div></td>
+      <td style="padding:14px 18px;text-align:center;border-right:1px solid #e2e8f0;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">New Customers</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${totalNCs}</div></td>
+      <td style="padding:14px 18px;text-align:center;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">Period</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#0f172a;">${months.length}M</div></td>
+    </tr>
+  </table>`;
 
-  // Page 1 — 2-col grid: Creator+Format | Language+Narrative
-  html+=`<div style="${S.grid2}">`;
-  html+=card2('🎬 Creator Type',creatorR,S);
-  html+=card2('🎥 Ad Format',formatR,S);
-  html+=card2('🌐 Language',langR,S);
-  html+=card2('💬 Narrative',narrativeR,S);
-  html+=`</div>`;
+  // ── KEY TAKEAWAYS ──
+  const takeaways=[
+    creatorR.length?`<b>Creator:</b> ${topLine(creatorR,'creator types')}` : null,
+    formatR.length?`<b>Format:</b> ${topLine(formatR,'ad formats')}` : null,
+    langR.length?`<b>Language:</b> ${topLine(langR,'languages')}` : null,
+    narrativeR.length?`<b>Narrative:</b> ${topLine(narrativeR,'narratives')}` : null,
+  ].filter(Boolean);
+  if(takeaways.length){
+    html+=`<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 18px;margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#1e40af;margin-bottom:10px;">Key Takeaways</div>
+      ${takeaways.map(t=>`<div style="font-size:12px;color:#1e293b;line-height:1.7;margin-bottom:4px;">• ${t}</div>`).join('')}
+    </div>`;
+  }
 
-  // Page 2 — Influencer table
+  // ── PAGE 1: 2-COL DIMENSION TABLES ──
+  function dimCard(title,rows){
+    if(!rows.length)return'<div></div>';
+    let h=`<div style="break-inside:avoid;">`;
+    h+=`<div style="font-size:13px;font-weight:700;color:#0f172a;border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:0;">${title}</div>`;
+    h+=`<table style="width:100%;border-collapse:collapse;">`;
+    h+=`<tr style="background:#1e293b;"><th style="${S.TH}">Name</th><th style="${S.THR}">Spend</th><th style="${S.THR}">NCs</th><th style="${S.THR}">ROAS</th><th style="${S.THR}">CAC</th></tr>`;
+    rows.forEach((r,i)=>{const bg=i%2?'#f8fafc':'#fff';h+=`<tr style="background:${bg};"><td style="${S.TD}">${r.key}</td><td style="${S.TDR}">${fmtS(r.spend)}</td><td style="${S.TDR}">${r.ncs||'—'}</td><td style="${S.TDR}">${fmtR(r.roas)}</td><td style="${S.TDR}">${fmtC(r.cac)}</td></tr>`;});
+    h+=`</table></div>`;return h;
+  }
+
+  html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:20px;"><tr>
+    <td style="width:50%;padding-right:10px;vertical-align:top;">${dimCard('🎬 Creator Type',creatorR)}${dimCard('🌐 Language',langR)}</td>
+    <td style="width:50%;padding-left:10px;vertical-align:top;">${dimCard('🎥 Ad Format',formatR)}${dimCard('💬 Narrative',narrativeR)}</td>
+  </tr></table>`;
+
+  // ── PAGE 2: INFLUENCER TABLE ──
   if(personR.length){
-    html+=`<div style="${S.card}margin-bottom:16px;">`;
-    html+=`<div style="${S.cardH}">👤 Influencer / Creator Performance</div>`;
-    html+=`<table style="width:100%;border-collapse:collapse;">`;
-    html+=`<tr><th style="${S.TH}">Creator</th><th style="${S.THR}">Spend</th><th style="${S.THR}">NCs</th><th style="${S.THR}">ROAS</th><th style="${S.THR}">CAC</th><th style="${S.TH}">Top Ad</th><th style="${S.TH}">Instagram</th></tr>`;
+    html+=`<div style="font-size:13px;font-weight:700;color:#0f172a;border-bottom:2px solid #0f172a;padding-bottom:6px;margin-bottom:0;">👤 Influencer / Creator Performance</div>`;
+    html+=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">`;
+    html+=`<tr style="background:#1e293b;"><th style="${S.TH}">Creator</th><th style="${S.THR}">Spend</th><th style="${S.THR}">NCs</th><th style="${S.THR}">ROAS</th><th style="${S.THR}">CAC</th><th style="${S.TH}">Top Ad</th><th style="${S.TH}">Instagram</th></tr>`;
     personR.forEach((r,i)=>{
-      const td=i%2?S.TDalt:S.TD;const tdr=i%2?S.TDRalt:S.TDR;
+      const bg=i%2?'#f8fafc':'#fff';
       const same=r.link45&&r.link916&&r.link45===r.link916;
       let adCell='—';
-      if(r.link45||r.link916){if(same)adCell=`<a href="${r.link45}" style="color:#2563eb;">▶ Watch</a>`;else{adCell='';if(r.link916)adCell+=`<a href="${r.link916}" style="color:#2563eb;">9:16</a>`;if(r.link45)adCell+=(adCell?' · ':'')+`<a href="${r.link45}" style="color:#2563eb;">4:5</a>`;}}
+      if(r.link45||r.link916){if(same)adCell=`<a href="${r.link45}" style="color:#2563eb;font-weight:600;">▶ Watch</a>`;else{adCell='';if(r.link916)adCell+=`<a href="${r.link916}" style="color:#2563eb;font-weight:600;">9:16</a>`;if(r.link45)adCell+=(adCell?' · ':'')+`<a href="${r.link45}" style="color:#2563eb;font-weight:600;">4:5</a>`;}}
       const igUrl=personInsta[r.key.toLowerCase()];
-      const igCell=igUrl?`<a href="${igUrl}" style="color:#db2777;">Instagram</a>`:'—';
-      html+=`<tr><td style="${td}font-weight:600;">${r.key}</td><td style="${tdr}">${fmtS(r.spend)}</td><td style="${tdr}">${r.ncs||'—'}</td><td style="${tdr}">${fmtR(r.roas)}</td><td style="${tdr}">${fmtC(r.cac)}</td><td style="${td}">${adCell}</td><td style="${td}">${igCell}</td></tr>`;
+      const igCell=igUrl?`<a href="${igUrl}" style="color:#db2777;font-weight:600;">↗ Profile</a>`:'—';
+      html+=`<tr style="background:${bg};"><td style="${S.TD}font-weight:600;">${r.key}</td><td style="${S.TDR}">${fmtS(r.spend)}</td><td style="${S.TDR}">${r.ncs||'—'}</td><td style="${S.TDR}">${fmtR(r.roas)}</td><td style="${S.TDR}">${fmtC(r.cac)}</td><td style="${S.TD}">${adCell}</td><td style="${S.TD}">${igCell}</td></tr>`;
     });
-    html+=`</table></div>`;
+    html+=`</table>`;
   }
 
   html+=`</div>`;
