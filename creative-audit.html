@@ -638,6 +638,7 @@ let sortKey='spend', sortDir=-1;
 const catalogue={biotin:{},s1:{},s2:{}};
 const perfData={biotin:{},s1:{},s2:{}};
 const dailyData={biotin:null,s1:null,s2:null};
+const personInsta={}; // normalized_name → instagram url
 let currentRows=[], currentCombined=[];
 let pendingPerfRows=null, pendingPerfHeaders=null, pendingMapperTarget='monthly';
 
@@ -875,6 +876,24 @@ function parseTagsFromName(adName){
 // ═══════════════════════════════════════════════
 function buildCatalogueEntry(row,cfg){const g=i=>(row[i]||'').trim();const adName=g(cfg.adName);if(!adName)return null;return{ad_name:adName,int_inf:normalizeIntInf(g(cfg.intInf)),ad_type:tc(g(cfg.adType))||'Unknown',language:tc(g(cfg.language))||'Unknown',person:(v=>(!v||v.toLowerCase()==='none'||v==='-'||v.toLowerCase()==='na'||v.toLowerCase()==='internal')?'Internal':v)(g(cfg.person)),narrative:normalizeNarrative(g(cfg.narrative))||'Unknown',ad_format:g(cfg.adFormat)||'Unknown',link45:g(cfg.link45)||null,link916:g(cfg.link916)||null};}
 function addToCatalogue(entries,pid){for(const e of entries){if(!e||!e.ad_name)continue;const k=normN(e.ad_name);if(!catalogue[pid][k])catalogue[pid][k]=e;}}
+
+function parseBucketsSheet(csvText){
+  const rows=parseCsv(csvText);
+  for(const r of rows){
+    const name=(r[7]||'').trim();
+    const insta=(r[8]||'').trim();
+    if(name&&insta&&insta.startsWith('http')){
+      personInsta[name.toLowerCase()]=insta;
+    }
+  }
+}
+
+function personInstaHtml(name){
+  if(!name||name==='Internal'||name==='Unknown')return esc(name||'—');
+  const url=personInsta[name.toLowerCase()];
+  if(!url)return esc(name);
+  return `${esc(name)} <a href="${esc(url)}" target="_blank" rel="noopener" title="Instagram" style="display:inline-flex;align-items:center;text-decoration:none;vertical-align:middle;margin-left:3px;opacity:0.75;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.75"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>`;
+}
 function parseSheetForProduct(csvText,cfg,productKw){const rows=parseCsv(csvText);const data=rows.slice(cfg.skip);const kwNorm=productKw.toLowerCase().replace(/\s+/g,'');return data.map(r=>{const prod=(r[cfg.product]||'').toLowerCase().replace(/\s+/g,'');if(!prod||!prod.includes(kwNorm))return null;return buildCatalogueEntry(r,cfg);}).filter(Boolean);}
 async function fetchCsv(sheetId,sheetName){const url=sheetName?`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`:`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status);return r.text();}
 
@@ -884,8 +903,9 @@ async function refreshSheet(){
   for(const p of PRODUCTS){try{const csv=await fetchCsv(SHEET_ID_MAIN,p.sheetName);const e=parseSheetForProduct(csv,MC,p.kw);addToCatalogue(e,p.id);loaded+=e.length;}catch(e){errors.push('Main/'+p.label+': '+e.message);}}
   try{const csv=await fetchCsv(SHEET_ID_OLD1,null);for(const p of PRODUCTS){const e=parseSheetForProduct(csv,O1C,p.kw);addToCatalogue(e,p.id);loaded+=e.length;}}catch(e){errors.push('OldSheet1: '+e.message);}
   try{const csv=await fetchCsv(SHEET_ID_OLD2,null);for(const p of PRODUCTS){const e=parseSheetForProduct(csv,O2C,p.kw);addToCatalogue(e,p.id);loaded+=e.length;}}catch(e){errors.push('OldSheet2: '+e.message);}
+  try{const csv=await fetchCsv(SHEET_ID_MAIN,'Buckets');parseBucketsSheet(csv);}catch(e){errors.push('Buckets: '+e.message);}
   invalidateFuzzyIdx();
-  try{localStorage.setItem('mm_cat',JSON.stringify(catalogue));}catch(_){}
+  try{localStorage.setItem('mm_cat',JSON.stringify(catalogue));localStorage.setItem('mm_insta',JSON.stringify(personInsta));}catch(_){}
   const total=Object.values(catalogue).reduce((a,m)=>a+Object.keys(m).length,0);
   setStatus(errors.length?'warn':'ok',`<strong>Catalogue ready</strong> · ${total} tagged creatives${errors.length?' · ⚠ '+errors.length+' source(s) failed':''}`);
   markStep1Done();refreshAnalytics();
@@ -1054,6 +1074,18 @@ function adDisplayName(r) {
   return parts.length ? parts.join(' · ') : null;
 }
 
+function adDisplayHtml(r) {
+  const hasPerson = r.person && r.person !== 'Internal' && r.person !== 'Unknown';
+  const rest = [
+    (r.narrative && r.narrative !== 'Unknown') ? r.narrative : null,
+    (r.language && r.language !== 'Unknown') ? r.language : null,
+  ].filter(Boolean);
+  if (hasPerson) {
+    return personInstaHtml(r.person) + (rest.length ? ' · ' + rest.map(esc).join(' · ') : '');
+  }
+  return rest.map(esc).join(' · ');
+}
+
 function perfClass(roas, portfolioRoas) {
   if (roas == null || portfolioRoas == null) return 'perf-none';
   const ratio = roas / portfolioRoas;
@@ -1139,7 +1171,7 @@ function renderCardAdList(rows, portfolioRoas) {
     return `<div class="card-ad-row" onclick="event.stopPropagation()">
       <div class="card-ad-bar" style="opacity:${0.2 + 0.8*(r.spend/maxSpend)};background:var(--blue);"></div>
       <div class="card-ad-main">
-        ${displayName ? `<div class="card-ad-display">${esc(displayName)}</div>` : ''}
+        ${displayName ? `<div class="card-ad-display">${adDisplayHtml(r)}</div>` : ''}
         <div class="card-ad-rawname" title="${esc(r.name)}">${esc(rawName)}</div>
         <div class="card-ad-metrics">
           <span><strong>${fmtS(r.spend)}</strong></span>
@@ -1258,7 +1290,7 @@ function renderDrill(allRows){
       <td>${esc(r.language)}</td>
       <td>${esc(r.source_funnel)}</td>
       <td>${esc(r.int_inf)}</td>
-      <td>${esc(r.person)}</td>
+      <td>${personInstaHtml(r.person)}</td>
       <td>${esc(r.ad_type)}</td>
       <td>${esc(r.ad_format)}</td>
       <td>${esc(r.funnel_type)}</td>
@@ -2377,7 +2409,7 @@ function copyPlanningDocs(){
 // ═══════════════════════════════════════════════
 const bar=document.getElementById('product-bar');
 PRODUCTS.forEach(p=>{const btn=document.createElement('button');btn.className='ptab '+p.cls+(p.id===activeProduct?' active':'');btn.dataset.id=p.id;btn.textContent=p.label;btn.onclick=()=>switchProduct(p.id);bar.appendChild(btn);});
-try{const saved=localStorage.getItem('mm_cat');if(saved){const parsed=JSON.parse(saved);Object.assign(catalogue.biotin,parsed.biotin||{});Object.assign(catalogue.s1,parsed.s1||{});Object.assign(catalogue.s2,parsed.s2||{});invalidateFuzzyIdx();}const savedP=localStorage.getItem('mm_perf');if(savedP){const parsed=JSON.parse(savedP);Object.assign(perfData.biotin,parsed.biotin||{});Object.assign(perfData.s1,parsed.s1||{});Object.assign(perfData.s2,parsed.s2||{});}markStep1Done();refreshAnalytics();}catch(_){}
+try{const saved=localStorage.getItem('mm_cat');if(saved){const parsed=JSON.parse(saved);Object.assign(catalogue.biotin,parsed.biotin||{});Object.assign(catalogue.s1,parsed.s1||{});Object.assign(catalogue.s2,parsed.s2||{});invalidateFuzzyIdx();}const savedInsta=localStorage.getItem('mm_insta');if(savedInsta){Object.assign(personInsta,JSON.parse(savedInsta));}const savedP=localStorage.getItem('mm_perf');if(savedP){const parsed=JSON.parse(savedP);Object.assign(perfData.biotin,parsed.biotin||{});Object.assign(perfData.s1,parsed.s1||{});Object.assign(perfData.s2,parsed.s2||{});}markStep1Done();refreshAnalytics();}catch(_){}
 refreshSheet();
 </script>
 </body>
