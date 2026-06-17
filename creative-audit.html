@@ -290,6 +290,7 @@ table.trends tr:hover td{background:var(--paper2);}
     <button class="mnav-btn active" onclick="switchMainTab('analytics',this)">📊 Monthly Analysis</button>
     <button class="mnav-btn" onclick="switchMainTab('daily',this)">📅 Daily Digest</button>
     <button class="mnav-btn" onclick="switchMainTab('trends',this)">📈 Trends</button>
+    <button class="mnav-btn" onclick="switchMainTab('planning',this)">🎯 Planning</button>
   </div>
 </div>
 
@@ -489,6 +490,18 @@ table.trends tr:hover td{background:var(--paper2);}
   <div id="trends-content"><div class="trends-empty">Upload at least 1 month of data in Monthly Analysis to see trends.</div></div>
 </div>
 
+<!-- ═══ TAB: PLANNING ═══ -->
+<div id="main-tab-planning" class="main-tab">
+  <div style="padding:28px;">
+    <div id="planning-empty" style="text-align:center;padding:60px 20px;color:var(--ink2);">
+      <div style="font-size:32px;margin-bottom:12px;">📊</div>
+      <div style="font-size:15px;font-weight:500;">Upload monthly performance data first</div>
+      <div style="font-size:13px;margin-top:6px;">Go to Monthly Analysis → upload CSVs for the months you want to plan from</div>
+    </div>
+    <div id="planning-content" style="display:none;"></div>
+  </div>
+</div>
+
 </div><!-- /.wrap -->
 
 <!-- Sheet Settings Modal -->
@@ -653,6 +666,7 @@ const normN = s => (s||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/
 const FORMAT_STRIP=new Set([
   'ugc','statics','static','carousel','educational','podcast','testimonial',
   'skit','documentary','reaction','non','vo',
+  'voxpop','asmr','vlog','running','calisthenics',
   'si','bca',   // single identity / brand collaboration ad markers
   '0','1','2','3','4','5','6','7','8','9', // extra guard for single digits
 ]);
@@ -676,8 +690,8 @@ const scalingThreshold = () => +document.getElementById('tier-hit').value||10000
 // ═══════════════════════════════════════════════
 function parseNum(s){if(!s||s==='-'||s==='—'||s==null)return null;const n=parseFloat(String(s).replace(/[₹,\s]/g,''));return isNaN(n)?null:n;}
 function parsePct(s){if(!s||s==='-'||s==='—'||s==null)return null;const n=parseFloat(String(s).replace(/[%\s]/g,''));return isNaN(n)?null:n/100;}
-function normalizeIntInf(raw){const v=(raw||'').toLowerCase().trim();if(v==='inf'||v==='influencer')return'Influencer';if(v==='int'||v==='internal')return'Internal';return raw?tc(raw):'Unknown';}
-function deriveSource(intInf,adType){const t=(adType||'').toLowerCase(),i=(intInf||'').toLowerCase();if(t==='static'||t.includes('static')||t==='carousel'||t==='image')return'Static / Carousel';if(i==='influencer'||i==='inf')return'Influencer';return'Internal — Video';}
+function normalizeIntInf(raw){const v=(raw||'').toLowerCase().trim();if(v==='inf'||v==='influencer')return'Influencer';if(v==='int'||v==='internal')return'Internal';if(v==='aff'||v==='affluence')return'Affluence';return raw?tc(raw):'Unknown';}
+function deriveSource(intInf,adType){const t=(adType||'').toLowerCase(),i=(intInf||'').toLowerCase();if(t==='static'||t.includes('static')||t==='carousel'||t==='image')return'Static / Carousel';if(i==='influencer'||i==='inf')return'Influencer';if(i==='affluence'||i==='aff')return'Affluence';return'Internal — Video';}
 function parseFunnelFromName(name){const l=(name||'').toLowerCase();if(l.includes('_mof_'))return'MOF';if(l.includes('_tof_'))return'TOF';if(l.includes('_bof_'))return'BOF';return'Unknown';}
 function detectMonthFromFilename(name){const lower=(name||'').toLowerCase();for(const[k,a]of Object.entries(MONTH_NAMES)){if(lower.includes(k)){const yr=lower.match(/20(2[3-9]|[3-9]\d)/);return a+' '+(yr?yr[0]:'2026');}}return null;}
 
@@ -689,7 +703,7 @@ const NARRATIVE_KW=new Set(['receding','price','stages','genetics','science','re
 const AD_TYPE_NORM={influencer:'VO',vo:'VO',reel:'Reel',static:'Static',statics:'Static',carousel:'Carousel',image:'Static',video:'Video',ugc:'UGC'};
 const FUNNEL_KW=new Set(['bof','mof','tof']);
 // ONLY these tokens at the end of a name represent the ad format. Everything else is narrative.
-const FORMAT_KW=new Set(['ugc','statics','static','carousel','educational','podcast','testimonial','skit','documentary','reaction','non','vo']);
+const FORMAT_KW=new Set(['ugc','statics','static','carousel','educational','podcast','testimonial','skit','documentary','reaction','non','vo','voxpop','asmr','review','whiteboard','white','board','vlog','running','calisthenics','icebath','ice','bath','motion','graphic','organic','qanda','q&a']);
 const LANG_KW=new Set(['hindi','hinglish','english','tamil','telugu','kannada','bengali','marathi','punjabi','malayalam']);
 
 // Canonical map — all spelling variants → one label
@@ -699,7 +713,11 @@ const NARR_NORM={
   'problem  solution':'Problem-Solution',
   'results assurance':'Results/Assurance','results-assurance':'Results/Assurance',
   'results / assurance':'Results/Assurance',
-  'results assurance product first':'Results/Assurance/ProductFirst',
+  'results assurance product first':'Results/Assurance',
+  'results/assurance/product first':'Results/Assurance',
+  'results / assurance / product first':'Results/Assurance',
+  'results-assurance-product-first':'Results/Assurance',
+  'results assurance/product first':'Results/Assurance',
   'receding hairline bald spots':'Receding Hairline/Bald Spots',
   'receding hairline/bald spots':'Receding Hairline/Bald Spots',
   'receding hairline / bald spots':'Receding Hairline/Bald Spots',
@@ -1470,6 +1488,7 @@ function switchMainTab(name,btn){
   document.getElementById('main-tab-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
   if(name==='trends')renderTrends();
+  if(name==='planning')renderPlanning();
   const cb=document.getElementById('combined-digest-box');
   if(cb)cb.style.display=name==='daily'?'block':'none';
   if(name==='daily'&&!contextData.lastFetched)fetchContextData();
@@ -2158,6 +2177,144 @@ function submitPaste(){
     if(labelEl&&!labelEl.value){labelEl.value='';}
   }
   showMapper(pendingPerfHeaders,autoDetectPerf(pendingPerfHeaders),det);
+}
+
+// ═══════════════════════════════════════════════
+// PLANNING TAB
+// ═══════════════════════════════════════════════
+function renderPlanning(){
+  const months=Object.keys(perfData[activeProduct]||{});
+  const empty=document.getElementById('planning-empty');
+  const content=document.getElementById('planning-content');
+  if(!months.length){empty.style.display='block';content.style.display='none';return;}
+  empty.style.display='none';content.style.display='block';
+
+  const allRows=buildRows(activeProduct);
+  if(!allRows.length){content.innerHTML='<p style="color:var(--ink2);">No data to analyse.</p>';return;}
+
+  const p=PRODUCTS.find(x=>x.id===activeProduct);
+  const totalSpend=allRows.reduce((a,r)=>a+(r.spend||0),0);
+  const totalNCs=allRows.reduce((a,r)=>a+(r.ncs||0),0);
+  const portfolioRoas=wAvg(allRows,'roas','spend');
+  const portfolioCAC=totalCAC(allRows);
+
+  function rankDim(dim){
+    const map=new Map();
+    for(const r of allRows){
+      const k=r[dim]||'Unknown';
+      if(k==='Unknown'||k==='-'||k==='None')continue;
+      if(!map.has(k))map.set(k,{key:k,spend:0,ncs:0,_wR:0});
+      const v=map.get(k);
+      v.spend+=(r.spend||0);
+      if(r.ncs>0)v.ncs+=r.ncs;
+      if(r.roas!=null)v._wR+=(r.spend||0)*r.roas;
+    }
+    return[...map.values()]
+      .filter(v=>v.spend>1000)
+      .map(v=>({...v,roas:v.spend>0?v._wR/v.spend:null,cac:v.ncs>0?v.spend/v.ncs:null,spendShare:v.spend/totalSpend}))
+      .sort((a,b)=>(b.roas||0)-(a.roas||0));
+  }
+
+  const SECTION=`margin-bottom:32px;`;
+  const H2=`font-size:16px;font-weight:700;color:var(--ink);margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid var(--line);`;
+  const H3=`font-size:13px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;margin:0 0 10px;`;
+  const CARD=`background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;`;
+
+  function perfBadge(roas){
+    if(roas==null)return'';
+    if(roas>=2)return`<span style="background:#dcfce7;color:#166534;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;">★ Top</span>`;
+    if(roas>=1)return`<span style="background:#fef9c3;color:#854d0e;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;">✓ OK</span>`;
+    return`<span style="background:#fee2e2;color:#991b1b;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600;">✗ Weak</span>`;
+  }
+
+  function dimTable(rows,title,icon){
+    if(!rows.length)return'';
+    const top=rows.slice(0,8);
+    const maxSpend=Math.max(...top.map(r=>r.spend));
+    let h=`<div style="${CARD}margin-bottom:16px;"><div style="${H3}">${icon} ${title}</div>`;
+    h+=`<table style="width:100%;border-collapse:collapse;font-size:13px;">`;
+    h+=`<tr style="color:var(--ink2);font-size:11px;"><td style="padding:4px 8px 8px 0;font-weight:600;">Name</td><td style="padding:4px 8px 8px;text-align:right;font-weight:600;">Spend</td><td style="padding:4px 8px 8px;text-align:right;font-weight:600;">NCs</td><td style="padding:4px 8px 8px;text-align:right;font-weight:600;">ROAS</td><td style="padding:4px 8px 8px;text-align:right;font-weight:600;">CAC</td><td style="padding:4px 8px 8px;font-weight:600;">Signal</td></tr>`;
+    top.forEach((r,i)=>{
+      const bar=`<div style="background:var(--blue);height:4px;border-radius:2px;width:${Math.round(r.spend/maxSpend*100)}%;margin-top:3px;opacity:0.4;"></div>`;
+      h+=`<tr style="${i%2?'background:#f8fafc;':''}">`;
+      h+=`<td style="padding:6px 8px 6px 0;font-weight:${i===0?'700':'500'}">${r.key}</td>`;
+      h+=`<td style="padding:6px 8px;text-align:right;font-family:var(--mono);">${fmtS(r.spend)}${bar}</td>`;
+      h+=`<td style="padding:6px 8px;text-align:right;font-family:var(--mono);">${r.ncs||'—'}</td>`;
+      h+=`<td style="padding:6px 8px;text-align:right;font-family:var(--mono);">${fmtR(r.roas)}</td>`;
+      h+=`<td style="padding:6px 8px;text-align:right;font-family:var(--mono);">${fmtC(r.cac)}</td>`;
+      h+=`<td style="padding:6px 8px;">${perfBadge(r.roas)}</td>`;
+      h+=`</tr>`;
+    });
+    h+=`</table></div>`;
+    return h;
+  }
+
+  function insight(dim,label){
+    const ranked=rankDim(dim);
+    if(!ranked.length)return'';
+    const top=ranked[0];
+    const weak=ranked.filter(r=>r.roas!=null&&r.roas<1);
+    let txt=`<b>${top.key}</b> is your best-performing ${label} (${fmtR(top.roas)} ROAS, ${fmtC(top.cac)} CAC, ${fmtS(top.spend)} spent).`;
+    if(weak.length)txt+=` Consider reducing spend on: ${weak.map(r=>r.key).join(', ')}.`;
+    return txt;
+  }
+
+  const creatorRanked=rankDim('int_inf');
+  const formatRanked=rankDim('ad_format');
+  const langRanked=rankDim('language');
+  const narrativeRanked=rankDim('narrative');
+
+  let html=`<div style="max-width:1200px;">`;
+
+  html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <h2 style="font-size:20px;font-weight:700;margin:0 0 4px;">${p.label} — Creative Planning</h2>
+      <div style="font-size:13px;color:var(--ink2);">Based on ${months.length} month(s) of data · ${allRows.length} ads · ${fmtS(totalSpend)} total spend · ${totalNCs} NCs</div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 16px;text-align:center;">
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:2px;">Portfolio ROAS</div>
+        <div style="font-size:18px;font-weight:700;font-family:var(--mono);">${fmtR(portfolioRoas)}</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 16px;text-align:center;">
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:2px;">Portfolio CAC</div>
+        <div style="font-size:18px;font-weight:700;font-family:var(--mono);">${fmtC(portfolioCAC)}</div>
+      </div>
+    </div>
+  </div>`;
+
+  html+=`<div style="${CARD}margin-bottom:24px;background:linear-gradient(135deg,#eff6ff,#f0fdf4);">
+    <div style="${H3}">💡 Key Insights</div>
+    <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.6;">`;
+  if(creatorRanked.length)html+=`<div>🎬 <b>Creator Type:</b> ${insight('int_inf','creator type')}</div>`;
+  if(formatRanked.length)html+=`<div>🎥 <b>Ad Format:</b> ${insight('ad_format','format')}</div>`;
+  if(langRanked.length)html+=`<div>🌐 <b>Language:</b> ${insight('language','language')}</div>`;
+  html+=`</div></div>`;
+
+  html+=`<div style="${SECTION}">`;
+  html+=`<h2 style="${H2}">🎬 Creator Type Performance</h2>`;
+  html+=dimTable(creatorRanked,'Int / Inf / Affluence breakdown','');
+  html+=`</div>`;
+
+  html+=`<div style="${SECTION}">`;
+  html+=`<h2 style="${H2}">🎥 Ad Format Performance</h2>`;
+  html+=dimTable(formatRanked,'Formats ranked by ROAS','');
+  html+=`</div>`;
+
+  html+=`<div style="${SECTION}">`;
+  html+=`<h2 style="${H2}">🌐 Language Performance</h2>`;
+  html+=dimTable(langRanked,'Languages ranked by ROAS','');
+  html+=`</div>`;
+
+  if(narrativeRanked.length){
+    html+=`<div style="${SECTION}">`;
+    html+=`<h2 style="${H2}">💬 Narrative / Angle Performance</h2>`;
+    html+=dimTable(narrativeRanked,'Narratives ranked by ROAS','');
+    html+=`</div>`;
+  }
+
+  html+=`</div>`;
+  content.innerHTML=html;
 }
 
 // ═══════════════════════════════════════════════
