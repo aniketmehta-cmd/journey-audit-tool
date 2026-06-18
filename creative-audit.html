@@ -2649,11 +2649,26 @@ refreshSheet();
 // ═══════════════════════════════════════════════
 // UMBRELLA SHEET TAB
 // ═══════════════════════════════════════════════
+// PWDD formula reverse-engineered from XLSX:
+//   Spend  = SUMIFS(DD!G, date, product)         col G = "Amount spent (INR)"
+//   NCs    = SUMIFS(DD!Z, date, product)         col Z = "NC"
+//   CAC    = Spend / NCs / G1                    G1 = 0.76 benchmark
+//   AOV    = SUMIFS(DD!AC, date, product) / NCs  col AC = "Sum"
+//   ROAS   = SUMIFS(DD!AC) × G1 / Spend
+//   Prepaid= SUMIFS(DD!AA, date, product) / NCs  col AA = "Prepaid"
+//   CTR    = SUMIFS(DD!I) / SUMIFS(DD!H)         I=Clicks, H=Impressions
+//   CPC    = Spend / Clicks
+//   CPM    = Spend / Impressions × 1000
+//   Hook   = SUMIFS(DD!N) / Impressions          N = "3-second video plays"
+//   ATC%   = SUMIFS(DD!AE) / SUMIFS(DD!AD)       AE="ATC/BN", AD="PDP Viewed"
+//   Purch% = SUMIFS(DD!AF) / SUMIFS(DD!AE)       AF="NCs (Funnel)"
+//   Conv%  = ATC% × Purch% = NCs_Funnel/PDP_Viewed
+//   Product filter: DD!AH = "Product" column (col 33, 0-indexed)
+
 const UMBRELLA_SHEET_ID = '1FhU5tkfTREdeVlMjyIdqhyaTIdeBoSZczQ2rTd2B-KI';
-const UMBRELLA_DD_GID   = '0';         // DD tab — raw ad-level rows
-const UMBRELLA_PWDD_GID = '831967312'; // PWDD tab — pre-computed daily metrics
-let umbrellaRaw = null;      // DD parsed rows (ad-level raw)
-let umbrellaPWDD = null;     // { productName, dailyRows[] } from PWDD
+const UMBRELLA_DD_GID   = '0';
+const UMBRELLA_G1       = 0.76; // PWDD benchmark constant (cell G1)
+let umbrellaRaw = null;
 let umbrellaProducts = [];
 let umbrellaLastFetched = null;
 let umbrellaAutoRefreshTimer = null;
@@ -2664,37 +2679,20 @@ function umbrellaStatus(msg){
   el.innerHTML = `<div style="font-size:13px;color:var(--ink2);">${msg}</div>`;
 }
 
-// Normalise product name for fuzzy match: remove spaces, lowercase
-function umbrellaSlug(s){ return (s||'').toLowerCase().replace(/\s+/g,''); }
-
-// Returns true if DD product name matches PWDD product name
-function umbrellaProductMatchesPWDD(ddProduct){
-  if(!umbrellaPWDD) return false;
-  const a = umbrellaSlug(ddProduct);
-  const b = umbrellaSlug(umbrellaPWDD.productName);
-  return a === b || a.includes(b) || b.includes(a);
-}
-
 async function umbrellaFetchData(){
   umbrellaStatus('Fetching data from Umbrella Sheet…');
   document.getElementById('umbrella-kpis').style.display = 'none';
   document.getElementById('umbrella-table-wrap').style.display = 'none';
-  const base = `https://docs.google.com/spreadsheets/d/${UMBRELLA_SHEET_ID}/gviz/tq?tqx=out:csv&gid=`;
+  const url = `https://docs.google.com/spreadsheets/d/${UMBRELLA_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${UMBRELLA_DD_GID}`;
   try {
-    const [ddResp, pwddResp] = await Promise.all([
-      fetch(base + UMBRELLA_DD_GID),
-      fetch(base + UMBRELLA_PWDD_GID),
-    ]);
-    if(!ddResp.ok)   throw new Error('DD tab HTTP ' + ddResp.status);
-    if(!pwddResp.ok) throw new Error('PWDD tab HTTP ' + pwddResp.status);
-    const [ddText, pwddText] = await Promise.all([ddResp.text(), pwddResp.text()]);
-    umbrellaParseDD(ddText);
-    umbrellaPWDD = umbrellaParseWDD(pwddText);
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    umbrellaParseDD(text);
     umbrellaLastFetched = new Date();
     document.getElementById('umbrella-last-refreshed').textContent =
       'Last refreshed: ' + umbrellaLastFetched.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) +
-      ' on ' + umbrellaLastFetched.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) +
-      (umbrellaPWDD ? ' · Exact data for: ' + umbrellaPWDD.productName : '');
+      ' on ' + umbrellaLastFetched.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
     umbrellaPopulateProducts();
     umbrellaApplyFilters();
     umbrellaScheduleAutoRefresh();
@@ -2703,7 +2701,6 @@ async function umbrellaFetchData(){
   }
 }
 
-// Parse DD tab (raw ad-level rows)
 function umbrellaParseDD(text){
   function parseRow(line){
     const cols = []; let cur='', inQ=false;
@@ -2719,130 +2716,58 @@ function umbrellaParseDD(text){
   const lines = text.trim().split('\n');
   if(lines.length < 2){ umbrellaStatus('No data in DD tab.'); return; }
   const headers = parseRow(lines[0]);
+  // Build column index — duplicate headers get _2 suffix
   const ci = {}, seen = {};
   headers.forEach((h,i)=>{
     let k = h.trim().toLowerCase().replace(/[^a-z0-9]/g,'_');
-    if(seen[k]){ k = k+'_2'; } seen[k]=1;
-    ci[k] = i;
+    if(seen[k]){ k=k+'_2'; } seen[k]=1;
+    ci[k]=i;
   });
+  // DD tab gviz CSV column indices (confirmed from live fetch + XLSX analysis):
+  //  0:Day  6:Amount spent(INR)  7:Impressions  8:Link clicks
+  //  13:3-second video plays  25:NC  26:Prepaid
+  //  28:Sum (revenue used by PWDD)  29:PDP Viewed  30:ATC/BN
+  //  31:NCs(Funnel)  33:Product (product filter used by PWDD)
   const rows = [];
   for(let i=1;i<lines.length;i++){
     if(!lines[i].trim()) continue;
     const cols = parseRow(lines[i]);
-    const get = (key) => (cols[ci[key]]||'').trim();
-    const num = (key) => parseFloat((cols[ci[key]]||'0').replace(/,/g,''))||0;
+    const get = k => (cols[ci[k]]||'').trim();
+    const num = k => parseFloat((cols[ci[k]]||'0').replace(/,/g,''))||0;
     const dateStr = get('day');
     if(!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
     const dateParsed = new Date(dateStr);
     if(isNaN(dateParsed)) continue;
-    const campaignName = get('campaign_name');
-    let product = 'Unknown';
-    if(campaignName){
-      const parts = campaignName.split('|');
-      product = parts.length >= 2 ? parts[1].trim() : campaignName.trim();
-    }
+    // Use the pre-computed "Product" column (col 33 = DD!AH) — exact same filter as PWDD
+    const product = get('product') || 'Unknown';
     rows.push({
       date: dateParsed, dateStr, product,
       adSetName: get('ad_set_name'),
-      adName: (cols[ci['ad_name_2']]||'').trim() || get('ad_name'),
-      spend: num('amount_spent__inr_'),
-      impressions: num('impressions'),
-      clicks: num('link_clicks'),
-      lpv: num('landing_page_views'),
-      atc: num('add_to_cart'),
-      nc: num('nc'),
-      purchases: num('purchases'),
-      revenue: num('purchases_conversion_value'),
-      video3s: num('3_second_video_plays'),
+      adName: get('ad_name_2') || get('ad_name'), // col 24 = clean ad name
+      spend:      num('amount_spent__inr_'), // DD!G
+      impressions:num('impressions'),         // DD!H
+      clicks:     num('link_clicks'),         // DD!I
+      nc:         num('nc'),                  // DD!Z
+      video3s:    num('3_second_video_plays'),// DD!N
+      prepaid:    num('prepaid'),             // DD!AA
+      sumRev:     num('sum'),                 // DD!AC — revenue per PWDD formula
+      pdpViewed:  num('pdp_viewed'),          // DD!AD
+      atcBN:      num('atc__bn'),             // DD!AE
+      ncsFunnel:  num('ncs__funnel_'),        // DD!AF
     });
   }
   umbrellaRaw = rows;
 }
 
-// Parse PWDD tab — extracts product name + pre-computed daily rows
-function umbrellaParseWDD(text){
-  function parseRow(line){
-    const cols = []; let cur='', inQ=false;
-    for(let i=0;i<line.length;i++){
-      const c=line[i];
-      if(c==='"'){ if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ; }
-      else if(c===','&&!inQ){cols.push(cur);cur='';}
-      else cur+=c;
-    }
-    cols.push(cur);
-    return cols;
-  }
-  const MONTHS = {January:1,February:2,March:3,April:4,May:5,June:6,
-                  July:7,August:8,September:9,October:10,November:11,December:12};
-  function parsePWDDDate(s){
-    const m = s.match(/(\d+)\s+(\w+)\s+(\d{4})/);
-    if(!m) return null;
-    const mon = MONTHS[m[2]]; if(!mon) return null;
-    return `${m[3]}-${String(mon).padStart(2,'0')}-${String(parseInt(m[1])).padStart(2,'0')}`;
-  }
-  function pn(s){ // parse number, strips commas and % sign
-    return parseFloat((s||'0').replace(/,/g,'').replace(/%$/,''))||0;
-  }
-  const lines = text.trim().split('\n');
-  if(lines.length < 3) return null;
-  const allRows = lines.map(parseRow);
-  // Row index 1 = header row: col 0 = product name
-  const productName = (allRows[1]?.[0]||'').trim();
-  if(!productName) return null;
-
-  const dailyRows = [];
-  let section = 'daily'; // daily → week → ads
-  for(let i=2; i<allRows.length; i++){
-    const row = allRows[i];
-    const col0 = (row[0]||'').trim();
-    if(!col0) continue;
-    // Section header detection
-    if(col0 === 'Week'){ section = 'week'; continue; }
-    if(col0 === 'Ads'){  section = 'ads';  continue; }
-    if(section !== 'daily') continue;
-    // Must look like "Weekday, DD Month YYYY"
-    const dateStr = parsePWDDDate(col0);
-    if(!dateStr) continue;
-    const spend = pn(row[1]);
-    if(!spend) continue; // skip zero-spend rows
-    dailyRows.push({
-      dateStr,
-      date: new Date(dateStr),
-      spend,
-      nc:       pn(row[2]),
-      cac:      pn(row[3]),
-      aov:      pn(row[4]),
-      roas:     pn(row[5]) / 100,  // "72%" → 0.72
-      prepaidPct: pn(row[6]),
-      ctr:      pn(row[7]),
-      cpc:      pn(row[8]),
-      cpm:      pn(row[9]),
-      hookRate: pn(row[10]),
-      atcPct:   pn(row[11]),
-      purchPct: pn(row[12]),
-      convPct:  pn(row[13]),
-    });
-  }
-  return { productName, dailyRows };
-}
-
 function umbrellaPopulateProducts(){
   if(!umbrellaRaw) return;
-  const products = [...new Set(umbrellaRaw.map(r=>r.product))].sort();
+  const products = [...new Set(umbrellaRaw.map(r=>r.product).filter(p=>p&&p!=='Unknown'))].sort();
   umbrellaProducts = products;
   const sel = document.getElementById('umbrella-product-sel');
-  sel.innerHTML = products.map(p=>{
-    const exact = umbrellaPWDD && umbrellaProductMatchesPWDD(p);
-    return `<option value="${p}">${p}${exact?' ✓':''}</option>`;
-  }).join('');
-  // Auto-select the PWDD product if present
-  if(umbrellaPWDD){
-    const match = products.find(p=>umbrellaProductMatchesPWDD(p));
-    if(match) sel.value = match;
-  }
+  sel.innerHTML = products.map(p=>`<option value="${p}">${p}</option>`).join('');
 }
 
-function umbrellaGetFilteredDDRows(){
+function umbrellaGetFilteredRows(){
   if(!umbrellaRaw || !umbrellaRaw.length) return [];
   const product = document.getElementById('umbrella-product-sel').value;
   let rows = umbrellaRaw.filter(r => r.product === product);
@@ -2853,43 +2778,35 @@ function umbrellaGetFilteredDDRows(){
   return rows;
 }
 
-function umbrellaGetFilteredPWDDRows(){
-  if(!umbrellaPWDD) return [];
-  let rows = umbrellaPWDD.dailyRows;
-  const from = document.getElementById('umbrella-date-from').value;
-  const to   = document.getElementById('umbrella-date-to').value;
-  if(from) rows = rows.filter(r=>r.dateStr >= from);
-  if(to)   rows = rows.filter(r=>r.dateStr <= to);
-  return rows.sort((a,b)=>b.date-a.date);
-}
-
-// Aggregate DD rows by date (for non-PWDD products)
 function umbrellaAggrByDate(rows){
   const map = {};
   rows.forEach(r=>{
     const d = r.dateStr;
-    if(!map[d]) map[d]={date:r.date,dateStr:d,spend:0,impressions:0,clicks:0,lpv:0,atc:0,nc:0,purchases:0,revenue:0,video3s:0};
+    if(!map[d]) map[d]={date:r.date,dateStr:d,spend:0,impressions:0,clicks:0,nc:0,video3s:0,prepaid:0,sumRev:0,pdpViewed:0,atcBN:0,ncsFunnel:0};
     const m=map[d];
     m.spend+=r.spend; m.impressions+=r.impressions; m.clicks+=r.clicks;
-    m.lpv+=r.lpv; m.atc+=r.atc; m.nc+=r.nc;
-    m.purchases+=r.purchases; m.revenue+=r.revenue; m.video3s+=r.video3s;
+    m.nc+=r.nc; m.video3s+=r.video3s; m.prepaid+=r.prepaid;
+    m.sumRev+=r.sumRev; m.pdpViewed+=r.pdpViewed;
+    m.atcBN+=r.atcBN; m.ncsFunnel+=r.ncsFunnel;
   });
   return Object.values(map).sort((a,b)=>b.date-a.date);
 }
 
+// Exact PWDD formula replication (G1 = UMBRELLA_G1 = 0.76)
 function umbrellaCalcMetrics(agg){
   return agg.map(r=>({
     ...r,
-    cac:     r.purchases ? r.spend/r.purchases : 0,
-    aov:     r.purchases ? r.revenue/r.purchases : 0,
-    roas:    r.spend ? r.revenue/r.spend : 0,
-    ctr:     r.impressions ? r.clicks/r.impressions*100 : 0,
-    cpc:     r.clicks ? r.spend/r.clicks : 0,
-    cpm:     r.impressions ? r.spend/r.impressions*1000 : 0,
-    hookRate:r.impressions ? r.video3s/r.impressions*100 : 0,
-    atcPct:  r.clicks ? r.atc/r.clicks*100 : 0,
-    purchPct:r.atc ? r.purchases/r.atc*100 : 0,
-    convPct: r.lpv ? r.nc/r.lpv*100 : 0,
+    cac:     r.nc     ? r.spend / r.nc / UMBRELLA_G1 : 0,
+    aov:     r.nc     ? r.sumRev / r.nc : 0,
+    roas:    r.spend  ? r.sumRev * UMBRELLA_G1 / r.spend : 0,
+    ctr:     r.impressions ? r.clicks / r.impressions * 100 : 0,
+    cpc:     r.clicks ? r.spend / r.clicks : 0,
+    cpm:     r.impressions ? r.spend / r.impressions * 1000 : 0,
+    hookRate:r.impressions ? r.video3s / r.impressions * 100 : 0,
+    prepaidPct: r.nc  ? r.prepaid / r.nc * 100 : 0,
+    atcPct:  r.pdpViewed ? r.atcBN / r.pdpViewed * 100 : 0,
+    purchPct:r.atcBN  ? r.ncsFunnel / r.atcBN * 100 : 0,
+    convPct: r.pdpViewed ? r.ncsFunnel / r.pdpViewed * 100 : 0,
   }));
 }
 
@@ -2902,66 +2819,22 @@ function umbrellaFmt(n,type){
   return n.toFixed(2);
 }
 
-// Render KPI cards. When usePWDD=true, derives aggregates from PWDD daily rows
-function umbrellaRenderKPIs(rows, pwddRows){
-  let spend=0, nc=0, cac=0, aov=0, roas=0, ctr=0, cpc=0, cpm=0, hookRate=0, atcPct=0, purchPct=0, convPct=0;
-  let impressions=0;
-
-  if(pwddRows && pwddRows.length){
-    // Derive aggregates from PWDD pre-computed rows
-    let totalSpend=0, totalNC=0, totalPurchases=0, totalRevenue=0;
-    let totalClicks=0, totalImpr=0, totalATC=0, totalLPV=0, totalVideo3s=0;
-    pwddRows.forEach(r=>{
-      totalSpend    += r.spend;
-      totalNC       += r.nc;
-      // infer counts from pre-computed rates
-      const inferredPurchases = r.cac > 0 ? r.spend / r.cac : 0;
-      const inferredRevenue   = r.spend * r.roas;
-      const inferredClicks    = r.cpc > 0 ? r.spend / r.cpc : 0;
-      const inferredImpr      = r.cpm > 0 ? r.spend * 1000 / r.cpm : 0;
-      const inferredATC       = inferredClicks * r.atcPct / 100;
-      const inferredLPV       = r.convPct > 0 ? r.nc / (r.convPct / 100) : 0;
-      const inferredVideo3s   = inferredImpr * r.hookRate / 100;
-      totalPurchases += inferredPurchases;
-      totalRevenue   += inferredRevenue;
-      totalClicks    += inferredClicks;
-      totalImpr      += inferredImpr;
-      totalATC       += inferredATC;
-      totalLPV       += inferredLPV;
-      totalVideo3s   += inferredVideo3s;
-    });
-    spend      = totalSpend;
-    nc         = totalNC;
-    impressions= Math.round(totalImpr);
-    cac        = totalPurchases ? totalSpend / totalPurchases : 0;
-    aov        = totalPurchases ? totalRevenue / totalPurchases : 0;
-    roas       = totalSpend ? totalRevenue / totalSpend : 0;
-    ctr        = totalImpr ? totalClicks / totalImpr * 100 : 0;
-    cpc        = totalClicks ? totalSpend / totalClicks : 0;
-    cpm        = totalImpr ? totalSpend / totalImpr * 1000 : 0;
-    hookRate   = totalImpr ? totalVideo3s / totalImpr * 100 : 0;
-    atcPct     = totalClicks ? totalATC / totalClicks * 100 : 0;
-    purchPct   = totalATC ? totalPurchases / totalATC * 100 : 0;
-    convPct    = totalLPV ? totalNC / totalLPV * 100 : 0;
-  } else {
-    const t={spend:0,impressions:0,clicks:0,lpv:0,atc:0,nc:0,purchases:0,revenue:0,video3s:0};
-    rows.forEach(r=>{ for(const k of Object.keys(t)) t[k]+=r[k]||0; });
-    spend=t.spend; nc=t.nc; impressions=t.impressions;
-    cac=t.purchases?t.spend/t.purchases:0;
-    aov=t.purchases?t.revenue/t.purchases:0;
-    roas=t.spend?t.revenue/t.spend:0;
-    ctr=t.impressions?t.clicks/t.impressions*100:0;
-    cpc=t.clicks?t.spend/t.clicks:0;
-    cpm=t.impressions?t.spend/t.impressions*1000:0;
-    hookRate=t.impressions?t.video3s/t.impressions*100:0;
-    atcPct=t.clicks?t.atc/t.clicks*100:0;
-    purchPct=t.atc?t.purchases/t.atc*100:0;
-    convPct=t.lpv?t.nc/t.lpv*100:0;
-  }
-
+function umbrellaRenderKPIs(rows){
+  const t={spend:0,impressions:0,clicks:0,nc:0,video3s:0,prepaid:0,sumRev:0,pdpViewed:0,atcBN:0,ncsFunnel:0};
+  rows.forEach(r=>{ for(const k of Object.keys(t)) t[k]+=(r[k]||0); });
+  const cac     = t.nc         ? t.spend / t.nc / UMBRELLA_G1 : 0;
+  const aov     = t.nc         ? t.sumRev / t.nc : 0;
+  const roas    = t.spend      ? t.sumRev * UMBRELLA_G1 / t.spend : 0;
+  const ctr     = t.impressions? t.clicks / t.impressions * 100 : 0;
+  const cpc     = t.clicks     ? t.spend / t.clicks : 0;
+  const cpm     = t.impressions? t.spend / t.impressions * 1000 : 0;
+  const hookRate= t.impressions? t.video3s / t.impressions * 100 : 0;
+  const atcPct  = t.pdpViewed  ? t.atcBN / t.pdpViewed * 100 : 0;
+  const purchPct= t.atcBN      ? t.ncsFunnel / t.atcBN * 100 : 0;
+  const convPct = t.pdpViewed  ? t.ncsFunnel / t.pdpViewed * 100 : 0;
   const kpis = [
-    {label:'Spend',      val:umbrellaFmt(spend,'inrk')},
-    {label:'NCs',        val:umbrellaFmt(nc,'num')},
+    {label:'Spend',      val:umbrellaFmt(t.spend,'inrk')},
+    {label:'NCs',        val:umbrellaFmt(t.nc,'num')},
     {label:'CAC',        val:umbrellaFmt(cac,'inr')},
     {label:'AOV',        val:umbrellaFmt(aov,'inr')},
     {label:'ROAS',       val:umbrellaFmt(roas,'x')},
@@ -2972,7 +2845,7 @@ function umbrellaRenderKPIs(rows, pwddRows){
     {label:'ATC %',      val:umbrellaFmt(atcPct,'pct')},
     {label:'Purchase %', val:umbrellaFmt(purchPct,'pct')},
     {label:'Conv. %',    val:umbrellaFmt(convPct,'pct')},
-    {label:'Impressions',val:umbrellaFmt(impressions,'num')},
+    {label:'Impressions',val:umbrellaFmt(t.impressions,'num')},
   ];
   const card = k => `<div style="background:#fff;border:1px solid #d0d0d0;border-radius:8px;padding:12px 16px;min-width:105px;">
     <div style="font-size:10px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${k.label}</div>
@@ -3006,10 +2879,8 @@ function umbrellaGridTable(title, cols, rows, dateColKey){
     </table></div>`;
 }
 
-// dailyRows: either PWDD pre-computed rows or DD-aggregated+calculated rows (same field names)
-function umbrellaRenderTable(dailyRows, ddRows, usingPWDD){
+function umbrellaRenderTable(dailyRows, rawRows){
   const roasFmt = v => umbrellaFmt(v,'x');
-
   const dailyCols = [
     {key:'dateStr',  label:'Date',      left:true, fmt:v=>v},
     {key:'spend',    label:'Spend',     fmt:v=>umbrellaFmt(v,'inrk')},
@@ -3026,28 +2897,28 @@ function umbrellaRenderTable(dailyRows, ddRows, usingPWDD){
     {key:'convPct',  label:'Conv %',    fmt:v=>umbrellaFmt(v,'pct')},
   ];
 
-  // Ad-level from DD rows
+  // Ad-level aggregation using same formulas as PWDD
   const adMap = {};
-  ddRows.forEach(r=>{
+  rawRows.forEach(r=>{
     const k = r.adName || r.adSetName || 'Unknown';
-    if(!adMap[k]) adMap[k]={adName:k,spend:0,impressions:0,clicks:0,lpv:0,atc:0,nc:0,purchases:0,revenue:0,video3s:0};
+    if(!adMap[k]) adMap[k]={adName:k,spend:0,impressions:0,clicks:0,nc:0,video3s:0,sumRev:0,pdpViewed:0,atcBN:0,ncsFunnel:0};
     const m=adMap[k];
     m.spend+=r.spend; m.impressions+=r.impressions; m.clicks+=r.clicks;
-    m.lpv+=r.lpv; m.atc+=r.atc; m.nc+=r.nc;
-    m.purchases+=r.purchases; m.revenue+=r.revenue; m.video3s+=r.video3s;
+    m.nc+=r.nc; m.video3s+=r.video3s; m.sumRev+=r.sumRev;
+    m.pdpViewed+=r.pdpViewed; m.atcBN+=r.atcBN; m.ncsFunnel+=r.ncsFunnel;
   });
   const adRows = Object.values(adMap)
     .filter(r=>r.spend>0)
     .map(r=>({...r,
-      cac:      r.purchases ? r.spend/r.purchases : 0,
-      aov:      r.purchases ? r.revenue/r.purchases : 0,
-      roas:     r.spend ? r.revenue/r.spend : 0,
-      ctr:      r.impressions ? r.clicks/r.impressions*100 : 0,
-      cpm:      r.impressions ? r.spend/r.impressions*1000 : 0,
-      hookRate: r.impressions ? r.video3s/r.impressions*100 : 0,
-      atcPct:   r.clicks ? r.atc/r.clicks*100 : 0,
-      purchPct: r.atc ? r.purchases/r.atc*100 : 0,
-      convPct:  r.lpv ? r.nc/r.lpv*100 : 0,
+      cac:     r.nc         ? r.spend/r.nc/UMBRELLA_G1 : 0,
+      aov:     r.nc         ? r.sumRev/r.nc : 0,
+      roas:    r.spend      ? r.sumRev*UMBRELLA_G1/r.spend : 0,
+      ctr:     r.impressions? r.clicks/r.impressions*100 : 0,
+      cpm:     r.impressions? r.spend/r.impressions*1000 : 0,
+      hookRate:r.impressions? r.video3s/r.impressions*100 : 0,
+      atcPct:  r.pdpViewed  ? r.atcBN/r.pdpViewed*100 : 0,
+      purchPct:r.atcBN      ? r.ncsFunnel/r.atcBN*100 : 0,
+      convPct: r.pdpViewed  ? r.ncsFunnel/r.pdpViewed*100 : 0,
     }))
     .sort((a,b)=>b.nc-a.nc||b.spend-a.spend);
 
@@ -3067,44 +2938,27 @@ function umbrellaRenderTable(dailyRows, ddRows, usingPWDD){
     {key:'convPct', label:'Conv %',   fmt:v=>umbrellaFmt(v,'pct')},
   ];
 
-  const sourceNote = usingPWDD
-    ? `<div style="font-size:11px;color:#22a56b;font-weight:600;margin-bottom:16px;">✓ Daily metrics sourced directly from PWDD — exact match guaranteed</div>`
-    : `<div style="font-size:11px;color:#888;margin-bottom:16px;">Daily metrics computed from DD raw data (select ${umbrellaPWDD?umbrellaPWDD.productName:'the PWDD product'} for exact PWDD match)</div>`;
-
   const wrap = document.getElementById('umbrella-table-wrap');
   wrap.style.display = 'block';
-  wrap.innerHTML = sourceNote +
+  wrap.innerHTML =
     umbrellaGridTable(`Daily Breakdown — ${dailyRows.length} days`, dailyCols, dailyRows, 'dateStr') +
     umbrellaGridTable(`Ad-Level Breakdown — ${adRows.length} ads`, adCols, adRows, '');
 }
 
 function umbrellaApplyFilters(){
   if(!umbrellaRaw) return;
-  const ddRows = umbrellaGetFilteredDDRows();
-  const selectedProduct = document.getElementById('umbrella-product-sel').value;
-  const useExact = umbrellaProductMatchesPWDD(selectedProduct);
-  const pwddRows = useExact ? umbrellaGetFilteredPWDDRows() : null;
-
-  if(!ddRows.length && (!pwddRows || !pwddRows.length)){
+  const rows = umbrellaGetFilteredRows();
+  if(!rows.length){
     umbrellaStatus('No data for selected product / date range.');
     document.getElementById('umbrella-kpis').style.display = 'none';
     document.getElementById('umbrella-table-wrap').style.display = 'none';
     return;
   }
   document.getElementById('umbrella-status').style.display = 'none';
-
-  let dailyRows;
-  if(pwddRows && pwddRows.length){
-    // Use PWDD pre-computed daily rows directly (exact match)
-    dailyRows = pwddRows;
-  } else {
-    // Fall back to DD-computed daily rows
-    const aggByDate = umbrellaAggrByDate(ddRows);
-    dailyRows = umbrellaCalcMetrics(aggByDate);
-  }
-
-  umbrellaRenderKPIs(ddRows, pwddRows && pwddRows.length ? pwddRows : null);
-  umbrellaRenderTable(dailyRows, ddRows, !!(pwddRows && pwddRows.length));
+  const aggByDate = umbrellaAggrByDate(rows);
+  const withMetrics = umbrellaCalcMetrics(aggByDate);
+  umbrellaRenderKPIs(rows);
+  umbrellaRenderTable(withMetrics, rows);
 }
 
 function umbrellaRefresh(){ umbrellaFetchData(); }
