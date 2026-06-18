@@ -282,6 +282,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
     <button class="mnav-btn active" onclick="switchMainTab('analytics',this)">📊 Monthly Analysis</button>
     <button class="mnav-btn" onclick="switchMainTab('daily',this)">📅 Daily Digest</button>
     <button class="mnav-btn" onclick="switchMainTab('planning',this)">🎯 Planning</button>
+    <button class="mnav-btn" onclick="switchMainTab('umbrella',this)">☂️ Umbrella Sheet</button>
   </div>
 </div>
 
@@ -486,6 +487,39 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
       <div style="font-size:13px;margin-top:6px;">Go to Monthly Analysis → upload CSVs for the months you want to plan from</div>
     </div>
     <div id="planning-content" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: UMBRELLA SHEET ═══ -->
+<div id="main-tab-umbrella" class="main-tab">
+  <div style="padding:28px;">
+    <div id="umbrella-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+      <div>
+        <div style="font-size:18px;font-weight:700;">Umbrella Sheet — Daily Performance</div>
+        <div id="umbrella-last-refreshed" style="font-size:12px;color:var(--ink2);margin-top:2px;">Not loaded yet</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <select id="umbrella-product-sel" style="padding:6px 10px;border-radius:8px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
+          <option value="">Loading products…</option>
+        </select>
+        <select id="umbrella-range-sel" style="padding:6px 10px;border-radius:8px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
+          <option value="7">Last 7 days</option>
+          <option value="14">Last 14 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="all">All time</option>
+          <option value="custom">Custom range…</option>
+        </select>
+        <div id="umbrella-custom-range" style="display:none;gap:6px;align-items:center;">
+          <input type="date" id="umbrella-date-from" style="padding:5px 8px;border-radius:6px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;" onchange="umbrellaApplyFilters()">
+          <span style="font-size:12px;color:var(--ink2);">to</span>
+          <input type="date" id="umbrella-date-to" style="padding:5px 8px;border-radius:6px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;" onchange="umbrellaApplyFilters()">
+        </div>
+        <button onclick="umbrellaRefresh()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
+      </div>
+    </div>
+    <div id="umbrella-status" style="text-align:center;padding:40px;color:var(--ink2);font-size:14px;">Select the tab to load data…</div>
+    <div id="umbrella-kpis" style="display:none;"></div>
+    <div id="umbrella-table-wrap" style="display:none;overflow-x:auto;margin-top:20px;"></div>
   </div>
 </div>
 
@@ -1554,6 +1588,8 @@ function switchMainTab(name,btn){
   document.getElementById('main-tab-'+name).classList.add('active');
   if(btn)btn.classList.add('active');
   if(name==='planning')renderPlanning();
+  if(name==='umbrella'&&!umbrellaRaw)umbrellaFetchData();
+  else if(name==='umbrella')umbrellaApplyFilters();
   const cb=document.getElementById('combined-digest-box');
   if(cb)cb.style.display=name==='daily'?'block':'none';
   if(name==='daily'&&!contextData.lastFetched)fetchContextData();
@@ -2613,6 +2649,286 @@ const bar=document.getElementById('product-bar');
 PRODUCTS.forEach(p=>{const btn=document.createElement('button');btn.className='ptab '+p.cls+(p.id===activeProduct?' active':'');btn.dataset.id=p.id;btn.textContent=p.label;btn.onclick=()=>switchProduct(p.id);bar.appendChild(btn);});
 try{const saved=localStorage.getItem('mm_cat');if(saved){const parsed=JSON.parse(saved);Object.assign(catalogue.biotin,parsed.biotin||{});Object.assign(catalogue.s1,parsed.s1||{});Object.assign(catalogue.s2,parsed.s2||{});invalidateFuzzyIdx();}const savedInsta=localStorage.getItem('mm_insta');if(savedInsta){Object.assign(personInsta,JSON.parse(savedInsta));}const savedIg=localStorage.getItem('mm_ig_profiles');if(savedIg){Object.assign(igProfiles,JSON.parse(savedIg));}const savedP=localStorage.getItem('mm_perf');if(savedP){const parsed=JSON.parse(savedP);Object.assign(perfData.biotin,parsed.biotin||{});Object.assign(perfData.s1,parsed.s1||{});Object.assign(perfData.s2,parsed.s2||{});}markStep1Done();refreshAnalytics();}catch(_){}
 refreshSheet();
+
+// ═══════════════════════════════════════════════
+// UMBRELLA SHEET TAB
+// ═══════════════════════════════════════════════
+const UMBRELLA_SHEET_ID = '1FhU5tkfTREdeVlMjyIdqhyaTIdeBoSZczQ2rTd2B-KI';
+const UMBRELLA_GID = '0'; // DD tab — raw ad-level data
+let umbrellaRaw = null; // parsed rows
+let umbrellaProducts = []; // unique product names
+let umbrellaLastFetched = null;
+let umbrellaAutoRefreshTimer = null;
+
+function umbrellaStatus(msg, loading=false){
+  const el = document.getElementById('umbrella-status');
+  el.style.display = 'block';
+  el.innerHTML = loading
+    ? `<div style="font-size:13px;color:var(--ink2);">${msg}</div>`
+    : `<div style="font-size:13px;color:var(--ink2);">${msg}</div>`;
+}
+
+async function umbrellaFetchData(){
+  umbrellaStatus('Fetching data from Umbrella Sheet…', true);
+  document.getElementById('umbrella-kpis').style.display = 'none';
+  document.getElementById('umbrella-table-wrap').style.display = 'none';
+  const url = `https://docs.google.com/spreadsheets/d/${UMBRELLA_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${UMBRELLA_GID}`;
+  try {
+    const resp = await fetch(url);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    umbrellaParseCSV(text);
+    umbrellaLastFetched = new Date();
+    document.getElementById('umbrella-last-refreshed').textContent =
+      'Last refreshed: ' + umbrellaLastFetched.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) +
+      ' on ' + umbrellaLastFetched.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+    umbrellaPopulateProducts();
+    umbrellaApplyFilters();
+    umbrellaScheduleAutoRefresh();
+  } catch(e) {
+    umbrellaStatus('Failed to load data: ' + e.message);
+  }
+}
+
+function umbrellaParseCSV(text){
+  // Simple CSV parser respecting quoted fields
+  function parseRow(line){
+    const cols = []; let cur='', inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){ if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ; }
+      else if(c===','&&!inQ){cols.push(cur);cur='';}
+      else cur+=c;
+    }
+    cols.push(cur);
+    return cols;
+  }
+  const lines = text.trim().split('\n');
+  if(lines.length < 2){ umbrellaStatus('No data found in sheet.'); return; }
+  const headers = parseRow(lines[0]);
+  // Map column indices
+  const ci = {};
+  headers.forEach((h,i)=>{ ci[h.trim().toLowerCase().replace(/[^a-z0-9]/g,'_')] = i; });
+  // Expected columns: Day, Account Name, Campaign name, Ad set name, Ad name,
+  // Currency, Amount spent (INR), Impressions, Link clicks, Landing page views,
+  // Add To Cart, Purchases, Purchases conversion value,
+  // 3-second video plays, ...
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim()) continue;
+    const cols = parseRow(lines[i]);
+    const get = (key) => (cols[ci[key]]||'').trim();
+    const num = (key) => parseFloat((cols[ci[key]]||'0').replace(/,/g,''))||0;
+    const dateStr = get('day');
+    if(!dateStr) continue;
+    // Parse date — format like "2026-05-01"
+    const dateParsed = new Date(dateStr);
+    if(isNaN(dateParsed)) continue;
+    const campaignName = get('campaign_name');
+    // Extract product from campaign name: "Hair | Stage 2 Hair Regrowth Kit | ..." → "Stage 2 Hair Regrowth Kit"
+    // format: "Category | Product | ..."
+    let product = 'Unknown';
+    if(campaignName){
+      const parts = campaignName.split('|');
+      if(parts.length >= 2) product = parts[1].trim();
+      else product = campaignName.trim();
+    }
+    rows.push({
+      date: dateParsed,
+      dateStr,
+      product,
+      campaign: campaignName,
+      adName: get('ad_name') || (cols[ci['ad_name_2']]||'').trim(),
+      spend: num('amount_spent__inr_'),
+      impressions: num('impressions'),
+      clicks: num('link_clicks'),
+      lpv: num('landing_page_views'),
+      atc: num('add_to_cart'),
+      purchases: num('purchases'),
+      revenue: num('purchases_conversion_value'),
+      video3s: num('3_second_video_plays'),
+    });
+  }
+  umbrellaRaw = rows;
+}
+
+function umbrellaPopulateProducts(){
+  if(!umbrellaRaw) return;
+  const products = [...new Set(umbrellaRaw.map(r=>r.product))].sort();
+  umbrellaProducts = products;
+  const sel = document.getElementById('umbrella-product-sel');
+  sel.innerHTML = products.map(p=>`<option value="${p}">${p}</option>`).join('');
+}
+
+function umbrellaGetFilteredRows(){
+  if(!umbrellaRaw || !umbrellaRaw.length) return [];
+  const product = document.getElementById('umbrella-product-sel').value;
+  const rangeVal = document.getElementById('umbrella-range-sel').value;
+  let rows = umbrellaRaw.filter(r => r.product === product);
+  if(!rows.length) return [];
+  const maxDate = rows.reduce((a,b)=>a.date>b.date?a:b).date;
+  if(rangeVal === 'all'){
+    // all rows
+  } else if(rangeVal === 'custom'){
+    const from = document.getElementById('umbrella-date-from').value;
+    const to = document.getElementById('umbrella-date-to').value;
+    if(from) rows = rows.filter(r=>r.dateStr >= from);
+    if(to) rows = rows.filter(r=>r.dateStr <= to);
+  } else {
+    const days = parseInt(rangeVal);
+    const cutoff = new Date(maxDate);
+    cutoff.setDate(cutoff.getDate() - days + 1);
+    rows = rows.filter(r=>r.date >= cutoff);
+  }
+  return rows;
+}
+
+function umbrellaAggrByDate(rows){
+  const map = {};
+  rows.forEach(r=>{
+    const d = r.dateStr;
+    if(!map[d]) map[d] = {date:r.date,dateStr:d,spend:0,impressions:0,clicks:0,lpv:0,atc:0,purchases:0,revenue:0,video3s:0};
+    const m = map[d];
+    m.spend += r.spend;
+    m.impressions += r.impressions;
+    m.clicks += r.clicks;
+    m.lpv += r.lpv;
+    m.atc += r.atc;
+    m.purchases += r.purchases;
+    m.revenue += r.revenue;
+    m.video3s += r.video3s;
+  });
+  return Object.values(map).sort((a,b)=>b.date-a.date);
+}
+
+function umbrellaCalcMetrics(agg){
+  return agg.map(r=>({
+    ...r,
+    cac: r.purchases ? r.spend/r.purchases : 0,
+    aov: r.purchases ? r.revenue/r.purchases : 0,
+    roas: r.spend ? r.revenue/r.spend : 0,
+    ctr: r.impressions ? r.clicks/r.impressions*100 : 0,
+    cpc: r.clicks ? r.spend/r.clicks : 0,
+    cpm: r.impressions ? r.spend/r.impressions*1000 : 0,
+    hookRate: r.impressions ? r.video3s/r.impressions*100 : 0,
+    atcPct: r.lpv ? r.atc/r.lpv*100 : 0,
+    purchPct: r.atc ? r.purchases/r.atc*100 : 0,
+    convPct: r.lpv ? r.purchases/r.lpv*100 : 0,
+  }));
+}
+
+function umbrellaFmt(n,type){
+  if(type==='inr') return '₹'+n.toLocaleString('en-IN',{maximumFractionDigits:0});
+  if(type==='inrk') return n>=100000?'₹'+(n/100000).toFixed(1)+'L':n>=1000?'₹'+(n/1000).toFixed(0)+'K':'₹'+Math.round(n);
+  if(type==='x') return n.toFixed(2)+'x';
+  if(type==='pct') return n.toFixed(2)+'%';
+  if(type==='num') return Math.round(n).toLocaleString('en-IN');
+  return n.toFixed(2);
+}
+
+function umbrellaRenderKPIs(rows){
+  const total = {spend:0,impressions:0,clicks:0,lpv:0,atc:0,purchases:0,revenue:0,video3s:0};
+  rows.forEach(r=>{ for(const k of Object.keys(total)) total[k]+=r[k]||0; });
+  const cac = total.purchases ? total.spend/total.purchases : 0;
+  const aov = total.purchases ? total.revenue/total.purchases : 0;
+  const roas = total.spend ? total.revenue/total.spend : 0;
+  const ctr = total.impressions ? total.clicks/total.impressions*100 : 0;
+  const cpc = total.clicks ? total.spend/total.clicks : 0;
+  const cpm = total.impressions ? total.spend/total.impressions*1000 : 0;
+  const hookRate = total.impressions ? total.video3s/total.impressions*100 : 0;
+  const atcPct = total.lpv ? total.atc/total.lpv*100 : 0;
+  const purchPct = total.atc ? total.purchases/total.atc*100 : 0;
+  const convPct = total.lpv ? total.purchases/total.lpv*100 : 0;
+  const kpis = [
+    {label:'Total Spend',val:umbrellaFmt(total.spend,'inrk'),sub:''},
+    {label:'NCs',val:umbrellaFmt(total.purchases,'num'),sub:''},
+    {label:'CAC',val:umbrellaFmt(cac,'inr'),sub:''},
+    {label:'AOV',val:umbrellaFmt(aov,'inr'),sub:''},
+    {label:'ROAS',val:umbrellaFmt(roas,'x'),sub:'',hi:roas>=0.76},
+    {label:'CTR',val:umbrellaFmt(ctr,'pct'),sub:''},
+    {label:'CPC',val:'₹'+cpc.toFixed(2),sub:''},
+    {label:'CPM',val:'₹'+cpm.toFixed(2),sub:''},
+    {label:'Hook Rate',val:umbrellaFmt(hookRate,'pct'),sub:''},
+    {label:'ATC %',val:umbrellaFmt(atcPct,'pct'),sub:''},
+    {label:'Purchase %',val:umbrellaFmt(purchPct,'pct'),sub:''},
+    {label:'Conv. %',val:umbrellaFmt(convPct,'pct'),sub:''},
+  ];
+  const el = document.getElementById('umbrella-kpis');
+  el.style.display = 'block';
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:4px;">
+    ${kpis.map(k=>`<div style="background:var(--surface);border:1px solid var(--ink3);border-radius:10px;padding:12px 14px;">
+      <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">${k.label}</div>
+      <div style="font-size:18px;font-weight:700;font-family:var(--mono);${k.hi?'color:#2e7d32;':''}">${k.val}</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function umbrellaRenderTable(rows){
+  const cols = [
+    {key:'dateStr',label:'Date',fmt:v=>v},
+    {key:'spend',label:'Spend',fmt:v=>umbrellaFmt(v,'inrk')},
+    {key:'purchases',label:'NCs',fmt:v=>umbrellaFmt(v,'num')},
+    {key:'cac',label:'CAC',fmt:v=>umbrellaFmt(v,'inr')},
+    {key:'aov',label:'AOV',fmt:v=>umbrellaFmt(v,'inr')},
+    {key:'roas',label:'ROAS',fmt:(v,r)=>`<span style="${r.roas>=0.76?'color:#2e7d32;font-weight:600;':''}">${umbrellaFmt(v,'x')}</span>`},
+    {key:'ctr',label:'CTR',fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'cpc',label:'CPC',fmt:v=>'₹'+v.toFixed(2)},
+    {key:'cpm',label:'CPM',fmt:v=>'₹'+v.toFixed(2)},
+    {key:'hookRate',label:'Hook Rate',fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'atcPct',label:'ATC %',fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'purchPct',label:'Purch %',fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'convPct',label:'Conv %',fmt:v=>umbrellaFmt(v,'pct')},
+  ];
+  const wrap = document.getElementById('umbrella-table-wrap');
+  wrap.style.display = 'block';
+  wrap.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Daily Breakdown — ${rows.length} days</div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+      <tr style="background:var(--surface);border-bottom:2px solid var(--ink3);">
+        ${cols.map(c=>`<th style="padding:8px 10px;text-align:${c.key==='dateStr'?'left':'right'};font-weight:600;color:var(--ink2);white-space:nowrap;">${c.label}</th>`).join('')}
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map((r,i)=>`<tr style="border-bottom:1px solid var(--ink3);${i%2===0?'background:var(--bg);':'background:var(--surface);'}">
+        ${cols.map(c=>`<td style="padding:7px 10px;text-align:${c.key==='dateStr'?'left':'right'};font-family:${c.key==='dateStr'?'var(--sans)':'var(--mono)'};white-space:nowrap;">${c.fmt(r[c.key],r)}</td>`).join('')}
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function umbrellaApplyFilters(){
+  const rangeVal = document.getElementById('umbrella-range-sel').value;
+  const customDiv = document.getElementById('umbrella-custom-range');
+  customDiv.style.display = rangeVal === 'custom' ? 'flex' : 'none';
+  if(!umbrellaRaw) return;
+  const rows = umbrellaGetFilteredRows();
+  if(!rows.length){
+    umbrellaStatus('No data for selected product / date range.');
+    document.getElementById('umbrella-kpis').style.display = 'none';
+    document.getElementById('umbrella-table-wrap').style.display = 'none';
+    return;
+  }
+  document.getElementById('umbrella-status').style.display = 'none';
+  const aggByDate = umbrellaAggrByDate(rows);
+  const withMetrics = umbrellaCalcMetrics(aggByDate);
+  umbrellaRenderKPIs(rows);
+  umbrellaRenderTable(withMetrics);
+}
+
+function umbrellaRefresh(){
+  umbrellaFetchData();
+}
+
+function umbrellaScheduleAutoRefresh(){
+  if(umbrellaAutoRefreshTimer) clearTimeout(umbrellaAutoRefreshTimer);
+  const now = new Date();
+  const next = new Date();
+  next.setHours(11,30,0,0);
+  if(next <= now) next.setDate(next.getDate()+1);
+  const ms = next - now;
+  umbrellaAutoRefreshTimer = setTimeout(()=>umbrellaFetchData(), ms);
+}
+
 </script>
 </body>
 </html>
