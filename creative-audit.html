@@ -495,28 +495,21 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
   <div style="padding:24px 28px;">
 
     <!-- Top bar -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--ink3);">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e0e0e0;">
       <div>
         <div style="font-size:17px;font-weight:700;letter-spacing:-0.2px;">☂️ Umbrella Sheet</div>
         <div id="umbrella-last-refreshed" style="font-size:11px;color:var(--ink2);margin-top:3px;">Not loaded yet · auto-refreshes at 11:30 AM</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <select id="umbrella-product-sel" style="padding:6px 12px;border-radius:7px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;font-weight:500;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
+        <select id="umbrella-product-sel" style="padding:7px 12px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
           <option value="">Loading…</option>
         </select>
-        <select id="umbrella-range-sel" style="padding:6px 12px;border-radius:7px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
-          <option value="7">Last 7 days</option>
-          <option value="14">Last 14 days</option>
-          <option value="30" selected>Last 30 days</option>
-          <option value="all">All time</option>
-          <option value="custom">Custom range…</option>
-        </select>
-        <div id="umbrella-custom-range" style="display:none;gap:6px;align-items:center;">
-          <input type="date" id="umbrella-date-from" style="padding:5px 8px;border-radius:6px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:12px;" onchange="umbrellaApplyFilters()">
-          <span style="font-size:11px;color:var(--ink2);">→</span>
-          <input type="date" id="umbrella-date-to" style="padding:5px 8px;border-radius:6px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:12px;" onchange="umbrellaApplyFilters()">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input type="date" id="umbrella-date-from" style="padding:6px 10px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
+          <span style="font-size:12px;color:var(--ink2);font-weight:500;">to</span>
+          <input type="date" id="umbrella-date-to" style="padding:6px 10px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
         </div>
-        <button onclick="umbrellaRefresh()" style="padding:6px 14px;border-radius:7px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
+        <button onclick="umbrellaRefresh()" style="padding:7px 16px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
       </div>
     </div>
 
@@ -2772,23 +2765,12 @@ function umbrellaPopulateProducts(){
 function umbrellaGetFilteredRows(){
   if(!umbrellaRaw || !umbrellaRaw.length) return [];
   const product = document.getElementById('umbrella-product-sel').value;
-  const rangeVal = document.getElementById('umbrella-range-sel').value;
   let rows = umbrellaRaw.filter(r => r.product === product);
   if(!rows.length) return [];
-  if(rangeVal === 'all'){
-    // keep all
-  } else if(rangeVal === 'custom'){
-    const from = document.getElementById('umbrella-date-from').value;
-    const to = document.getElementById('umbrella-date-to').value;
-    if(from) rows = rows.filter(r=>r.dateStr >= from);
-    if(to) rows = rows.filter(r=>r.dateStr <= to);
-  } else {
-    const days = parseInt(rangeVal);
-    const maxDate = rows.reduce((a,b)=>a.date>b.date?a:b).date;
-    const cutoff = new Date(maxDate);
-    cutoff.setDate(cutoff.getDate() - days + 1);
-    rows = rows.filter(r=>r.date >= cutoff);
-  }
+  const from = document.getElementById('umbrella-date-from').value;
+  const to = document.getElementById('umbrella-date-to').value;
+  if(from) rows = rows.filter(r=>r.dateStr >= from);
+  if(to) rows = rows.filter(r=>r.dateStr <= to);
   return rows;
 }
 
@@ -2837,7 +2819,6 @@ function umbrellaFmt(n,type){
 function umbrellaRenderKPIs(rows){
   const t = {spend:0,impressions:0,clicks:0,lpv:0,atc:0,nc:0,purchases:0,revenue:0,video3s:0};
   rows.forEach(r=>{ for(const k of Object.keys(t)) t[k]+=r[k]||0; });
-  const bench = 0.76;
   const cac = t.purchases ? t.spend/t.purchases : 0;
   const aov = t.purchases ? t.revenue/t.purchases : 0;
   const roas = t.spend ? t.revenue/t.spend : 0;
@@ -2848,51 +2829,46 @@ function umbrellaRenderKPIs(rows){
   const atcPct = t.clicks ? t.atc/t.clicks*100 : 0;
   const purchPct = t.atc ? t.purchases/t.atc*100 : 0;
   const convPct = t.lpv ? t.nc/t.lpv*100 : 0;
-  // Two rows of KPIs: spend metrics | funnel metrics
-  const row1 = [
-    {label:'Spend',val:umbrellaFmt(t.spend,'inrk'),icon:'💰'},
-    {label:'NCs',val:umbrellaFmt(t.nc,'num'),icon:'🎯'},
-    {label:'CAC',val:umbrellaFmt(cac,'inr'),icon:'📉'},
-    {label:'AOV',val:umbrellaFmt(aov,'inr'),icon:'🛒'},
-    {label:'ROAS',val:umbrellaFmt(roas,'x'),icon:'📈',good:roas>=bench,bad:roas<bench*0.85},
-    {label:'CTR',val:umbrellaFmt(ctr,'pct'),icon:'🖱️'},
-    {label:'CPC',val:'₹'+cpc.toFixed(2),icon:'💸'},
-    {label:'CPM',val:'₹'+cpm.toFixed(2),icon:'👁️'},
+  const kpis = [
+    {label:'Spend',      val:umbrellaFmt(t.spend,'inrk')},
+    {label:'NCs',        val:umbrellaFmt(t.nc,'num')},
+    {label:'CAC',        val:umbrellaFmt(cac,'inr')},
+    {label:'AOV',        val:umbrellaFmt(aov,'inr')},
+    {label:'ROAS',       val:umbrellaFmt(roas,'x')},
+    {label:'CTR',        val:umbrellaFmt(ctr,'pct')},
+    {label:'CPC',        val:'₹'+cpc.toFixed(2)},
+    {label:'CPM',        val:'₹'+cpm.toFixed(2)},
+    {label:'Hook Rate',  val:umbrellaFmt(hookRate,'pct')},
+    {label:'ATC %',      val:umbrellaFmt(atcPct,'pct')},
+    {label:'Purchase %', val:umbrellaFmt(purchPct,'pct')},
+    {label:'Conv. %',    val:umbrellaFmt(convPct,'pct')},
+    {label:'Impressions',val:umbrellaFmt(t.impressions,'num')},
   ];
-  const row2 = [
-    {label:'Hook Rate',val:umbrellaFmt(hookRate,'pct'),icon:'🎣'},
-    {label:'ATC %',val:umbrellaFmt(atcPct,'pct'),icon:'🛍️'},
-    {label:'Purchase %',val:umbrellaFmt(purchPct,'pct'),icon:'✅'},
-    {label:'Conv. %',val:umbrellaFmt(convPct,'pct'),icon:'🔄'},
-    {label:'Impressions',val:umbrellaFmt(t.impressions,'num'),icon:'📡'},
-  ];
-  const card = k => `<div style="background:var(--surface);border:1px solid var(--ink3);border-radius:10px;padding:14px 16px;min-width:110px;">
-    <div style="font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${k.label}</div>
-    <div style="font-size:20px;font-weight:700;font-family:var(--mono);line-height:1;${k.good?'color:#1a7f37;':k.bad?'color:#cf222e;':''}">${k.val}</div>
+  const card = k => `<div style="background:#fff;border:1px solid #d0d0d0;border-radius:8px;padding:12px 16px;min-width:105px;">
+    <div style="font-size:10px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${k.label}</div>
+    <div style="font-size:19px;font-weight:700;font-family:var(--mono);line-height:1;color:var(--ink);">${k.val}</div>
   </div>`;
   const el = document.getElementById('umbrella-kpis');
   el.style.display = 'block';
-  el.innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">${row1.map(card).join('')}</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">${row2.map(card).join('')}</div>`;
+  el.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">${kpis.map(card).join('')}</div>`;
 }
 
 function umbrellaGridTable(title, cols, rows, dateColKey){
-  const bench = 0.76;
+  const BORDER = '1px solid #d0d0d0';
   const cellStyle = (isLeft, isDate) =>
-    `padding:7px 10px;border:1px solid var(--ink3);text-align:${isLeft?'left':'right'};font-family:${isDate?'var(--sans)':'var(--mono)'};font-size:12px;white-space:nowrap;`;
+    `padding:7px 10px;border:${BORDER};text-align:${isLeft?'left':'right'};font-family:${isDate?'var(--sans)':'var(--mono)'};font-size:12px;white-space:nowrap;background:inherit;`;
   const headStyle = isLeft =>
-    `padding:8px 10px;border:1px solid var(--ink3);text-align:${isLeft?'left':'right'};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--ink2);background:var(--surface);white-space:nowrap;`;
+    `padding:8px 10px;border:${BORDER};text-align:${isLeft?'left':'right'};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;background:#f4f4f4;white-space:nowrap;`;
   return `
     <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;">${title}</div>
-    <div style="overflow-x:auto;margin-bottom:32px;">
+    <div style="overflow-x:auto;margin-bottom:32px;border:${BORDER};border-radius:6px;overflow:hidden;">
     <table style="width:100%;border-collapse:collapse;font-size:12px;">
       <thead><tr>${cols.map(c=>`<th style="${headStyle(c.left)}">${c.label}</th>`).join('')}</tr></thead>
       <tbody>
-        ${rows.map((r,i)=>`<tr style="${i%2===1?'background:var(--bg);':''}">
+        ${rows.map((r,i)=>`<tr style="background:${i%2===1?'#fafafa':'#ffffff'};">
           ${cols.map(c=>{
             const isDate = c.key===dateColKey;
-            let val = c.fmt ? c.fmt(r[c.key],r) : (r[c.key]||'—');
+            const val = c.fmt ? c.fmt(r[c.key],r) : (r[c.key]||'—');
             return `<td style="${cellStyle(c.left,isDate)}">${val}</td>`;
           }).join('')}
         </tr>`).join('')}
@@ -2901,8 +2877,7 @@ function umbrellaGridTable(title, cols, rows, dateColKey){
 }
 
 function umbrellaRenderTable(dailyRows, rawRows){
-  const bench = 0.76;
-  const roasFmt = (v,r) => `<span style="${r.roas>=bench?'color:#1a7f37;font-weight:700;':r.roas<bench*0.85?'color:#cf222e;':''}">${umbrellaFmt(v,'x')}</span>`;
+  const roasFmt = (v) => umbrellaFmt(v,'x');
 
   const dailyCols = [
     {key:'dateStr', label:'Date', left:true, fmt:v=>v},
@@ -2969,9 +2944,6 @@ function umbrellaRenderTable(dailyRows, rawRows){
 }
 
 function umbrellaApplyFilters(){
-  const rangeVal = document.getElementById('umbrella-range-sel').value;
-  const customDiv = document.getElementById('umbrella-custom-range');
-  customDiv.style.display = rangeVal === 'custom' ? 'flex' : 'none';
   if(!umbrellaRaw) return;
   const rows = umbrellaGetFilteredRows();
   if(!rows.length){
