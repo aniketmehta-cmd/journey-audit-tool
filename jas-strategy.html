@@ -136,8 +136,7 @@ tr:nth-child(even) td{background:var(--paper2);}
 
 <!-- TAB NAV -->
 <div class="tab-nav">
-  <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-  <button class="tab-btn" onclick="switchTab('influencer')">Influencer Strategy</button>
+  <button class="tab-btn active" onclick="switchTab('influencer')">Influencer Strategy</button>
   <button class="tab-btn" onclick="switchTab('content')">Content Strategy</button>
   <button class="tab-btn" onclick="switchTab('internal')">Internal Assets</button>
   <button class="tab-btn" onclick="switchTab('guidelines')">Creative Guidelines</button>
@@ -145,83 +144,8 @@ tr:nth-child(even) td{background:var(--paper2);}
 </div>
 
 <!-- ─────────────────────────── TAB 1: OVERVIEW ─────────────────────────── -->
-<div class="tab-pane active" id="tab-overview">
-
-  <div class="section">
-    <div class="section-title">Quarter at a Glance <span class="badge">JAS 2026</span></div>
-    <div class="card-grid cols-4">
-      <div class="card accent">
-        <h3>Total Creators</h3>
-        <div class="big">50</div>
-        <div class="sub">All influencer (no internal)</div>
-      </div>
-      <div class="card">
-        <h3>Funnel Split</h3>
-        <div class="big">50/50</div>
-        <div class="sub">25 MOF · 25 BOF</div>
-      </div>
-      <div class="card green">
-        <h3>Primary Language</h3>
-        <div class="big">Hinglish</div>
-        <div class="sub">Hindi + Hinglish merged</div>
-      </div>
-      <div class="card purple">
-        <h3>Format Experiment</h3>
-        <div class="big">~7</div>
-        <div class="sub">creators (~15%) on skit format</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Creator Pool Breakdown</div>
-    <div class="card" style="padding:24px 28px;">
-      <div class="donut-wrap">
-        <svg class="donut-svg" viewBox="0 0 180 180" width="160" height="160">
-          <!-- Donut: 50 total; UGC/Educational 43 (86%), Skit 7 (14%) -->
-          <!-- Total circumference at r=60: 376.99 -->
-          <!-- UGC+Educational: 43/50 = 86% → 324.2 dash, offset 0 -->
-          <!-- Skit: 7/50 = 14% → 52.8 dash, offset -324.2 -->
-          <circle cx="90" cy="90" r="60" fill="none" stroke="#e2e8f0" stroke-width="28"/>
-          <circle cx="90" cy="90" r="60" fill="none" stroke="#1e40af" stroke-width="28"
-                  stroke-dasharray="324.2 376.99" stroke-dashoffset="94.25" transform="rotate(-90 90 90)"/>
-          <circle cx="90" cy="90" r="60" fill="none" stroke="#7c3aed" stroke-width="28"
-                  stroke-dasharray="52.8 376.99" stroke-dashoffset="-230" transform="rotate(-90 90 90)"/>
-          <text x="90" y="86" text-anchor="middle" font-size="22" font-weight="700" fill="#0f172a">50</text>
-          <text x="90" y="102" text-anchor="middle" font-size="11" fill="#64748b">creators</text>
-        </svg>
-        <div class="donut-legend">
-          <div class="leg-item"><div class="leg-dot" style="background:#1e40af"></div><span class="leg-val">43</span><span class="leg-lbl">&nbsp;UGC + Educational</span><span class="leg-pct">&nbsp;(86%)</span></div>
-          <div class="leg-item"><div class="leg-dot" style="background:#7c3aed"></div><span class="leg-val">7</span><span class="leg-lbl">&nbsp;Skit format experiment</span><span class="leg-pct">&nbsp;(14%)</span></div>
-          <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);">
-            <div class="leg-item" style="margin-bottom:4px;"><div class="leg-dot" style="background:#16a34a"></div><span class="leg-val">25</span><span class="leg-lbl">&nbsp;MOF — Stages Education</span></div>
-            <div class="leg-item"><div class="leg-dot" style="background:#d97706"></div><span class="leg-val">25</span><span class="leg-lbl">&nbsp;BOF — Results / Assurance</span></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Why These Decisions — Data Rationale</div>
-    <div class="insight-box">
-      <h4>UGC as primary format</h4>
-      <p>UGC delivered <strong>&#x20B9;1.03Cr spend · 8,329 NCs · 0.63x ROAS · &#x20B9;1,235 CAC</strong> — dominant format by both volume and conversion. All 50 JAS creators will follow UGC format. Skit is a new format experiment (~7 creators, ~15% of pool) built on top of the UGC structure.</p>
-    </div>
-    <div class="insight-box">
-      <h4>Hinglish-only (Hindi + Hinglish merged)</h4>
-      <p>Hindi is the dominant language — <strong>₹1.43Cr spend, 11,625 NCs, 0.64x ROAS, ₹1,232 CAC</strong>. English spent ₹86.1L but delivered lower ROAS (0.59x) and higher CAC (₹1,317). Hindi + Hinglish combined: ₹1.45Cr, 11,753 NCs, 0.64x ROAS — clearly the more efficient register. All 50 JAS creators briefed in Hinglish.</p>
-    </div>
-    <div class="insight-box">
-      <h4>50% MOF · 50% BOF</h4>
-      <p>Stages Education (MOF combined): <strong>₹84.9L, 6,516 NCs, 0.59x ROAS, ₹1,303 CAC</strong>. Results/Assurance/Product First (BOF combined): <strong>₹96.6L, 7,862 NCs, 0.66x ROAS, ₹1,228 CAC</strong>. BOF delivers better efficiency — equal 50/50 split tests whether sustaining MOF feed into BOF holds performance, or if heavier BOF weighting is the right call for Q3.</p>
-    </div>
-  </div>
-
-</div>
-
-<!-- ─────────────────────────── TAB 2: INFLUENCER STRATEGY ─────────────────────────── -->
-<div class="tab-pane" id="tab-influencer">
+<!-- ─────────────────────────── TAB 1: INFLUENCER STRATEGY ─────────────────────────── -->
+<div class="tab-pane active" id="tab-influencer">
 
   <div class="section">
     <div class="section-title">Creator Type — Data Backed <span class="badge">Stage 2</span></div>
@@ -230,11 +154,12 @@ tr:nth-child(even) td{background:var(--paper2);}
         <th>Creator Type</th><th>Spend</th><th>NCs</th><th>ROAS</th><th>CAC</th><th>Decision</th>
       </tr></thead>
       <tbody>
-        <tr><td><strong>Influencer</strong></td><td class="num">₹48.4L</td><td class="num">5,551</td><td class="num">0.65x</td><td class="num">₹872</td><td>Lower CAC by ₹168/NC · 14% higher ROAS</td></tr>
-        <tr><td><strong>Internal</strong></td><td class="num">₹64.2L</td><td class="num">6,172</td><td class="num">0.57x</td><td class="num">₹1,040</td><td>Higher spend share, lower efficiency vs influencer</td></tr>
+        <tr><td><strong>Influencer</strong></td><td class="num">&#x20B9;1.33Cr</td><td class="num">10,905</td><td class="num">0.64x</td><td class="num">&#x20B9;1,223</td><td>Best ROAS · lowest CAC — primary JAS creator pool</td></tr>
+        <tr><td><strong>Internal</strong></td><td class="num">&#x20B9;78.4L</td><td class="num">5,653</td><td class="num">0.56x</td><td class="num">&#x20B9;1,387</td><td>&#x20B9;164 higher CAC vs influencer · lower ROAS</td></tr>
+        <tr><td><strong>Affluence</strong></td><td class="num">&#x20B9;18.1L</td><td class="num">1,242</td><td class="num">0.58x</td><td class="num">&#x20B9;1,459</td><td>Supplementary non-VO format · all BOF</td></tr>
       </tbody>
     </table>
-    <p class="rationale" style="margin-top:6px;">Influencers: lower CAC by ₹168 per NC and 14% higher ROAS. Full JAS creator pool = influencers only.</p>
+    <p class="rationale" style="margin-top:6px;">Influencers: best ROAS (0.64x) and lowest CAC (&#x20B9;1,223) across all creator types. &#x20B9;164 cheaper per NC vs Internal, &#x20B9;236 cheaper vs Affluence. Full JAS creator pool = influencers only.</p>
   </div>
 
   <div class="section">
