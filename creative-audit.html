@@ -492,17 +492,19 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 
 <!-- ═══ TAB: UMBRELLA SHEET ═══ -->
 <div id="main-tab-umbrella" class="main-tab">
-  <div style="padding:28px;">
-    <div id="umbrella-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+  <div style="padding:24px 28px;">
+
+    <!-- Top bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--ink3);">
       <div>
-        <div style="font-size:18px;font-weight:700;">Umbrella Sheet — Daily Performance</div>
-        <div id="umbrella-last-refreshed" style="font-size:12px;color:var(--ink2);margin-top:2px;">Not loaded yet</div>
+        <div style="font-size:17px;font-weight:700;letter-spacing:-0.2px;">☂️ Umbrella Sheet</div>
+        <div id="umbrella-last-refreshed" style="font-size:11px;color:var(--ink2);margin-top:3px;">Not loaded yet · auto-refreshes at 11:30 AM</div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <select id="umbrella-product-sel" style="padding:6px 10px;border-radius:8px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
-          <option value="">Loading products…</option>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <select id="umbrella-product-sel" style="padding:6px 12px;border-radius:7px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;font-weight:500;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
+          <option value="">Loading…</option>
         </select>
-        <select id="umbrella-range-sel" style="padding:6px 10px;border-radius:8px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
+        <select id="umbrella-range-sel" style="padding:6px 12px;border-radius:7px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);" onchange="umbrellaApplyFilters()">
           <option value="7">Last 7 days</option>
           <option value="14">Last 14 days</option>
           <option value="30" selected>Last 30 days</option>
@@ -510,14 +512,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
           <option value="custom">Custom range…</option>
         </select>
         <div id="umbrella-custom-range" style="display:none;gap:6px;align-items:center;">
-          <input type="date" id="umbrella-date-from" style="padding:5px 8px;border-radius:6px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;" onchange="umbrellaApplyFilters()">
-          <span style="font-size:12px;color:var(--ink2);">to</span>
-          <input type="date" id="umbrella-date-to" style="padding:5px 8px;border-radius:6px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:13px;" onchange="umbrellaApplyFilters()">
+          <input type="date" id="umbrella-date-from" style="padding:5px 8px;border-radius:6px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:12px;" onchange="umbrellaApplyFilters()">
+          <span style="font-size:11px;color:var(--ink2);">→</span>
+          <input type="date" id="umbrella-date-to" style="padding:5px 8px;border-radius:6px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:12px;" onchange="umbrellaApplyFilters()">
         </div>
-        <button onclick="umbrellaRefresh()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
+        <button onclick="umbrellaRefresh()" style="padding:6px 14px;border-radius:7px;border:1.5px solid var(--ink3);background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
       </div>
     </div>
-    <div id="umbrella-status" style="text-align:center;padding:40px;color:var(--ink2);font-size:14px;">Select the tab to load data…</div>
+
+    <div id="umbrella-status" style="text-align:center;padding:60px 20px;color:var(--ink2);font-size:14px;">Loading…</div>
     <div id="umbrella-kpis" style="display:none;"></div>
     <div id="umbrella-table-wrap" style="display:none;overflow-x:auto;margin-top:20px;"></div>
   </div>
@@ -2795,26 +2798,30 @@ function umbrellaAggrByDate(rows){
     const d = r.dateStr;
     if(!map[d]) map[d] = {date:r.date,dateStr:d,spend:0,impressions:0,clicks:0,lpv:0,atc:0,nc:0,purchases:0,revenue:0,video3s:0};
     const m = map[d];
-    m.spend += r.spend; m.impressions += r.impressions; m.clicks += r.clicks;
-    m.lpv += r.lpv; m.atc += r.atc; m.nc += r.nc;
-    m.purchases += r.purchases; m.revenue += r.revenue; m.video3s += r.video3s;
+    m.spend+=r.spend; m.impressions+=r.impressions; m.clicks+=r.clicks;
+    m.lpv+=r.lpv; m.atc+=r.atc; m.nc+=r.nc;
+    m.purchases+=r.purchases; m.revenue+=r.revenue; m.video3s+=r.video3s;
   });
   return Object.values(map).sort((a,b)=>b.date-a.date);
 }
 
 function umbrellaCalcMetrics(agg){
+  // Formula source: verified against PWDD sheet (gid=831967312)
+  // CAC & AOV use FB Purchases (col 11) as denominator — NOT CRM NCs
+  // ATC% uses Link Clicks as denominator — NOT LPV
+  // Conv% uses LPV as denominator
   return agg.map(r=>({
     ...r,
-    cac: r.nc ? r.spend/r.nc : 0,
-    aov: r.nc ? r.revenue/r.nc : 0,
-    roas: r.spend ? r.revenue/r.spend : 0,
-    ctr: r.impressions ? r.clicks/r.impressions*100 : 0,
-    cpc: r.clicks ? r.spend/r.clicks : 0,
-    cpm: r.impressions ? r.spend/r.impressions*1000 : 0,
+    cac:    r.purchases ? r.spend/r.purchases : 0,
+    aov:    r.purchases ? r.revenue/r.purchases : 0,
+    roas:   r.spend ? r.revenue/r.spend : 0,
+    ctr:    r.impressions ? r.clicks/r.impressions*100 : 0,
+    cpc:    r.clicks ? r.spend/r.clicks : 0,
+    cpm:    r.impressions ? r.spend/r.impressions*1000 : 0,
     hookRate: r.impressions ? r.video3s/r.impressions*100 : 0,
-    atcPct: r.lpv ? r.atc/r.lpv*100 : 0,
-    purchPct: r.atc ? r.nc/r.atc*100 : 0,
-    convPct: r.lpv ? r.nc/r.lpv*100 : 0,
+    atcPct: r.clicks ? r.atc/r.clicks*100 : 0,
+    purchPct: r.atc ? r.purchases/r.atc*100 : 0,
+    convPct:  r.lpv ? r.nc/r.lpv*100 : 0,
   }));
 }
 
@@ -2830,118 +2837,135 @@ function umbrellaFmt(n,type){
 function umbrellaRenderKPIs(rows){
   const t = {spend:0,impressions:0,clicks:0,lpv:0,atc:0,nc:0,purchases:0,revenue:0,video3s:0};
   rows.forEach(r=>{ for(const k of Object.keys(t)) t[k]+=r[k]||0; });
-  const cac = t.nc ? t.spend/t.nc : 0;
-  const aov = t.nc ? t.revenue/t.nc : 0;
+  const bench = 0.76;
+  const cac = t.purchases ? t.spend/t.purchases : 0;
+  const aov = t.purchases ? t.revenue/t.purchases : 0;
   const roas = t.spend ? t.revenue/t.spend : 0;
   const ctr = t.impressions ? t.clicks/t.impressions*100 : 0;
   const cpc = t.clicks ? t.spend/t.clicks : 0;
   const cpm = t.impressions ? t.spend/t.impressions*1000 : 0;
   const hookRate = t.impressions ? t.video3s/t.impressions*100 : 0;
-  const atcPct = t.lpv ? t.atc/t.lpv*100 : 0;
-  const purchPct = t.atc ? t.nc/t.atc*100 : 0;
+  const atcPct = t.clicks ? t.atc/t.clicks*100 : 0;
+  const purchPct = t.atc ? t.purchases/t.atc*100 : 0;
   const convPct = t.lpv ? t.nc/t.lpv*100 : 0;
-  const kpis = [
-    {label:'Total Spend',val:umbrellaFmt(t.spend,'inrk')},
-    {label:'NCs',val:umbrellaFmt(t.nc,'num')},
-    {label:'CAC',val:umbrellaFmt(cac,'inr')},
-    {label:'AOV',val:umbrellaFmt(aov,'inr')},
-    {label:'ROAS',val:umbrellaFmt(roas,'x'),hi:roas>=0.76},
-    {label:'CTR',val:umbrellaFmt(ctr,'pct')},
-    {label:'CPC',val:'₹'+cpc.toFixed(2)},
-    {label:'CPM',val:'₹'+cpm.toFixed(2)},
-    {label:'Hook Rate',val:umbrellaFmt(hookRate,'pct')},
-    {label:'ATC %',val:umbrellaFmt(atcPct,'pct')},
-    {label:'Purchase %',val:umbrellaFmt(purchPct,'pct')},
-    {label:'Conv. %',val:umbrellaFmt(convPct,'pct')},
+  // Two rows of KPIs: spend metrics | funnel metrics
+  const row1 = [
+    {label:'Spend',val:umbrellaFmt(t.spend,'inrk'),icon:'💰'},
+    {label:'NCs',val:umbrellaFmt(t.nc,'num'),icon:'🎯'},
+    {label:'CAC',val:umbrellaFmt(cac,'inr'),icon:'📉'},
+    {label:'AOV',val:umbrellaFmt(aov,'inr'),icon:'🛒'},
+    {label:'ROAS',val:umbrellaFmt(roas,'x'),icon:'📈',good:roas>=bench,bad:roas<bench*0.85},
+    {label:'CTR',val:umbrellaFmt(ctr,'pct'),icon:'🖱️'},
+    {label:'CPC',val:'₹'+cpc.toFixed(2),icon:'💸'},
+    {label:'CPM',val:'₹'+cpm.toFixed(2),icon:'👁️'},
   ];
+  const row2 = [
+    {label:'Hook Rate',val:umbrellaFmt(hookRate,'pct'),icon:'🎣'},
+    {label:'ATC %',val:umbrellaFmt(atcPct,'pct'),icon:'🛍️'},
+    {label:'Purchase %',val:umbrellaFmt(purchPct,'pct'),icon:'✅'},
+    {label:'Conv. %',val:umbrellaFmt(convPct,'pct'),icon:'🔄'},
+    {label:'Impressions',val:umbrellaFmt(t.impressions,'num'),icon:'📡'},
+  ];
+  const card = k => `<div style="background:var(--surface);border:1px solid var(--ink3);border-radius:10px;padding:14px 16px;min-width:110px;">
+    <div style="font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">${k.label}</div>
+    <div style="font-size:20px;font-weight:700;font-family:var(--mono);line-height:1;${k.good?'color:#1a7f37;':k.bad?'color:#cf222e;':''}">${k.val}</div>
+  </div>`;
   const el = document.getElementById('umbrella-kpis');
   el.style.display = 'block';
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:4px;">
-    ${kpis.map(k=>`<div style="background:var(--surface);border:1px solid var(--ink3);border-radius:10px;padding:12px 14px;">
-      <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">${k.label}</div>
-      <div style="font-size:18px;font-weight:700;font-family:var(--mono);${k.hi?'color:#2e7d32;':''}">${k.val}</div>
-    </div>`).join('')}
-  </div>`;
+  el.innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">${row1.map(card).join('')}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">${row2.map(card).join('')}</div>`;
+}
+
+function umbrellaGridTable(title, cols, rows, dateColKey){
+  const bench = 0.76;
+  const cellStyle = (isLeft, isDate) =>
+    `padding:7px 10px;border:1px solid var(--ink3);text-align:${isLeft?'left':'right'};font-family:${isDate?'var(--sans)':'var(--mono)'};font-size:12px;white-space:nowrap;`;
+  const headStyle = isLeft =>
+    `padding:8px 10px;border:1px solid var(--ink3);text-align:${isLeft?'left':'right'};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--ink2);background:var(--surface);white-space:nowrap;`;
+  return `
+    <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;">${title}</div>
+    <div style="overflow-x:auto;margin-bottom:32px;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr>${cols.map(c=>`<th style="${headStyle(c.left)}">${c.label}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map((r,i)=>`<tr style="${i%2===1?'background:var(--bg);':''}">
+          ${cols.map(c=>{
+            const isDate = c.key===dateColKey;
+            let val = c.fmt ? c.fmt(r[c.key],r) : (r[c.key]||'—');
+            return `<td style="${cellStyle(c.left,isDate)}">${val}</td>`;
+          }).join('')}
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
 }
 
 function umbrellaRenderTable(dailyRows, rawRows){
-  const cols = [
-    {key:'dateStr',label:'Date',left:true,fmt:v=>v},
-    {key:'spend',label:'Spend',fmt:v=>umbrellaFmt(v,'inrk')},
-    {key:'nc',label:'NCs',fmt:v=>umbrellaFmt(v,'num')},
-    {key:'cac',label:'CAC',fmt:v=>umbrellaFmt(v,'inr')},
-    {key:'aov',label:'AOV',fmt:v=>umbrellaFmt(v,'inr')},
-    {key:'roas',label:'ROAS',fmt:(v,r)=>`<span style="${r.roas>=0.76?'color:#2e7d32;font-weight:600;':''}">${umbrellaFmt(v,'x')}</span>`},
-    {key:'ctr',label:'CTR',fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'cpc',label:'CPC',fmt:v=>'₹'+v.toFixed(2)},
-    {key:'cpm',label:'CPM',fmt:v=>'₹'+v.toFixed(2)},
+  const bench = 0.76;
+  const roasFmt = (v,r) => `<span style="${r.roas>=bench?'color:#1a7f37;font-weight:700;':r.roas<bench*0.85?'color:#cf222e;':''}">${umbrellaFmt(v,'x')}</span>`;
+
+  const dailyCols = [
+    {key:'dateStr', label:'Date', left:true, fmt:v=>v},
+    {key:'spend',   label:'Spend',    fmt:v=>umbrellaFmt(v,'inrk')},
+    {key:'nc',      label:'NCs',      fmt:v=>umbrellaFmt(v,'num')},
+    {key:'cac',     label:'CAC',      fmt:v=>umbrellaFmt(v,'inr')},
+    {key:'aov',     label:'AOV',      fmt:v=>umbrellaFmt(v,'inr')},
+    {key:'roas',    label:'ROAS',     fmt:roasFmt},
+    {key:'ctr',     label:'CTR',      fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'cpc',     label:'CPC',      fmt:v=>'₹'+v.toFixed(2)},
+    {key:'cpm',     label:'CPM',      fmt:v=>'₹'+v.toFixed(2)},
     {key:'hookRate',label:'Hook Rate',fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'atcPct',label:'ATC %',fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'purchPct',label:'Purch %',fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'convPct',label:'Conv %',fmt:v=>umbrellaFmt(v,'pct')},
-  ];
-  const adCols = [
-    {key:'adName',label:'Ad Name',left:true,fmt:v=>v?`<span title="${v}" style="max-width:320px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v}</span>`:'—'},
-    {key:'spend',label:'Spend',fmt:v=>umbrellaFmt(v,'inrk')},
-    {key:'nc',label:'NCs',fmt:v=>umbrellaFmt(v,'num')},
-    {key:'cac',label:'CAC',fmt:v=>v?umbrellaFmt(v,'inr'):'—'},
-    {key:'roas',label:'ROAS',fmt:(v,r)=>r.spend?`<span style="${r.roas>=0.76?'color:#2e7d32;font-weight:600;':''}">${umbrellaFmt(v,'x')}</span>`:'—'},
-    {key:'impressions',label:'Impr.',fmt:v=>umbrellaFmt(v,'num')},
-    {key:'ctr',label:'CTR',fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'cpm',label:'CPM',fmt:v=>'₹'+v.toFixed(2)},
-    {key:'hookRate',label:'Hook Rate',fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'atcPct',label:'ATC %',fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'convPct',label:'Conv %',fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'atcPct',  label:'ATC %',    fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'purchPct',label:'Purch %',  fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'convPct', label:'Conv %',   fmt:v=>umbrellaFmt(v,'pct')},
   ];
 
-  // Build ad-level aggregates per adName for the full filtered period
+  // Ad-level aggregation — same formulas as PWDD
   const adMap = {};
   rawRows.forEach(r=>{
     const k = r.adName || r.adSetName || 'Unknown';
-    if(!adMap[k]) adMap[k]={adName:k,spend:0,impressions:0,clicks:0,lpv:0,atc:0,nc:0,revenue:0,video3s:0};
+    if(!adMap[k]) adMap[k]={adName:k,spend:0,impressions:0,clicks:0,lpv:0,atc:0,nc:0,purchases:0,revenue:0,video3s:0};
     const m=adMap[k];
     m.spend+=r.spend; m.impressions+=r.impressions; m.clicks+=r.clicks;
-    m.lpv+=r.lpv; m.atc+=r.atc; m.nc+=r.nc; m.revenue+=r.revenue; m.video3s+=r.video3s;
+    m.lpv+=r.lpv; m.atc+=r.atc; m.nc+=r.nc;
+    m.purchases+=r.purchases; m.revenue+=r.revenue; m.video3s+=r.video3s;
   });
   const adRows = Object.values(adMap)
     .filter(r=>r.spend>0)
     .map(r=>({...r,
-      cac:r.nc?r.spend/r.nc:0, roas:r.spend?r.revenue/r.spend:0,
-      ctr:r.impressions?r.clicks/r.impressions*100:0,
-      cpm:r.impressions?r.spend/r.impressions*1000:0,
-      hookRate:r.impressions?r.video3s/r.impressions*100:0,
-      atcPct:r.lpv?r.atc/r.lpv*100:0,
-      convPct:r.lpv?r.nc/r.lpv*100:0,
+      cac:      r.purchases ? r.spend/r.purchases : 0,
+      aov:      r.purchases ? r.revenue/r.purchases : 0,
+      roas:     r.spend ? r.revenue/r.spend : 0,
+      ctr:      r.impressions ? r.clicks/r.impressions*100 : 0,
+      cpm:      r.impressions ? r.spend/r.impressions*1000 : 0,
+      hookRate: r.impressions ? r.video3s/r.impressions*100 : 0,
+      atcPct:   r.clicks ? r.atc/r.clicks*100 : 0,
+      purchPct: r.atc ? r.purchases/r.atc*100 : 0,
+      convPct:  r.lpv ? r.nc/r.lpv*100 : 0,
     }))
     .sort((a,b)=>b.nc-a.nc||b.spend-a.spend);
 
+  const adCols = [
+    {key:'adName',  label:'Ad Name', left:true,
+      fmt:v=>v?`<span title="${v}" style="max-width:300px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">${v}</span>`:'—'},
+    {key:'spend',   label:'Spend',    fmt:v=>umbrellaFmt(v,'inrk')},
+    {key:'nc',      label:'NCs',      fmt:v=>umbrellaFmt(v,'num')},
+    {key:'cac',     label:'CAC',      fmt:v=>v?umbrellaFmt(v,'inr'):'—'},
+    {key:'aov',     label:'AOV',      fmt:v=>v?umbrellaFmt(v,'inr'):'—'},
+    {key:'roas',    label:'ROAS',     fmt:roasFmt},
+    {key:'impressions',label:'Impr.', fmt:v=>umbrellaFmt(v,'num')},
+    {key:'ctr',     label:'CTR',      fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'cpm',     label:'CPM',      fmt:v=>'₹'+v.toFixed(2)},
+    {key:'hookRate',label:'Hook Rate',fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'atcPct',  label:'ATC %',    fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'convPct', label:'Conv %',   fmt:v=>umbrellaFmt(v,'pct')},
+  ];
+
   const wrap = document.getElementById('umbrella-table-wrap');
   wrap.style.display = 'block';
-  const thStyle = (left) => `padding:8px 10px;text-align:${left?'left':'right'};font-weight:600;color:var(--ink2);white-space:nowrap;`;
-  const tdStyle = (left,mono) => `padding:7px 10px;text-align:${left?'left':'right'};font-family:${mono?'var(--mono)':'var(--sans)'};white-space:nowrap;`;
-  wrap.innerHTML = `
-    <div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Daily Breakdown — ${dailyRows.length} days</div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:32px;">
-      <thead><tr style="background:var(--surface);border-bottom:2px solid var(--ink3);">
-        ${cols.map(c=>`<th style="${thStyle(c.left)}">${c.label}</th>`).join('')}
-      </tr></thead>
-      <tbody>
-        ${dailyRows.map((r,i)=>`<tr style="border-bottom:1px solid var(--ink3);${i%2===0?'background:var(--bg);':'background:var(--surface);'}">
-          ${cols.map(c=>`<td style="${tdStyle(c.left,!c.left)}">${c.fmt(r[c.key],r)}</td>`).join('')}
-        </tr>`).join('')}
-      </tbody>
-    </table>
-    <div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Ad-Level Breakdown — ${adRows.length} ads with spend</div>
-    <table style="width:100%;border-collapse:collapse;font-size:12px;">
-      <thead><tr style="background:var(--surface);border-bottom:2px solid var(--ink3);">
-        ${adCols.map(c=>`<th style="${thStyle(c.left)}">${c.label}</th>`).join('')}
-      </tr></thead>
-      <tbody>
-        ${adRows.map((r,i)=>`<tr style="border-bottom:1px solid var(--ink3);${i%2===0?'background:var(--bg);':'background:var(--surface);'}">
-          ${adCols.map(c=>`<td style="${tdStyle(c.left,!c.left)}">${c.fmt(r[c.key],r)}</td>`).join('')}
-        </tr>`).join('')}
-      </tbody>
-    </table>`;
+  wrap.innerHTML =
+    umbrellaGridTable(`Daily Breakdown — ${dailyRows.length} days`, dailyCols, dailyRows, 'dateStr') +
+    umbrellaGridTable(`Ad-Level Breakdown — ${adRows.length} ads`, adCols, adRows, '');
 }
 
 function umbrellaApplyFilters(){
