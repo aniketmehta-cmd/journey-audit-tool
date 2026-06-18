@@ -2879,6 +2879,24 @@ function umbrellaGridTable(title, cols, rows, dateColKey){
     </table></div>`;
 }
 
+// Map umbrella "Product" column value → catalogue pid (s1 / s2 / biotin)
+function umbrellaToCatPid(product){
+  const p = (product||'').toLowerCase().replace(/\s+/g,'');
+  if(p.includes('stage1') || p.includes('stage_1') || p.includes('antihairfall')) return 's1';
+  if(p.includes('stage2') || p.includes('stage_2') || p.includes('regrowth'))     return 's2';
+  if(p.includes('biotin') || p.includes('gummies'))                                return 'biotin';
+  return null;
+}
+
+// Return video links object {link45, link916} or null for an ad name
+function umbrellaAdLinks(adName, product){
+  const pid = umbrellaToCatPid(product);
+  if(!pid || !catalogue[pid]) return null;
+  const entry = catalogue[pid][normN(adName)];
+  if(!entry) return null;
+  return { link45: entry.link45||null, link916: entry.link916||null };
+}
+
 function umbrellaRenderTable(dailyRows, rawRows){
   const roasFmt = v => umbrellaFmt(v,'x');
   const dailyCols = [
@@ -2907,19 +2925,25 @@ function umbrellaRenderTable(dailyRows, rawRows){
     m.nc+=r.nc; m.video3s+=r.video3s; m.sumRev+=r.sumRev;
     m.pdpViewed+=r.pdpViewed; m.atcBN+=r.atcBN; m.ncsFunnel+=r.ncsFunnel;
   });
+  const selectedProduct = document.getElementById('umbrella-product-sel').value;
   const adRows = Object.values(adMap)
     .filter(r=>r.spend>0)
-    .map(r=>({...r,
-      cac:     r.nc         ? r.spend/r.nc/UMBRELLA_G1 : 0,
-      aov:     r.nc         ? r.sumRev/r.nc : 0,
-      roas:    r.spend      ? r.sumRev*UMBRELLA_G1/r.spend : 0,
-      ctr:     r.impressions? r.clicks/r.impressions*100 : 0,
-      cpm:     r.impressions? r.spend/r.impressions*1000 : 0,
-      hookRate:r.impressions? r.video3s/r.impressions*100 : 0,
-      atcPct:  r.pdpViewed  ? r.atcBN/r.pdpViewed*100 : 0,
-      purchPct:r.atcBN      ? r.ncsFunnel/r.atcBN*100 : 0,
-      convPct: r.pdpViewed  ? r.ncsFunnel/r.pdpViewed*100 : 0,
-    }))
+    .map(r=>{
+      const links = umbrellaAdLinks(r.adName, selectedProduct);
+      return {...r,
+        cac:     r.nc         ? r.spend/r.nc/UMBRELLA_G1 : 0,
+        aov:     r.nc         ? r.sumRev/r.nc : 0,
+        roas:    r.spend      ? r.sumRev*UMBRELLA_G1/r.spend : 0,
+        ctr:     r.impressions? r.clicks/r.impressions*100 : 0,
+        cpm:     r.impressions? r.spend/r.impressions*1000 : 0,
+        hookRate:r.impressions? r.video3s/r.impressions*100 : 0,
+        atcPct:  r.pdpViewed  ? r.atcBN/r.pdpViewed*100 : 0,
+        purchPct:r.atcBN      ? r.ncsFunnel/r.atcBN*100 : 0,
+        convPct: r.pdpViewed  ? r.ncsFunnel/r.pdpViewed*100 : 0,
+        link45:  links ? links.link45  : null,
+        link916: links ? links.link916 : null,
+      };
+    })
     .sort((a,b)=>b.nc-a.nc||b.spend-a.spend);
 
   const adCols = [
@@ -2936,6 +2960,12 @@ function umbrellaRenderTable(dailyRows, rawRows){
     {key:'hookRate',label:'Hook Rate',fmt:v=>umbrellaFmt(v,'pct')},
     {key:'atcPct',  label:'ATC %',    fmt:v=>umbrellaFmt(v,'pct')},
     {key:'convPct', label:'Conv %',   fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'_links',  label:'Video',    left:true, fmt:(v,r)=>{
+      const links = [];
+      if(r.link45)  links.push(`<a href="${r.link45}"  target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#1a6ef5;text-decoration:none;font-family:var(--sans);padding:2px 7px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;white-space:nowrap;" title="${r.link45}">▶ 4:5</a>`);
+      if(r.link916) links.push(`<a href="${r.link916}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#1a6ef5;text-decoration:none;font-family:var(--sans);padding:2px 7px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;white-space:nowrap;" title="${r.link916}">▶ 9:16</a>`);
+      return links.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${links.join('')}</div>` : '<span style="color:#bbb;font-size:11px;">—</span>';
+    }},
   ];
 
   const wrap = document.getElementById('umbrella-table-wrap');
