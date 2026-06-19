@@ -3462,9 +3462,18 @@ function mmdMonthShort(m){
 function mmdLoad(){
   const st=document.getElementById('mmdata-status');
   if(st){st.style.display='block';st.textContent='Fetching MM tab…';}
+  // Timeout — gviz fetch sometimes hangs indefinitely
+  const timeout=setTimeout(()=>{
+    if(!mmdRaw&&st){
+      st.style.display='block';
+      st.style.color='#c0392b';
+      st.innerHTML='⚠️ MM tab fetch timed out. The sheet may need "Anyone with link" viewer access, or Google login may be required.<br><button onclick="st.style.display=\'none\';mmdLoad()" style="margin-top:8px;padding:6px 16px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:13px;">↺ Retry</button>';
+    }
+  },25000);
   const url=`https://docs.google.com/spreadsheets/d/${MMD_ID}/gviz/tq?tqx=out:csv&sheet=MM`;
   Papa.parse(url,{download:true,header:false,skipEmptyLines:false,
     complete(res){
+      clearTimeout(timeout);
       const data=res.data;
       // Columns: A(0)=section label, B(1)=metric label, C(2)=current month, D(3)=prev, …
       // Row 1(idx 0): B1 = global latest date
@@ -3553,7 +3562,13 @@ function mmdLoad(){
       mmdRenderCurrent();
       mmdScheduleAutoRefresh();
     },
-    error(){if(document.getElementById('mmdata-status'))document.getElementById('mmdata-status').textContent='Failed to load MM tab. Ensure sheet has Viewer access.';}
+    error(err){
+      clearTimeout(timeout);
+      const s=document.getElementById('mmdata-status');
+      if(s){s.style.display='block';s.style.color='#c0392b';
+        s.innerHTML=`⚠️ Failed to load MM tab: ${err&&err.message||'network error'}. Ensure the Cat Daily Update sheet is shared as "Anyone with the link can view."<br><button onclick="s.style.display='none';s.style.color='';mmdLoad()" style="margin-top:8px;padding:6px 16px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:13px;">↺ Retry</button>`;
+      }
+    }
   });
 }
 
