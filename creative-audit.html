@@ -3442,7 +3442,7 @@ const MMD_METRICS=[
   {key:'rev',label:'Revenue',fmt:'cur'},
 ];
 
-let mmdRaw=null,mmdAutoTimer=null,mmdActiveSub='overview';
+let mmdRaw=false,mmdMMData=null,mmdAutoTimer=null,mmdActiveSub='overview';
 let mmdMomMetric='nc',mmdMomVisProds=new Set(['hg','hg_stages','minox','minox_stages']);
 let mmdByProdKey='hg';
 
@@ -3458,109 +3458,114 @@ function mmdMonthShort(m){
   return mo[parseInt(mm)-1]+' '+y.slice(2);
 }
 
-async function mmdLoad(){
+// Read the small pre-computed MM tab (not raw data — fast)
+function mmdLoad(){
   const st=document.getElementById('mmdata-status');
-  if(st){st.style.display='block';st.innerHTML='<div style="margin-bottom:8px;">Fetching data…</div><div style="font-size:12px;opacity:0.6;">Querying last 13 months from mm_raw_data</div>';}
-  // Limit to last 13 months + only the 6 columns needed → drastically smaller payload
-  const since=new Date();since.setMonth(since.getMonth()-13);
-  const sinceStr=since.toISOString().slice(0,10);
-  const tq=encodeURIComponent(`select A,C,E,F,G,H where A >= date '${sinceStr}'`);
-  const url=`https://docs.google.com/spreadsheets/d/${MMD_ID}/gviz/tq?tqx=out:csv&sheet=mm_raw_data&tq=${tq}`;
-  const ctrl=new AbortController();
-  const timer=setTimeout(()=>ctrl.abort(),30000);
-  let text;
-  try{
-    const resp=await fetch(url,{signal:ctrl.signal});
-    clearTimeout(timer);
-    if(!resp.ok)throw new Error('HTTP '+resp.status);
-    text=await resp.text();
-  }catch(e){
-    clearTimeout(timer);
-    if(st)st.textContent=e.name==='AbortError'?'Timed out (30s). Sheet may be too large or not public.':'Failed to load: '+e.message;
-    return;
-  }
-  Papa.parse(text,{header:true,skipEmptyLines:true,complete(res){
-    if(!res.data||!res.data.length){if(st)st.textContent='No data returned. Ensure sheet has Viewer access.';return;}
-    // gviz tq select may rename headers to col letters — handle both
-    mmdRaw=res.data.map(r=>{
-      const ds=(r['order_dt']||r['A']||'').trim();
-      const dt=new Date(ds);
-      return{date:dt,ds,
-        cust:(r['cust_type']||r['C']||'').toUpperCase().trim(),
-        fp_cat:(r['fp_category']||r['E']||'').toLowerCase().trim(),
-        sub_cat:(r['sub_category']||r['F']||'').toLowerCase().trim(),
-        orders:parseFloat(r['orders']||r['G'])||0,
-        rev:parseFloat(r['total_amount_spent']||r['H'])||0};
-    }).filter(r=>r.orders>0&&!isNaN(r.date)&&r.date.getFullYear()>2000);
-    if(st)st.style.display='none';
-    const nav=document.getElementById('mmdata-subnav');
-    if(nav){
-      nav.style.display='flex';
-      if(!nav.children.length){
-        nav.innerHTML=[
-          {n:'overview',l:'Overview'},{n:'mom',l:'Month-on-Month'},{n:'product',l:'By Product'}
-        ].map((t,i)=>`<button class="dim-tab${i===0?' active':''}" onclick="mmdSub('${t.n}',this)">${t.l}</button>`).join('');
+  if(st){st.style.display='block';st.textContent='Fetching MM tab…';}
+  const url=`https://docs.google.com/spreadsheets/d/${MMD_ID}/gviz/tq?tqx=out:csv&sheet=MM`;
+  Papa.parse(url,{download:true,header:false,skipEmptyLines:false,
+    complete(res){
+      const data=res.data;
+      // Columns: A(0)=section label, B(1)=metric label, C(2)=current month, D(3)=prev, …
+      // Row 1(idx 0): B1 = global latest date
+      // Row 2(idx 1): C2,D2,… = latest date captured per column
+      // Row 3(idx 2): C3,D3,… = month start dates per column
+      const months=[];
+      for(let c=2;c<25;c++){
+        const startRaw=String(data[2]?.[c]||'').trim();
+        if(!startRaw||startRaw==='0'||startRaw==='')break;
+        const startDt=mmdParseDate(startRaw);
+        if(!startDt||startDt.getFullYear()<2020)break;
+        const latestRaw=String(data[1]?.[c]||'').trim();
+        const latestDt=mmdParseDate(latestRaw)||startDt;
+        const daysInMonth=new Date(startDt.getFullYear(),startDt.getMonth()+1,0).getDate();
+        const daysElapsed=Math.max(1,Math.round((latestDt-startDt)/86400000)+1);
+        months.push({col:c,startDt,latestDt,daysInMonth,daysElapsed,
+          label:startDt.getFullYear()+'-'+String(startDt.getMonth()+1).padStart(2,'0')});
       }
-    }
-    const ts=document.getElementById('mmdata-refresh-ts');
-    if(ts)ts.textContent=`Loaded ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${mmdRaw.length.toLocaleString('en-IN')} rows · auto-refreshes at 11:30 AM`;
-    mmdRenderCurrent();
-    mmdScheduleAutoRefresh();
-  }});
-}
+      if(!months.length){if(st)st.textContent='Could not read month columns from MM tab. Check sheet access.';return;}
 
-function mmdFilterProd(rows,p){
-  if(p.colIdx==null)return rows;
-  return rows.filter(r=>p.vals.includes(p.colIdx===4?r.fp_cat:r.sub_cat));
-}
+      // Find section header row (col A = label)
+      const findSec=lbl=>{
+        const l=lbl.toLowerCase().trim();
+        for(let r=0;r<data.length;r++)if((data[r][0]||'').toLowerCase().trim()===l)return r;
+        return -1;
+      };
+      // Find metric value within section: search col B from secRow, return col c
+      const getVal=(secRow,metric,col)=>{
+        const l=metric.toLowerCase();
+        for(let r=secRow+1;r<secRow+22&&r<data.length;r++){
+          const b=(data[r][1]||'').toLowerCase().trim();
+          if(b===l)return parseFloat((data[r][col]||'').replace(/,/g,''))||0;
+        }
+        return 0;
+      };
 
-function mmdCalc(rows){
-  let nc=0,rc=0,ncr=0,rcr=0;
-  rows.forEach(r=>{
-    if(r.cust==='NEW'){nc+=r.orders;ncr+=r.rev;}
-    else if(r.cust==='RPT'){rc+=r.orders;rcr+=r.rev;}
+      const SECS=[
+        {key:'overall',search:'MM Overall'},
+        {key:'hair',search:'Hair'},
+        {key:'hg',search:'HG'},
+        {key:'hg_stages',search:'HG Stages'},
+        {key:'minox',search:'Minox'},
+        {key:'minox_stages',search:'Minox Stages'},
+      ];
+      mmdMMData={};
+      SECS.forEach(sec=>{
+        const sr=findSec(sec.search);
+        mmdMMData[sec.key]=months.map(m=>{
+          const nc=sr>=0?getVal(sr,'NC',m.col):0;
+          const rc=sr>=0?getVal(sr,'RC',m.col):0;
+          const nc_aov=sr>=0?getVal(sr,'NC AOV',m.col):0;
+          const rc_aov=sr>=0?getVal(sr,'RC AOV',m.col):0;
+          return{month:m.label,nc,rc,total:nc+rc,nc_aov,rc_aov,
+            rev:nc*nc_aov+rc*rc_aov,
+            latestDt:m.latestDt,daysInMonth:m.daysInMonth,daysElapsed:m.daysElapsed};
+        });
+      });
+
+      mmdRaw=true;
+      if(st)st.style.display='none';
+      const nav=document.getElementById('mmdata-subnav');
+      if(nav){
+        nav.style.display='flex';
+        if(!nav.children.length)
+          nav.innerHTML=[{n:'overview',l:'Overview'},{n:'mom',l:'Month-on-Month'},{n:'product',l:'By Product'}]
+            .map((t,i)=>`<button class="dim-tab${i===0?' active':''}" onclick="mmdSub('${t.n}',this)">${t.l}</button>`).join('');
+      }
+      const ts=document.getElementById('mmdata-refresh-ts');
+      const latest=months[months.length-1];
+      if(ts)ts.textContent=`Loaded ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · as of ${latest.latestDt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · auto-refreshes at 11:30 AM`;
+      mmdRenderCurrent();
+      mmdScheduleAutoRefresh();
+    },
+    error(){if(document.getElementById('mmdata-status'))document.getElementById('mmdata-status').textContent='Failed to load MM tab. Ensure sheet has Viewer access.';}
   });
-  return{nc,rc,total:nc+rc,nc_aov:nc?ncr/nc:null,rc_aov:rc?rcr/rc:null,rev:ncr+rcr};
 }
 
-function mmdPeriods(filtRows){
-  if(!filtRows.length)return null;
-  const allDs=[...new Set(filtRows.map(r=>r.ds))].sort();
-  const latestDs=allDs[allDs.length-1];
-  const latest=new Date(latestDs);
-  const monthStart=new Date(latest.getFullYear(),latest.getMonth(),1);
-  const monthDays=new Date(latest.getFullYear(),latest.getMonth()+1,0).getDate();
-  const l10Ds=new Set(allDs.slice(-10));
-  const l30Ds=new Set(allDs.slice(-30));
-  const mtdRows=filtRows.filter(r=>r.date>=monthStart&&r.date<=latest);
-  const mtdDays=[...new Set(mtdRows.map(r=>r.ds))].length||1;
-  const l10m=mmdCalc(filtRows.filter(r=>l10Ds.has(r.ds)));
-  const l30m=mmdCalc(filtRows.filter(r=>l30Ds.has(r.ds)));
-  const mtdm=mmdCalc(mtdRows);
-  const ps=monthDays/mtdDays;
-  const dayDiv=(m,n)=>({nc:m.nc/n,rc:m.rc/n,total:m.total/n,nc_aov:m.nc_aov,rc_aov:m.rc_aov,rev:m.rev/n});
-  return{
-    ld:mmdCalc(filtRows.filter(r=>r.ds===latestDs)),
-    l10:dayDiv(l10m,l10Ds.size),
-    l30:dayDiv(l30m,l30Ds.size),
-    mtd:mtdm,
-    proj:{nc:mtdm.nc*ps,rc:mtdm.rc*ps,total:mtdm.total*ps,nc_aov:mtdm.nc_aov,rc_aov:mtdm.rc_aov,rev:mtdm.rev*ps},
-    latestDs,mtdDays,monthDays,
-    monthLabel:latest.toLocaleString('en-IN',{month:'long',year:'numeric'})
-  };
+function mmdParseDate(s){
+  if(!s)return null;
+  s=s.trim();
+  // "Date(YYYY,M,D)" gviz format
+  const dm=s.match(/^Date\((\d+),(\d+),(\d+)\)/);
+  if(dm)return new Date(+dm[1],+dm[2],+dm[3]);
+  // Try native parse (handles ISO, many locale formats)
+  const dt=new Date(s);
+  if(!isNaN(dt)&&dt.getFullYear()>2000)return dt;
+  // "D/M/YYYY" or "M/D/YYYY" — try both
+  const parts=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(parts){
+    const a=new Date(+parts[3],+parts[2]-1,+parts[1]);
+    if(!isNaN(a)&&a.getFullYear()>2000)return a;
+    const b=new Date(+parts[3],+parts[1]-1,+parts[2]);
+    if(!isNaN(b)&&b.getFullYear()>2000)return b;
+  }
+  return null;
 }
 
-function mmdMonthly(filtRows){
-  const byM={};
-  filtRows.forEach(r=>{
-    const k=r.date.getFullYear()+'-'+String(r.date.getMonth()+1).padStart(2,'0');
-    (byM[k]=byM[k]||[]).push(r);
-  });
-  return Object.entries(byM).sort(([a],[b])=>a<b?-1:1).map(([mo,rows])=>({month:mo,...mmdCalc(rows)}));
-}
+function mmdGetMonthly(prodKey){return(mmdMMData&&mmdMMData[prodKey])||[];}
 
 function mmdRenderCurrent(){mmdSub(mmdActiveSub,null);}
-function mmdRefresh(){mmdRaw=null;mmdLoad();}
+function mmdRefresh(){mmdRaw=false;mmdMMData=null;mmdLoad();}
 
 function mmdSub(name,btn){
   mmdActiveSub=name;
@@ -3583,25 +3588,36 @@ function mmdGoProduct(key){mmdByProdKey=key;mmdSub('product',null);}
 
 function mmdRenderOverview(){
   const el=document.getElementById('mmdata-panel-overview');
-  if(!mmdRaw||!el){if(el)el.innerHTML='';return;}
-  const allDs=[...new Set(mmdRaw.map(r=>r.ds))].sort();
-  const latestDs=allDs[allDs.length-1];
-  const latest=new Date(latestDs);
-  const monthStart=new Date(latest.getFullYear(),latest.getMonth(),1);
-  const monthDays=new Date(latest.getFullYear(),latest.getMonth()+1,0).getDate();
-  const mtdDays=[...new Set(mmdRaw.filter(r=>r.date>=monthStart&&r.date<=latest).map(r=>r.ds))].length||1;
-  const monthLabel=latest.toLocaleString('en-IN',{month:'long',year:'numeric'});
-  const prodData=MMD_PRODS.map(p=>{
-    const filt=mmdFilterProd(mmdRaw,p);
-    const mtd=mmdCalc(filt.filter(r=>r.date>=monthStart&&r.date<=latest));
-    const ld=mmdCalc(filt.filter(r=>r.ds===latestDs));
-    const ps=monthDays/mtdDays;
-    return{...p,mtd,ld,proj_nc:mtd.nc*ps,proj_rev:mtd.rev*ps};
-  });
+  if(!mmdMMData||!el){if(el)el.innerHTML='';return;}
+  // Current month = last entry in any product's monthly array
+  const cur=mmdGetMonthly('overall');
+  if(!cur.length){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data loaded.</div>';return;}
+  const latest=cur[cur.length-1];
+  const ps=latest.daysInMonth/latest.daysElapsed;
+  const monthLabel=mmdMonthShort(latest.month);
+  const latestDateStr=latest.latestDt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  const prevMonth=cur.length>=2?cur[cur.length-2]:null;
+
   const th='padding:10px 14px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;white-space:nowrap;';
   const thL='padding:10px 14px;text-align:left;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;';
   const td='padding:9px 14px;border-bottom:1px solid #eee;text-align:right;font-family:var(--mono);font-size:13px;';
   const tdL='padding:9px 14px;border-bottom:1px solid #eee;font-weight:600;font-size:13px;cursor:pointer;';
+
+  const mkRows=(getM,showProj)=>MMD_PRODS.map((p,i)=>{
+    const monthly=mmdGetMonthly(p.key);
+    const m=getM(monthly);if(!m)return'';
+    const c=MMD_COLORS[p.key];const bg=i%2?'#fafafa':'#fff';
+    const projNc=showProj&&monthly.length?monthly[monthly.length-1].nc*ps:null;
+    return`<tr style="background:${bg};" onclick="mmdGoProduct('${p.key}')">
+      <td style="${tdL}"><span style="width:9px;height:9px;border-radius:50%;background:${c};display:inline-block;margin-right:8px;vertical-align:middle;"></span>${p.label}</td>
+      <td style="${td}">${mmdFmt(m.nc,'num')}</td><td style="${td}">${mmdFmt(m.nc_aov,'cur')}</td>
+      <td style="${td}">${mmdFmt(m.rc,'num')}</td><td style="${td}">${mmdFmt(m.rc_aov,'cur')}</td>
+      <td style="${td};font-weight:600;">${mmdFmt(m.total,'num')}</td>
+      <td style="${td}">${mmdFmt(m.rev,'cur')}</td>
+      ${showProj?`<td style="${td};color:#aaa;">~${mmdFmt(projNc,'num')}</td>`:''}
+    </tr>`;
+  }).join('');
+
   const mkTable=(title,sub,getM,showProj)=>`
     <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
       <span style="font-size:14px;font-weight:700;">${title}</span>
@@ -3615,30 +3631,25 @@ function mmdRenderOverview(){
         <th style="${th}">RC</th><th style="${th}">RC AOV</th>
         <th style="${th}">Total</th><th style="${th}">Revenue</th>
         ${showProj?`<th style="${th};color:#aaa;">→ Projected NC</th>`:''}
-      </tr></thead><tbody>
-      ${prodData.map((p,i)=>{const m=getM(p);const c=MMD_COLORS[p.key];const bg=i%2?'#fafafa':'#fff';return`
-      <tr style="background:${bg};" onclick="mmdGoProduct('${p.key}')">
-        <td style="${tdL}"><span style="width:9px;height:9px;border-radius:50%;background:${c};display:inline-block;margin-right:8px;vertical-align:middle;"></span>${p.label}</td>
-        <td style="${td}">${mmdFmt(m.nc,'num')}</td><td style="${td}">${mmdFmt(m.nc_aov,'cur')}</td>
-        <td style="${td}">${mmdFmt(m.rc,'num')}</td><td style="${td}">${mmdFmt(m.rc_aov,'cur')}</td>
-        <td style="${td};font-weight:600;">${mmdFmt(m.total,'num')}</td>
-        <td style="${td}">${mmdFmt(m.rev,'cur')}</td>
-        ${showProj?`<td style="${td};color:#aaa;">~${mmdFmt(p.proj_nc,'num')}</td>`:''}
-      </tr>`;}).join('')}
-      </tbody>
+      </tr></thead><tbody>${mkRows(getM,showProj)}</tbody>
     </table></div>`;
-  el.innerHTML=
-    mkTable(monthLabel+' — Month to Date',`as of ${new Date(latestDs).toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${mtdDays}/${monthDays} days elapsed`,p=>p.mtd,true)+
-    mkTable('Yesterday',new Date(latestDs).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'}),p=>p.ld,false);
+
+  let h=mkTable(
+    `${monthLabel} — Month to Date`,
+    `as of ${latestDateStr} · ${latest.daysElapsed}/${latest.daysInMonth} days`,
+    monthly=>monthly.length?monthly[monthly.length-1]:null, true);
+  if(prevMonth)
+    h+=mkTable(`Last Month (${mmdMonthShort(prevMonth.month)})`,`full month`,
+      monthly=>monthly.length>=2?monthly[monthly.length-2]:null, false);
+  el.innerHTML=h;
 }
 
 function mmdRenderMom(){
   const el=document.getElementById('mmdata-panel-mom');
-  if(!mmdRaw||!el)return;
+  if(!mmdMMData||!el)return;
   const metricOpts=MMD_METRICS.map(m=>`<option value="${m.key}"${m.key===mmdMomMetric?' selected':''}>${m.label}</option>`).join('');
   const prodBtns=MMD_PRODS.map(p=>{
-    const on=mmdMomVisProds.has(p.key);
-    const c=MMD_COLORS[p.key];
+    const on=mmdMomVisProds.has(p.key);const c=MMD_COLORS[p.key];
     return`<button class="dim-tab${on?' active':''}" onclick="mmdToggleProd('${p.key}',this)" style="border-color:${c};background:${on?c:'var(--paper)'};color:${on?'#fff':c};">${p.label}</button>`;
   }).join('');
   el.innerHTML=`
@@ -3661,15 +3672,14 @@ function mmdToggleProd(key,btn){
 
 function mmdRenderMomChart(){
   const wrap=document.getElementById('mmd-mom-chart');
-  if(!wrap||!mmdRaw)return;
+  if(!wrap||!mmdMMData)return;
   const metric=MMD_METRICS.find(m=>m.key===mmdMomMetric)||MMD_METRICS[0];
   const active=MMD_PRODS.filter(p=>mmdMomVisProds.has(p.key));
   if(!active.length){wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">Select at least one product.</div>';return;}
-  const prodMonthly=active.map(p=>({p,data:mmdMonthly(mmdFilterProd(mmdRaw,p))}));
-  const allMonths=[...new Set(prodMonthly.flatMap(({data})=>data.map(d=>d.month)))].sort();
+  const allMonths=[...new Set(active.flatMap(p=>mmdGetMonthly(p.key).map(d=>d.month)))].sort();
   if(allMonths.length<2){wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">Not enough monthly data.</div>';return;}
-  const series=prodMonthly.map(({p,data})=>{
-    const byM=Object.fromEntries(data.map(d=>[d.month,d]));
+  const series=active.map(p=>{
+    const byM=Object.fromEntries(mmdGetMonthly(p.key).map(d=>[d.month,d]));
     return{label:p.label,color:MMD_COLORS[p.key],data:allMonths.map(m=>byM[m]?byM[m][mmdMomMetric]:null)};
   });
   mmdDrawChart('mmd-mom-chart',series,allMonths,metric.fmt);
@@ -3677,7 +3687,7 @@ function mmdRenderMomChart(){
 
 function mmdRenderByProduct(){
   const el=document.getElementById('mmdata-panel-product');
-  if(!mmdRaw||!el)return;
+  if(!mmdMMData||!el)return;
   const tabBtns=MMD_PRODS.map(p=>{
     const on=p.key===mmdByProdKey;const c=MMD_COLORS[p.key];
     return`<button class="dim-tab${on?' active':''}" onclick="mmdByProdKey='${p.key}';mmdRenderByProdContent()" style="border-color:${c};background:${on?c:'var(--paper)'};color:${on?'#fff':c};">${p.label}</button>`;
@@ -3692,19 +3702,19 @@ function mmdRenderByProdContent(){
     const on=p.key===mmdByProdKey;const c=MMD_COLORS[p.key];
     btn.classList.toggle('active',on);btn.style.background=on?c:'var(--paper)';btn.style.color=on?'#fff':c;btn.style.borderColor=c;
   });
-  const el=document.getElementById('mmd-byprod-content');
-  if(!el)return;
+  const el=document.getElementById('mmd-byprod-content');if(!el)return;
   const p=MMD_PRODS.find(x=>x.key===mmdByProdKey);if(!p)return;
-  const filtRows=mmdFilterProd(mmdRaw,p);
-  const periods=mmdPeriods(filtRows);
-  if(!periods){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data for this product.</div>';return;}
+  const monthly=mmdGetMonthly(p.key);
+  if(!monthly.length){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data for this product.</div>';return;}
   const c=MMD_COLORS[p.key];
+  const cur=monthly[monthly.length-1];
+  const ps=cur.daysInMonth/cur.daysElapsed;
+  const proj={nc:cur.nc*ps,rc:cur.rc*ps,total:cur.total*ps,nc_aov:cur.nc_aov,rc_aov:cur.rc_aov,rev:cur.rev*ps};
+  // Period rows: current MTD + projection + up to 3 prior months
   const periodRows=[
-    {label:'Last Day',m:periods.ld,note:''},
-    {label:'L10 Daily Avg',m:periods.l10,note:'10-day daily avg'},
-    {label:'L30 Daily Avg',m:periods.l30,note:'30-day daily avg'},
-    {label:'Month to Date',m:periods.mtd,note:`${periods.mtdDays} of ${periods.monthDays} days`,bold:true},
-    {label:'Projection',m:periods.proj,note:periods.monthLabel,italic:true},
+    {label:'Month to Date',m:cur,note:`${cur.daysElapsed} of ${cur.daysInMonth} days · ${mmdMonthShort(cur.month)}`,bold:true},
+    {label:'Projection',m:proj,note:`full ${mmdMonthShort(cur.month)}`,italic:true},
+    ...monthly.slice(-4,-1).reverse().map((d,i)=>({label:i===0?'Last Month':i===1?'2 Months Ago':'3 Months Ago',m:d,note:mmdMonthShort(d.month)})),
   ];
   const th='padding:10px 14px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;white-space:nowrap;';
   const td='padding:10px 14px;border-bottom:1px solid #eee;font-family:var(--mono);font-size:13px;text-align:right;';
@@ -3713,19 +3723,19 @@ function mmdRenderByProdContent(){
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
       <span style="width:12px;height:12px;border-radius:50%;background:${c};display:inline-block;"></span>
       <span style="font-size:16px;font-weight:700;">${p.label}</span>
-      <span style="font-size:11px;color:var(--ink2);">as of ${new Date(periods.latestDs).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span>
+      <span style="font-size:11px;color:var(--ink2);">as of ${cur.latestDt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span>
     </div>
     <div style="overflow-x:auto;margin-bottom:32px;border:1px solid #eee;border-radius:10px;overflow:hidden;">
     <table style="width:100%;border-collapse:collapse;">
       <thead><tr style="background:#f5f5f7;">
-        <th style="padding:10px 14px;text-align:left;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;min-width:160px;">Period</th>
+        <th style="padding:10px 14px;text-align:left;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;min-width:180px;">Period</th>
         <th style="${th}">NC</th><th style="${th}">NC AOV</th>
         <th style="${th}">RC</th><th style="${th}">RC AOV</th>
         <th style="${th}">Total</th><th style="${th}">Revenue</th>
       </tr></thead>
       <tbody>
       ${periodRows.map((r,i)=>{
-        const m=r.m;const bg=r.bold?'#f0f4ff':(r.italic?'#fafbff':(i%2?'#fafafa':'#fff'));
+        const m=r.m;const bg=r.bold?'#f0f4ff':(r.italic?'#fafbff':(i%2===0?'#fafafa':'#fff'));
         const fw=r.bold?'700':'400';const it=r.italic?'color:#888;font-style:italic;':'';
         return`<tr style="background:${bg};">
           <td style="padding:10px 14px;border-bottom:1px solid #eee;font-weight:${fw};${it}">
@@ -3751,10 +3761,10 @@ function mmdRenderByProdContent(){
 
 function mmdRenderByProdChart(prodKey){
   const p=MMD_PRODS.find(x=>x.key===prodKey);
-  if(!p||!mmdRaw)return;
-  const monthly=mmdMonthly(mmdFilterProd(mmdRaw,p));
+  if(!p||!mmdMMData)return;
+  const monthly=mmdGetMonthly(p.key);
   const metric=MMD_METRICS.find(m=>m.key===mmdMomMetric)||MMD_METRICS[0];
-  mmdDrawChart('mmd-byprod-chart',[{label:p.label,color:MMD_COLORS[p.key],data:monthly.map(m=>m[mmdMomMetric])}],monthly.map(m=>m.month),metric.fmt);
+  mmdDrawChart('mmd-byprod-chart',[{label:p.label,color:MMD_COLORS[p.key],data:monthly.map(d=>d[mmdMomMetric])}],monthly.map(d=>d.month),metric.fmt);
 }
 
 function mmdDrawChart(containerId,series,labels,fmt){
