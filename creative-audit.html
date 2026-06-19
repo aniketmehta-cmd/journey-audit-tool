@@ -3458,38 +3458,55 @@ function mmdMonthShort(m){
   return mo[parseInt(mm)-1]+' '+y.slice(2);
 }
 
-function mmdLoad(){
+async function mmdLoad(){
   const st=document.getElementById('mmdata-status');
-  if(st){st.style.display='block';st.innerHTML='<div style="margin-bottom:8px;">Fetching data from Cat Daily Update sheet…</div><div style="font-size:12px;opacity:0.6;">Reading mm_raw_data tab</div>';}
-  Papa.parse('https://docs.google.com/spreadsheets/d/'+MMD_ID+'/gviz/tq?tqx=out:csv&sheet=mm_raw_data',{
-    download:true,header:true,skipEmptyLines:true,
-    complete(res){
-      if(!res.data||!res.data.length){if(st)st.textContent='No data found. Ensure the sheet has Viewer access.';return;}
-      mmdRaw=res.data.map(r=>{
-        const ds=(r['order_dt']||'').trim();
-        const dt=new Date(ds);
-        return{date:dt,ds,cust:(r['cust_type']||'').toUpperCase().trim(),
-          fp_cat:(r['fp_category']||'').toLowerCase().trim(),
-          sub_cat:(r['sub_category']||'').toLowerCase().trim(),
-          orders:parseFloat(r['orders'])||0,rev:parseFloat(r['total_amount_spent'])||0};
-      }).filter(r=>r.orders>0&&!isNaN(r.date)&&r.date.getFullYear()>2000);
-      if(st)st.style.display='none';
-      const nav=document.getElementById('mmdata-subnav');
-      if(nav){
-        nav.style.display='flex';
-        if(!nav.children.length){
-          nav.innerHTML=[
-            {n:'overview',l:'Overview'},{n:'mom',l:'Month-on-Month'},{n:'product',l:'By Product'}
-          ].map((t,i)=>`<button class="dim-tab${i===0?' active':''}" onclick="mmdSub('${t.n}',this)">${t.l}</button>`).join('');
-        }
+  if(st){st.style.display='block';st.innerHTML='<div style="margin-bottom:8px;">Fetching data…</div><div style="font-size:12px;opacity:0.6;">Querying last 13 months from mm_raw_data</div>';}
+  // Limit to last 13 months + only the 6 columns needed → drastically smaller payload
+  const since=new Date();since.setMonth(since.getMonth()-13);
+  const sinceStr=since.toISOString().slice(0,10);
+  const tq=encodeURIComponent(`select A,C,E,F,G,H where A >= date '${sinceStr}'`);
+  const url=`https://docs.google.com/spreadsheets/d/${MMD_ID}/gviz/tq?tqx=out:csv&sheet=mm_raw_data&tq=${tq}`;
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),30000);
+  let text;
+  try{
+    const resp=await fetch(url,{signal:ctrl.signal});
+    clearTimeout(timer);
+    if(!resp.ok)throw new Error('HTTP '+resp.status);
+    text=await resp.text();
+  }catch(e){
+    clearTimeout(timer);
+    if(st)st.textContent=e.name==='AbortError'?'Timed out (30s). Sheet may be too large or not public.':'Failed to load: '+e.message;
+    return;
+  }
+  Papa.parse(text,{header:true,skipEmptyLines:true,complete(res){
+    if(!res.data||!res.data.length){if(st)st.textContent='No data returned. Ensure sheet has Viewer access.';return;}
+    // gviz tq select may rename headers to col letters — handle both
+    mmdRaw=res.data.map(r=>{
+      const ds=(r['order_dt']||r['A']||'').trim();
+      const dt=new Date(ds);
+      return{date:dt,ds,
+        cust:(r['cust_type']||r['C']||'').toUpperCase().trim(),
+        fp_cat:(r['fp_category']||r['E']||'').toLowerCase().trim(),
+        sub_cat:(r['sub_category']||r['F']||'').toLowerCase().trim(),
+        orders:parseFloat(r['orders']||r['G'])||0,
+        rev:parseFloat(r['total_amount_spent']||r['H'])||0};
+    }).filter(r=>r.orders>0&&!isNaN(r.date)&&r.date.getFullYear()>2000);
+    if(st)st.style.display='none';
+    const nav=document.getElementById('mmdata-subnav');
+    if(nav){
+      nav.style.display='flex';
+      if(!nav.children.length){
+        nav.innerHTML=[
+          {n:'overview',l:'Overview'},{n:'mom',l:'Month-on-Month'},{n:'product',l:'By Product'}
+        ].map((t,i)=>`<button class="dim-tab${i===0?' active':''}" onclick="mmdSub('${t.n}',this)">${t.l}</button>`).join('');
       }
-      const ts=document.getElementById('mmdata-refresh-ts');
-      if(ts)ts.textContent='Loaded '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' · auto-refreshes at 11:30 AM';
-      mmdRenderCurrent();
-      mmdScheduleAutoRefresh();
-    },
-    error(){if(st)st.textContent='Failed to load. Ensure sheet is set to "Anyone with the link can view".';}
-  });
+    }
+    const ts=document.getElementById('mmdata-refresh-ts');
+    if(ts)ts.textContent=`Loaded ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${mmdRaw.length.toLocaleString('en-IN')} rows · auto-refreshes at 11:30 AM`;
+    mmdRenderCurrent();
+    mmdScheduleAutoRefresh();
+  }});
 }
 
 function mmdFilterProd(rows,p){
