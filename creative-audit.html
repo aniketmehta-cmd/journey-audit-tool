@@ -3443,6 +3443,7 @@ const MMD_METRICS=[
 ];
 
 let mmdRaw=false,mmdMMData=null,mmdPeriodData=null,mmdAutoTimer=null,mmdActiveSub='overview';
+let mmdAppsScriptUrl=localStorage.getItem('mmd_apps_script_url')||'';
 let mmdMomMetric='nc',mmdMomVisProds=new Set(['hg','hg_stages','minox','minox_stages']);
 let mmdByProdKey='hg';
 
@@ -3459,117 +3460,162 @@ function mmdMonthShort(m){
 }
 
 // Read the small pre-computed MM tab (not raw data — fast)
-function mmdLoad(){
+function mmdShowSetup(){
+  const el=document.getElementById('mmdata-status');
+  if(!el)return;
+  el.style.display='block';el.style.color='';
+  el.innerHTML=`
+    <div style="background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:20px 24px;max-width:680px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px;">One-time setup required</div>
+      <div style="font-size:13px;color:#555;margin-bottom:16px;">The Cat Daily Update sheet is private. You need to create a Google Apps Script that reads it on your behalf. This takes ~2 minutes and only needs to be done once.</div>
+      <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px;">Step 1 — Create the Apps Script</div>
+      <ol style="font-size:13px;color:#333;padding-left:20px;margin:0 0 12px;">
+        <li style="margin-bottom:4px;">Go to <strong>script.google.com</strong> → click <strong>New project</strong></li>
+        <li style="margin-bottom:4px;">Delete all existing code and paste the code below</li>
+        <li style="margin-bottom:4px;">Click <strong>Deploy → New deployment</strong></li>
+        <li style="margin-bottom:4px;">Type: <strong>Web app</strong> · Execute as: <strong>Me</strong> · Who has access: <strong>Anyone</strong></li>
+        <li style="margin-bottom:4px;">Click <strong>Deploy</strong> → copy the Web App URL</li>
+      </ol>
+      <div style="font-size:12px;font-weight:700;color:#555;margin-bottom:4px;">Apps Script code to paste:</div>
+      <pre style="background:#f1f5f9;border-radius:8px;padding:12px;font-size:11.5px;overflow-x:auto;margin:0 0 16px;line-height:1.5;white-space:pre-wrap;">function doGet(){
+  var ss=SpreadsheetApp.openById('${MMD_ID}');
+  var sh=ss.getSheetByName('MM');
+  var data=sh.getDataRange().getValues();
+  var out=ContentService.createTextOutput(JSON.stringify({ok:true,data:data}));
+  out.setMimeType(ContentService.MimeType.JSON);
+  return out;
+}</pre>
+      <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">Step 2 — Paste the Web App URL here</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="mmd-script-url-input" type="text" placeholder="https://script.google.com/macros/s/…/exec"
+          style="flex:1;padding:8px 12px;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;outline:none;"
+          value="${mmdAppsScriptUrl}" />
+        <button onclick="mmdSaveScriptUrl()" style="padding:8px 18px;border-radius:8px;border:none;background:#6366f1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">Save & Load</button>
+      </div>
+    </div>`;
+}
+
+function mmdSaveScriptUrl(){
+  const input=document.getElementById('mmd-script-url-input');
+  if(!input)return;
+  const url=input.value.trim();
+  if(!url){alert('Please paste the Apps Script Web App URL.');return;}
+  mmdAppsScriptUrl=url;
+  localStorage.setItem('mmd_apps_script_url',url);
+  mmdRaw=false;mmdMMData=null;mmdPeriodData=null;
   const st=document.getElementById('mmdata-status');
-  if(st){st.style.display='block';st.textContent='Fetching MM tab…';}
-  // Timeout — gviz fetch sometimes hangs indefinitely
-  const timeout=setTimeout(()=>{
-    if(!mmdRaw&&st){
-      st.style.display='block';
-      st.style.color='#c0392b';
-      st.innerHTML='⚠️ MM tab fetch timed out. The sheet may need "Anyone with link" viewer access, or Google login may be required.<br><button onclick="st.style.display=\'none\';mmdLoad()" style="margin-top:8px;padding:6px 16px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:13px;">↺ Retry</button>';
+  if(st){st.style.color='';st.innerHTML='';}
+  mmdLoad();
+}
+
+function mmdLoad(){
+  if(!mmdAppsScriptUrl){mmdShowSetup();return;}
+  const st=document.getElementById('mmdata-status');
+  if(st){st.style.display='block';st.style.color='';st.textContent='Fetching MM data…';}
+  fetch(mmdAppsScriptUrl,{redirect:'follow'})
+    .then(r=>r.json())
+    .then(json=>{
+      if(!json.ok||!json.data)throw new Error('Unexpected response from Apps Script');
+      mmdProcessData(json.data);
+    })
+    .catch(err=>{
+      if(st){st.style.display='block';st.style.color='#c0392b';
+        st.innerHTML=`⚠️ Could not load data: ${err.message}.<br>
+          <span style="font-size:12px;color:#555;">Check that the Apps Script is deployed with <strong>Who has access: Anyone</strong> and the URL is correct.</span><br>
+          <button onclick="mmdAppsScriptUrl='';localStorage.removeItem('mmd_apps_script_url');mmdShowSetup();" style="margin-top:8px;margin-right:8px;padding:6px 14px;border-radius:6px;border:none;background:#e5e7eb;color:#333;cursor:pointer;font-size:12px;">Re-configure</button>
+          <button onclick="mmdLoad()" style="margin-top:8px;padding:6px 14px;border-radius:6px;border:none;background:#6366f1;color:#fff;cursor:pointer;font-size:12px;">↺ Retry</button>`;
+      }
+    });
+}
+
+function mmdProcessData(data){
+  const st=document.getElementById('mmdata-status');
+  // Row 0 = row 1 in sheet: B0 = latest date formula value
+  // Row 1 = row 2: latest date per column
+  // Row 2 = row 3: month start per column
+  // data is a 2D array from Apps Script (sheet values, 0-indexed rows/cols)
+  // Row 0=sheet row1, Row 1=sheet row2 (latest dates), Row 2=sheet row3 (month starts)
+  const months=[];
+  for(let c=2;c<25;c++){
+    const startRaw=String(data[2]?.[c]||'').trim();
+    if(!startRaw||startRaw==='0'||startRaw==='')break;
+    const startDt=mmdParseDate(startRaw);
+    if(!startDt||startDt.getFullYear()<2020)break;
+    const latestRaw=String(data[1]?.[c]||'').trim();
+    const latestDt=mmdParseDate(latestRaw)||startDt;
+    const daysInMonth=new Date(startDt.getFullYear(),startDt.getMonth()+1,0).getDate();
+    const daysElapsed=Math.max(1,Math.round((latestDt-startDt)/86400000)+1);
+    months.push({col:c,startDt,latestDt,daysInMonth,daysElapsed,
+      label:startDt.getFullYear()+'-'+String(startDt.getMonth()+1).padStart(2,'0')});
+  }
+  if(!months.length){
+    if(st){st.style.display='block';st.style.color='#c0392b';
+      st.innerHTML='⚠️ Could not read month columns from MM tab. Check the Apps Script is reading the right sheet.<br><button onclick="mmdAppsScriptUrl=\'\';localStorage.removeItem(\'mmd_apps_script_url\');mmdShowSetup();" style="margin-top:8px;padding:6px 14px;border-radius:6px;border:none;background:#e5e7eb;color:#333;cursor:pointer;font-size:12px;">Re-configure</button>';
     }
-  },25000);
-  const url=`https://docs.google.com/spreadsheets/d/${MMD_ID}/gviz/tq?tqx=out:csv&sheet=MM`;
-  Papa.parse(url,{download:true,header:false,skipEmptyLines:false,
-    complete(res){
-      clearTimeout(timeout);
-      const data=res.data;
-      // Columns: A(0)=section label, B(1)=metric label, C(2)=current month, D(3)=prev, …
-      // Row 1(idx 0): B1 = global latest date
-      // Row 2(idx 1): C2,D2,… = latest date captured per column
-      // Row 3(idx 2): C3,D3,… = month start dates per column
-      const months=[];
-      for(let c=2;c<25;c++){
-        const startRaw=String(data[2]?.[c]||'').trim();
-        if(!startRaw||startRaw==='0'||startRaw==='')break;
-        const startDt=mmdParseDate(startRaw);
-        if(!startDt||startDt.getFullYear()<2020)break;
-        const latestRaw=String(data[1]?.[c]||'').trim();
-        const latestDt=mmdParseDate(latestRaw)||startDt;
-        const daysInMonth=new Date(startDt.getFullYear(),startDt.getMonth()+1,0).getDate();
-        const daysElapsed=Math.max(1,Math.round((latestDt-startDt)/86400000)+1);
-        months.push({col:c,startDt,latestDt,daysInMonth,daysElapsed,
-          label:startDt.getFullYear()+'-'+String(startDt.getMonth()+1).padStart(2,'0')});
-      }
-      if(!months.length){if(st)st.textContent='Could not read month columns from MM tab. Check sheet access.';return;}
+    return;
+  }
 
-      // Find section header row (col A = label)
-      const findSec=lbl=>{
-        const l=lbl.toLowerCase().trim();
-        for(let r=0;r<data.length;r++)if((data[r][0]||'').toLowerCase().trim()===l)return r;
-        return -1;
-      };
-      // Find metric value within section: search col B from secRow, return col c
-      const getVal=(secRow,metric,col)=>{
-        const l=metric.toLowerCase();
-        for(let r=secRow+1;r<secRow+22&&r<data.length;r++){
-          const b=(data[r][1]||'').toLowerCase().trim();
-          if(b===l)return parseFloat((data[r][col]||'').replace(/,/g,''))||0;
-        }
-        return 0;
-      };
-
-      const SECS=[
-        {key:'overall',search:'MM Overall'},
-        {key:'hair',search:'Hair'},
-        {key:'hg',search:'HG'},
-        {key:'hg_stages',search:'HG Stages'},
-        {key:'minox',search:'Minox'},
-        {key:'minox_stages',search:'Minox Stages'},
-      ];
-      mmdMMData={};mmdPeriodData={};
-      const makePeriod=(nc,rc,nc_aov,rc_aov)=>({nc,rc,total:nc+rc,nc_aov,rc_aov,rev:nc*nc_aov+rc*rc_aov});
-      SECS.forEach(sec=>{
-        const sr=findSec(sec.search);
-        mmdMMData[sec.key]=months.map(m=>{
-          const nc=sr>=0?getVal(sr,'NC',m.col):0;
-          const rc=sr>=0?getVal(sr,'RC',m.col):0;
-          const nc_aov=sr>=0?getVal(sr,'NC AOV',m.col):0;
-          const rc_aov=sr>=0?getVal(sr,'RC AOV',m.col):0;
-          return{month:m.label,nc,rc,total:nc+rc,nc_aov,rc_aov,
-            rev:nc*nc_aov+rc*rc_aov,
-            latestDt:m.latestDt,daysInMonth:m.daysInMonth,daysElapsed:m.daysElapsed};
-        });
-        // LD/L10/L30 from fixed cols AX(49)/AW(48)/AV(47), MTD from current month col
-        const cur=months[months.length-1];
-        const ps=cur.daysInMonth/cur.daysElapsed;
-        const g=(m,c)=>sr>=0?getVal(sr,m,c):0;
-        const mtdNC=g('NC',cur.col),mtdRC=g('RC',cur.col),mtdNCAOV=g('NC AOV',cur.col),mtdRCAOV=g('RC AOV',cur.col);
-        mmdPeriodData[sec.key]={
-          ld:makePeriod(g('NC',49),g('RC',49),g('NC AOV',49),g('RC AOV',49)),
-          l10:makePeriod(g('NC',48),g('RC',48),g('NC AOV',48),g('RC AOV',48)),
-          l30:makePeriod(g('NC',47),g('RC',47),g('NC AOV',47),g('RC AOV',47)),
-          mtd:makePeriod(mtdNC,mtdRC,mtdNCAOV,mtdRCAOV),
-          proj:makePeriod(mtdNC*ps,mtdRC*ps,mtdNCAOV,mtdRCAOV),
-          daysElapsed:cur.daysElapsed,daysInMonth:cur.daysInMonth,
-          month:cur.month,latestDt:cur.latestDt,
-        };
-      });
-
-      mmdRaw=true;
-      if(st)st.style.display='none';
-      const nav=document.getElementById('mmdata-subnav');
-      if(nav){
-        nav.style.display='flex';
-        if(!nav.children.length)
-          nav.innerHTML=[{n:'overview',l:'Overview'},{n:'mom',l:'Month-on-Month'},{n:'product',l:'By Product'}]
-            .map((t,i)=>`<button class="dim-tab${i===0?' active':''}" onclick="mmdSub('${t.n}',this)">${t.l}</button>`).join('');
-      }
-      const ts=document.getElementById('mmdata-refresh-ts');
-      const latest=months[months.length-1];
-      if(ts)ts.textContent=`Loaded ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · as of ${latest.latestDt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · auto-refreshes at 11:30 AM`;
-      mmdRenderCurrent();
-      mmdScheduleAutoRefresh();
-    },
-    error(err){
-      clearTimeout(timeout);
-      const s=document.getElementById('mmdata-status');
-      if(s){s.style.display='block';s.style.color='#c0392b';
-        s.innerHTML=`⚠️ Failed to load MM tab: ${err&&err.message||'network error'}. Ensure the Cat Daily Update sheet is shared as "Anyone with the link can view."<br><button onclick="s.style.display='none';s.style.color='';mmdLoad()" style="margin-top:8px;padding:6px 16px;border-radius:6px;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:13px;">↺ Retry</button>`;
-      }
+  const findSec=lbl=>{
+    const l=lbl.toLowerCase().trim();
+    for(let r=0;r<data.length;r++)if(String(data[r][0]||'').toLowerCase().trim()===l)return r;
+    return -1;
+  };
+  const getVal=(secRow,metric,col)=>{
+    const l=metric.toLowerCase();
+    for(let r=secRow+1;r<secRow+22&&r<data.length;r++){
+      const b=String(data[r][1]||'').toLowerCase().trim();
+      if(b===l){const v=data[r][col];return typeof v==='number'?v:parseFloat(String(v||'').replace(/,/g,''))||0;}
     }
+    return 0;
+  };
+
+  const SECS=[
+    {key:'overall',search:'MM Overall'},{key:'hair',search:'Hair'},
+    {key:'hg',search:'HG'},{key:'hg_stages',search:'HG Stages'},
+    {key:'minox',search:'Minox'},{key:'minox_stages',search:'Minox Stages'},
+  ];
+  mmdMMData={};mmdPeriodData={};
+  const makePeriod=(nc,rc,nc_aov,rc_aov)=>({nc,rc,total:nc+rc,nc_aov,rc_aov,rev:nc*nc_aov+rc*rc_aov});
+  SECS.forEach(sec=>{
+    const sr=findSec(sec.search);
+    mmdMMData[sec.key]=months.map(m=>{
+      const nc=sr>=0?getVal(sr,'NC',m.col):0;
+      const rc=sr>=0?getVal(sr,'RC',m.col):0;
+      const nc_aov=sr>=0?getVal(sr,'NC AOV',m.col):0;
+      const rc_aov=sr>=0?getVal(sr,'RC AOV',m.col):0;
+      return{month:m.label,nc,rc,total:nc+rc,nc_aov,rc_aov,
+        rev:nc*nc_aov+rc*rc_aov,
+        latestDt:m.latestDt,daysInMonth:m.daysInMonth,daysElapsed:m.daysElapsed};
+    });
+    const cur=months[months.length-1];
+    const ps=cur.daysInMonth/cur.daysElapsed;
+    const g=(metric,col)=>sr>=0?getVal(sr,metric,col):0;
+    const mtdNC=g('NC',cur.col),mtdRC=g('RC',cur.col),mtdNCAOV=g('NC AOV',cur.col),mtdRCAOV=g('RC AOV',cur.col);
+    mmdPeriodData[sec.key]={
+      ld:makePeriod(g('NC',49),g('RC',49),g('NC AOV',49),g('RC AOV',49)),
+      l10:makePeriod(g('NC',48),g('RC',48),g('NC AOV',48),g('RC AOV',48)),
+      l30:makePeriod(g('NC',47),g('RC',47),g('NC AOV',47),g('RC AOV',47)),
+      mtd:makePeriod(mtdNC,mtdRC,mtdNCAOV,mtdRCAOV),
+      proj:makePeriod(mtdNC*ps,mtdRC*ps,mtdNCAOV,mtdRCAOV),
+      daysElapsed:cur.daysElapsed,daysInMonth:cur.daysInMonth,
+      month:cur.month,latestDt:cur.latestDt,
+    };
   });
+
+  mmdRaw=true;
+  if(st)st.style.display='none';
+  const nav=document.getElementById('mmdata-subnav');
+  if(nav){
+    nav.style.display='flex';
+    if(!nav.children.length)
+      nav.innerHTML=[{n:'overview',l:'Overview'},{n:'mom',l:'Month-on-Month'},{n:'product',l:'By Product'}]
+        .map((t,i)=>`<button class="dim-tab${i===0?' active':''}" onclick="mmdSub('${t.n}',this)">${t.l}</button>`).join('');
+  }
+  const ts=document.getElementById('mmdata-refresh-ts');
+  const latest=months[months.length-1];
+  if(ts)ts.textContent=`Loaded ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · as of ${latest.latestDt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · auto-refreshes at 11:30 AM`;
+  mmdRenderCurrent();
+  mmdScheduleAutoRefresh();
 }
 
 function mmdParseDate(s){
