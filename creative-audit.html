@@ -3442,7 +3442,7 @@ const MMD_METRICS=[
   {key:'rev',label:'Revenue',fmt:'cur'},
 ];
 
-let mmdRaw=false,mmdMMData=null,mmdAutoTimer=null,mmdActiveSub='overview';
+let mmdRaw=false,mmdMMData=null,mmdPeriodData=null,mmdAutoTimer=null,mmdActiveSub='overview';
 let mmdMomMetric='nc',mmdMomVisProds=new Set(['hg','hg_stages','minox','minox_stages']);
 let mmdByProdKey='hg';
 
@@ -3509,7 +3509,8 @@ function mmdLoad(){
         {key:'minox',search:'Minox'},
         {key:'minox_stages',search:'Minox Stages'},
       ];
-      mmdMMData={};
+      mmdMMData={};mmdPeriodData={};
+      const makePeriod=(nc,rc,nc_aov,rc_aov)=>({nc,rc,total:nc+rc,nc_aov,rc_aov,rev:nc*nc_aov+rc*rc_aov});
       SECS.forEach(sec=>{
         const sr=findSec(sec.search);
         mmdMMData[sec.key]=months.map(m=>{
@@ -3521,6 +3522,20 @@ function mmdLoad(){
             rev:nc*nc_aov+rc*rc_aov,
             latestDt:m.latestDt,daysInMonth:m.daysInMonth,daysElapsed:m.daysElapsed};
         });
+        // LD/L10/L30 from fixed cols AX(49)/AW(48)/AV(47), MTD from current month col
+        const cur=months[months.length-1];
+        const ps=cur.daysInMonth/cur.daysElapsed;
+        const g=(m,c)=>sr>=0?getVal(sr,m,c):0;
+        const mtdNC=g('NC',cur.col),mtdRC=g('RC',cur.col),mtdNCAOV=g('NC AOV',cur.col),mtdRCAOV=g('RC AOV',cur.col);
+        mmdPeriodData[sec.key]={
+          ld:makePeriod(g('NC',49),g('RC',49),g('NC AOV',49),g('RC AOV',49)),
+          l10:makePeriod(g('NC',48),g('RC',48),g('NC AOV',48),g('RC AOV',48)),
+          l30:makePeriod(g('NC',47),g('RC',47),g('NC AOV',47),g('RC AOV',47)),
+          mtd:makePeriod(mtdNC,mtdRC,mtdNCAOV,mtdRCAOV),
+          proj:makePeriod(mtdNC*ps,mtdRC*ps,mtdNCAOV,mtdRCAOV),
+          daysElapsed:cur.daysElapsed,daysInMonth:cur.daysInMonth,
+          month:cur.month,latestDt:cur.latestDt,
+        };
       });
 
       mmdRaw=true;
@@ -3565,7 +3580,7 @@ function mmdParseDate(s){
 function mmdGetMonthly(prodKey){return(mmdMMData&&mmdMMData[prodKey])||[];}
 
 function mmdRenderCurrent(){mmdSub(mmdActiveSub,null);}
-function mmdRefresh(){mmdRaw=false;mmdMMData=null;mmdLoad();}
+function mmdRefresh(){mmdRaw=false;mmdMMData=null;mmdPeriodData=null;mmdLoad();}
 
 function mmdSub(name,btn){
   mmdActiveSub=name;
@@ -3708,13 +3723,16 @@ function mmdRenderByProdContent(){
   if(!monthly.length){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data for this product.</div>';return;}
   const c=MMD_COLORS[p.key];
   const cur=monthly[monthly.length-1];
-  const ps=cur.daysInMonth/cur.daysElapsed;
-  const proj={nc:cur.nc*ps,rc:cur.rc*ps,total:cur.total*ps,nc_aov:cur.nc_aov,rc_aov:cur.rc_aov,rev:cur.rev*ps};
-  // Period rows: current MTD + projection + up to 3 prior months
-  const periodRows=[
+  const pd=mmdPeriodData&&mmdPeriodData[p.key];
+  // Period rows: LD, L10, L30, MTD, Projection
+  const periodRows=pd?[
+    {label:'LD',m:pd.ld,note:'last day'},
+    {label:'L10',m:pd.l10,note:'last 10 days'},
+    {label:'L30',m:pd.l30,note:'last 30 days'},
+    {label:'Month to Date',m:pd.mtd,note:`${pd.daysElapsed} of ${pd.daysInMonth} days · ${mmdMonthShort(pd.month)}`,bold:true},
+    {label:'Projection',m:pd.proj,note:`full ${mmdMonthShort(pd.month)}`,italic:true},
+  ]:[
     {label:'Month to Date',m:cur,note:`${cur.daysElapsed} of ${cur.daysInMonth} days · ${mmdMonthShort(cur.month)}`,bold:true},
-    {label:'Projection',m:proj,note:`full ${mmdMonthShort(cur.month)}`,italic:true},
-    ...monthly.slice(-4,-1).reverse().map((d,i)=>({label:i===0?'Last Month':i===1?'2 Months Ago':'3 Months Ago',m:d,note:mmdMonthShort(d.month)})),
   ];
   const th='padding:10px 14px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;white-space:nowrap;';
   const td='padding:10px 14px;border-bottom:1px solid #eee;font-family:var(--mono);font-size:13px;text-align:right;';
