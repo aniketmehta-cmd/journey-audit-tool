@@ -283,6 +283,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
     <button class="mnav-btn" onclick="switchMainTab('daily',this)">📅 Daily Digest</button>
     <button class="mnav-btn" onclick="switchMainTab('planning',this)">🎯 Planning</button>
     <button class="mnav-btn" onclick="switchMainTab('umbrella',this)">☂️ Umbrella Sheet</button>
+    <button class="mnav-btn" onclick="switchMainTab('mmdata',this)">📈 MM Dashboard</button>
   </div>
 </div>
 
@@ -487,6 +488,24 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
       <div style="font-size:13px;margin-top:6px;">Go to Monthly Analysis → upload CSVs for the months you want to plan from</div>
     </div>
     <div id="planning-content" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ═══ TAB: MM DASHBOARD ═══ -->
+<div id="main-tab-mmdata" class="main-tab">
+  <div style="padding:24px 28px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #e0e0e0;">
+      <div>
+        <div style="font-size:17px;font-weight:700;letter-spacing:-0.2px;">📈 MM Revenue Dashboard</div>
+        <div id="mmdata-refresh-ts" style="font-size:11px;color:var(--ink2);margin-top:3px;">Not loaded · auto-refreshes at 11:30 AM</div>
+      </div>
+      <button onclick="mmdRefresh()" style="padding:7px 16px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
+    </div>
+    <div id="mmdata-status" style="padding:32px;text-align:center;color:var(--ink2);font-size:14px;"></div>
+    <div id="mmdata-subnav" class="dim-tabs" style="display:none;margin-bottom:20px;"></div>
+    <div id="mmdata-panel-overview"></div>
+    <div id="mmdata-panel-mom" style="display:none;"></div>
+    <div id="mmdata-panel-product" style="display:none;"></div>
   </div>
 </div>
 
@@ -1588,6 +1607,8 @@ function switchMainTab(name,btn){
   if(name==='planning')renderPlanning();
   if(name==='umbrella'&&!umbrellaRaw)umbrellaFetchData();
   else if(name==='umbrella')umbrellaApplyFilters();
+  if(name==='mmdata'&&!mmdRaw)mmdLoad();
+  else if(name==='mmdata')mmdRenderCurrent();
   const cb=document.getElementById('combined-digest-box');
   if(cb)cb.style.display=name==='daily'?'block':'none';
   if(name==='daily'&&!contextData.lastFetched)fetchContextData();
@@ -3398,6 +3419,436 @@ function umbrellaApplyFilters(){
 }
 
 function umbrellaRefresh(){ umbrellaFetchData(); }
+
+// ═══════════════════════════════════════════════
+// MM DASHBOARD
+// ═══════════════════════════════════════════════
+const MMD_ID='1XFJMcu0lHpXvmJBskTgn5KQivRoowhM5kOfNktThowE';
+const MMD_PRODS=[
+  {key:'overall',label:'MM Overall',colIdx:null},
+  {key:'hair',label:'Hair',colIdx:4,vals:['hair']},
+  {key:'hg',label:'HG',colIdx:5,vals:['hg']},
+  {key:'hg_stages',label:'HG Stages',colIdx:5,vals:['hg stages']},
+  {key:'minox',label:'Minox',colIdx:5,vals:['minox']},
+  {key:'minox_stages',label:'Minox Stages',colIdx:5,vals:['minox stages']},
+];
+const MMD_COLORS={overall:'#6366f1',hair:'#22c55e',hg:'#f59e0b',hg_stages:'#ef4444',minox:'#3b82f6',minox_stages:'#8b5cf6'};
+const MMD_METRICS=[
+  {key:'nc',label:'NC',fmt:'num'},
+  {key:'rc',label:'RC',fmt:'num'},
+  {key:'total',label:'Total Orders',fmt:'num'},
+  {key:'nc_aov',label:'NC AOV',fmt:'cur'},
+  {key:'rc_aov',label:'RC AOV',fmt:'cur'},
+  {key:'rev',label:'Revenue',fmt:'cur'},
+];
+
+let mmdRaw=null,mmdAutoTimer=null,mmdActiveSub='overview';
+let mmdMomMetric='nc',mmdMomVisProds=new Set(['hg','hg_stages','minox','minox_stages']);
+let mmdByProdKey='hg';
+
+function mmdFmt(v,fmt){
+  if(v==null||isNaN(v)||!isFinite(v)||v===0&&fmt==='cur')return '—';
+  if(fmt==='cur')return '₹'+Math.round(v).toLocaleString('en-IN');
+  return Math.round(v).toLocaleString('en-IN');
+}
+
+function mmdMonthShort(m){
+  const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const[y,mm]=m.split('-');
+  return mo[parseInt(mm)-1]+' '+y.slice(2);
+}
+
+function mmdLoad(){
+  const st=document.getElementById('mmdata-status');
+  if(st){st.style.display='block';st.innerHTML='<div style="margin-bottom:8px;">Fetching data from Cat Daily Update sheet…</div><div style="font-size:12px;opacity:0.6;">Reading mm_raw_data tab</div>';}
+  Papa.parse('https://docs.google.com/spreadsheets/d/'+MMD_ID+'/gviz/tq?tqx=out:csv&sheet=mm_raw_data',{
+    download:true,header:true,skipEmptyLines:true,
+    complete(res){
+      if(!res.data||!res.data.length){if(st)st.textContent='No data found. Ensure the sheet has Viewer access.';return;}
+      mmdRaw=res.data.map(r=>{
+        const ds=(r['order_dt']||'').trim();
+        const dt=new Date(ds);
+        return{date:dt,ds,cust:(r['cust_type']||'').toUpperCase().trim(),
+          fp_cat:(r['fp_category']||'').toLowerCase().trim(),
+          sub_cat:(r['sub_category']||'').toLowerCase().trim(),
+          orders:parseFloat(r['orders'])||0,rev:parseFloat(r['total_amount_spent'])||0};
+      }).filter(r=>r.orders>0&&!isNaN(r.date)&&r.date.getFullYear()>2000);
+      if(st)st.style.display='none';
+      const nav=document.getElementById('mmdata-subnav');
+      if(nav){
+        nav.style.display='flex';
+        if(!nav.children.length){
+          nav.innerHTML=[
+            {n:'overview',l:'Overview'},{n:'mom',l:'Month-on-Month'},{n:'product',l:'By Product'}
+          ].map((t,i)=>`<button class="dim-tab${i===0?' active':''}" onclick="mmdSub('${t.n}',this)">${t.l}</button>`).join('');
+        }
+      }
+      const ts=document.getElementById('mmdata-refresh-ts');
+      if(ts)ts.textContent='Loaded '+new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})+' · auto-refreshes at 11:30 AM';
+      mmdRenderCurrent();
+      mmdScheduleAutoRefresh();
+    },
+    error(){if(st)st.textContent='Failed to load. Ensure sheet is set to "Anyone with the link can view".';}
+  });
+}
+
+function mmdFilterProd(rows,p){
+  if(p.colIdx==null)return rows;
+  return rows.filter(r=>p.vals.includes(p.colIdx===4?r.fp_cat:r.sub_cat));
+}
+
+function mmdCalc(rows){
+  let nc=0,rc=0,ncr=0,rcr=0;
+  rows.forEach(r=>{
+    if(r.cust==='NEW'){nc+=r.orders;ncr+=r.rev;}
+    else if(r.cust==='RPT'){rc+=r.orders;rcr+=r.rev;}
+  });
+  return{nc,rc,total:nc+rc,nc_aov:nc?ncr/nc:null,rc_aov:rc?rcr/rc:null,rev:ncr+rcr};
+}
+
+function mmdPeriods(filtRows){
+  if(!filtRows.length)return null;
+  const allDs=[...new Set(filtRows.map(r=>r.ds))].sort();
+  const latestDs=allDs[allDs.length-1];
+  const latest=new Date(latestDs);
+  const monthStart=new Date(latest.getFullYear(),latest.getMonth(),1);
+  const monthDays=new Date(latest.getFullYear(),latest.getMonth()+1,0).getDate();
+  const l10Ds=new Set(allDs.slice(-10));
+  const l30Ds=new Set(allDs.slice(-30));
+  const mtdRows=filtRows.filter(r=>r.date>=monthStart&&r.date<=latest);
+  const mtdDays=[...new Set(mtdRows.map(r=>r.ds))].length||1;
+  const l10m=mmdCalc(filtRows.filter(r=>l10Ds.has(r.ds)));
+  const l30m=mmdCalc(filtRows.filter(r=>l30Ds.has(r.ds)));
+  const mtdm=mmdCalc(mtdRows);
+  const ps=monthDays/mtdDays;
+  const dayDiv=(m,n)=>({nc:m.nc/n,rc:m.rc/n,total:m.total/n,nc_aov:m.nc_aov,rc_aov:m.rc_aov,rev:m.rev/n});
+  return{
+    ld:mmdCalc(filtRows.filter(r=>r.ds===latestDs)),
+    l10:dayDiv(l10m,l10Ds.size),
+    l30:dayDiv(l30m,l30Ds.size),
+    mtd:mtdm,
+    proj:{nc:mtdm.nc*ps,rc:mtdm.rc*ps,total:mtdm.total*ps,nc_aov:mtdm.nc_aov,rc_aov:mtdm.rc_aov,rev:mtdm.rev*ps},
+    latestDs,mtdDays,monthDays,
+    monthLabel:latest.toLocaleString('en-IN',{month:'long',year:'numeric'})
+  };
+}
+
+function mmdMonthly(filtRows){
+  const byM={};
+  filtRows.forEach(r=>{
+    const k=r.date.getFullYear()+'-'+String(r.date.getMonth()+1).padStart(2,'0');
+    (byM[k]=byM[k]||[]).push(r);
+  });
+  return Object.entries(byM).sort(([a],[b])=>a<b?-1:1).map(([mo,rows])=>({month:mo,...mmdCalc(rows)}));
+}
+
+function mmdRenderCurrent(){mmdSub(mmdActiveSub,null);}
+function mmdRefresh(){mmdRaw=null;mmdLoad();}
+
+function mmdSub(name,btn){
+  mmdActiveSub=name;
+  document.querySelectorAll('#mmdata-subnav .dim-tab').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  else document.querySelectorAll('#mmdata-subnav .dim-tab').forEach(b=>{
+    const map={overview:'Overview',mom:'Month',product:'Product'};
+    if(b.textContent.includes(map[name]||name))b.classList.add('active');
+  });
+  ['overview','mom','product'].forEach(p=>{
+    const el=document.getElementById('mmdata-panel-'+p);
+    if(el)el.style.display=p===name?'block':'none';
+  });
+  if(name==='overview')mmdRenderOverview();
+  else if(name==='mom')mmdRenderMom();
+  else mmdRenderByProduct();
+}
+
+function mmdGoProduct(key){mmdByProdKey=key;mmdSub('product',null);}
+
+function mmdRenderOverview(){
+  const el=document.getElementById('mmdata-panel-overview');
+  if(!mmdRaw||!el){if(el)el.innerHTML='';return;}
+  const allDs=[...new Set(mmdRaw.map(r=>r.ds))].sort();
+  const latestDs=allDs[allDs.length-1];
+  const latest=new Date(latestDs);
+  const monthStart=new Date(latest.getFullYear(),latest.getMonth(),1);
+  const monthDays=new Date(latest.getFullYear(),latest.getMonth()+1,0).getDate();
+  const mtdDays=[...new Set(mmdRaw.filter(r=>r.date>=monthStart&&r.date<=latest).map(r=>r.ds))].length||1;
+  const monthLabel=latest.toLocaleString('en-IN',{month:'long',year:'numeric'});
+  const prodData=MMD_PRODS.map(p=>{
+    const filt=mmdFilterProd(mmdRaw,p);
+    const mtd=mmdCalc(filt.filter(r=>r.date>=monthStart&&r.date<=latest));
+    const ld=mmdCalc(filt.filter(r=>r.ds===latestDs));
+    const ps=monthDays/mtdDays;
+    return{...p,mtd,ld,proj_nc:mtd.nc*ps,proj_rev:mtd.rev*ps};
+  });
+  const th='padding:10px 14px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;white-space:nowrap;';
+  const thL='padding:10px 14px;text-align:left;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;';
+  const td='padding:9px 14px;border-bottom:1px solid #eee;text-align:right;font-family:var(--mono);font-size:13px;';
+  const tdL='padding:9px 14px;border-bottom:1px solid #eee;font-weight:600;font-size:13px;cursor:pointer;';
+  const mkTable=(title,sub,getM,showProj)=>`
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+      <span style="font-size:14px;font-weight:700;">${title}</span>
+      <span style="font-size:11px;color:var(--ink2);">${sub}</span>
+    </div>
+    <div style="overflow-x:auto;margin-bottom:32px;border:1px solid #eee;border-radius:10px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="background:#f5f5f7;">
+        <th style="${thL}">Product</th>
+        <th style="${th}">NC</th><th style="${th}">NC AOV</th>
+        <th style="${th}">RC</th><th style="${th}">RC AOV</th>
+        <th style="${th}">Total</th><th style="${th}">Revenue</th>
+        ${showProj?`<th style="${th};color:#aaa;">→ Projected NC</th>`:''}
+      </tr></thead><tbody>
+      ${prodData.map((p,i)=>{const m=getM(p);const c=MMD_COLORS[p.key];const bg=i%2?'#fafafa':'#fff';return`
+      <tr style="background:${bg};" onclick="mmdGoProduct('${p.key}')">
+        <td style="${tdL}"><span style="width:9px;height:9px;border-radius:50%;background:${c};display:inline-block;margin-right:8px;vertical-align:middle;"></span>${p.label}</td>
+        <td style="${td}">${mmdFmt(m.nc,'num')}</td><td style="${td}">${mmdFmt(m.nc_aov,'cur')}</td>
+        <td style="${td}">${mmdFmt(m.rc,'num')}</td><td style="${td}">${mmdFmt(m.rc_aov,'cur')}</td>
+        <td style="${td};font-weight:600;">${mmdFmt(m.total,'num')}</td>
+        <td style="${td}">${mmdFmt(m.rev,'cur')}</td>
+        ${showProj?`<td style="${td};color:#aaa;">~${mmdFmt(p.proj_nc,'num')}</td>`:''}
+      </tr>`;}).join('')}
+      </tbody>
+    </table></div>`;
+  el.innerHTML=
+    mkTable(monthLabel+' — Month to Date',`as of ${new Date(latestDs).toLocaleDateString('en-IN',{day:'numeric',month:'short'})} · ${mtdDays}/${monthDays} days elapsed`,p=>p.mtd,true)+
+    mkTable('Yesterday',new Date(latestDs).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'short',year:'numeric'}),p=>p.ld,false);
+}
+
+function mmdRenderMom(){
+  const el=document.getElementById('mmdata-panel-mom');
+  if(!mmdRaw||!el)return;
+  const metricOpts=MMD_METRICS.map(m=>`<option value="${m.key}"${m.key===mmdMomMetric?' selected':''}>${m.label}</option>`).join('');
+  const prodBtns=MMD_PRODS.map(p=>{
+    const on=mmdMomVisProds.has(p.key);
+    const c=MMD_COLORS[p.key];
+    return`<button class="dim-tab${on?' active':''}" onclick="mmdToggleProd('${p.key}',this)" style="border-color:${c};background:${on?c:'var(--paper)'};color:${on?'#fff':c};">${p.label}</button>`;
+  }).join('');
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+      <div class="dim-tabs" style="margin:0;">${prodBtns}</div>
+      <select onchange="mmdMomMetric=this.value;mmdRenderMomChart()" style="padding:7px 12px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;font-family:var(--sans);">${metricOpts}</select>
+    </div>
+    <div id="mmd-mom-chart" style="width:100%;position:relative;min-height:340px;"></div>`;
+  mmdRenderMomChart();
+}
+
+function mmdToggleProd(key,btn){
+  if(mmdMomVisProds.has(key))mmdMomVisProds.delete(key);
+  else mmdMomVisProds.add(key);
+  const c=MMD_COLORS[key],on=mmdMomVisProds.has(key);
+  btn.classList.toggle('active',on);
+  btn.style.background=on?c:'var(--paper)';btn.style.color=on?'#fff':c;btn.style.borderColor=c;
+  mmdRenderMomChart();
+}
+
+function mmdRenderMomChart(){
+  const wrap=document.getElementById('mmd-mom-chart');
+  if(!wrap||!mmdRaw)return;
+  const metric=MMD_METRICS.find(m=>m.key===mmdMomMetric)||MMD_METRICS[0];
+  const active=MMD_PRODS.filter(p=>mmdMomVisProds.has(p.key));
+  if(!active.length){wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">Select at least one product.</div>';return;}
+  const prodMonthly=active.map(p=>({p,data:mmdMonthly(mmdFilterProd(mmdRaw,p))}));
+  const allMonths=[...new Set(prodMonthly.flatMap(({data})=>data.map(d=>d.month)))].sort();
+  if(allMonths.length<2){wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">Not enough monthly data.</div>';return;}
+  const series=prodMonthly.map(({p,data})=>{
+    const byM=Object.fromEntries(data.map(d=>[d.month,d]));
+    return{label:p.label,color:MMD_COLORS[p.key],data:allMonths.map(m=>byM[m]?byM[m][mmdMomMetric]:null)};
+  });
+  mmdDrawChart('mmd-mom-chart',series,allMonths,metric.fmt);
+}
+
+function mmdRenderByProduct(){
+  const el=document.getElementById('mmdata-panel-product');
+  if(!mmdRaw||!el)return;
+  const tabBtns=MMD_PRODS.map(p=>{
+    const on=p.key===mmdByProdKey;const c=MMD_COLORS[p.key];
+    return`<button class="dim-tab${on?' active':''}" onclick="mmdByProdKey='${p.key}';mmdRenderByProdContent()" style="border-color:${c};background:${on?c:'var(--paper)'};color:${on?'#fff':c};">${p.label}</button>`;
+  }).join('');
+  el.innerHTML=`<div class="dim-tabs" style="margin-bottom:20px;">${tabBtns}</div><div id="mmd-byprod-content"></div>`;
+  mmdRenderByProdContent();
+}
+
+function mmdRenderByProdContent(){
+  document.querySelectorAll('#mmdata-panel-product .dim-tab').forEach((btn,i)=>{
+    const p=MMD_PRODS[i];if(!p)return;
+    const on=p.key===mmdByProdKey;const c=MMD_COLORS[p.key];
+    btn.classList.toggle('active',on);btn.style.background=on?c:'var(--paper)';btn.style.color=on?'#fff':c;btn.style.borderColor=c;
+  });
+  const el=document.getElementById('mmd-byprod-content');
+  if(!el)return;
+  const p=MMD_PRODS.find(x=>x.key===mmdByProdKey);if(!p)return;
+  const filtRows=mmdFilterProd(mmdRaw,p);
+  const periods=mmdPeriods(filtRows);
+  if(!periods){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data for this product.</div>';return;}
+  const c=MMD_COLORS[p.key];
+  const periodRows=[
+    {label:'Last Day',m:periods.ld,note:''},
+    {label:'L10 Daily Avg',m:periods.l10,note:'10-day daily avg'},
+    {label:'L30 Daily Avg',m:periods.l30,note:'30-day daily avg'},
+    {label:'Month to Date',m:periods.mtd,note:`${periods.mtdDays} of ${periods.monthDays} days`,bold:true},
+    {label:'Projection',m:periods.proj,note:periods.monthLabel,italic:true},
+  ];
+  const th='padding:10px 14px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;white-space:nowrap;';
+  const td='padding:10px 14px;border-bottom:1px solid #eee;font-family:var(--mono);font-size:13px;text-align:right;';
+  const metricOpts=MMD_METRICS.map(m=>`<option value="${m.key}"${m.key===mmdMomMetric?' selected':''}>${m.label}</option>`).join('');
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+      <span style="width:12px;height:12px;border-radius:50%;background:${c};display:inline-block;"></span>
+      <span style="font-size:16px;font-weight:700;">${p.label}</span>
+      <span style="font-size:11px;color:var(--ink2);">as of ${new Date(periods.latestDs).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span>
+    </div>
+    <div style="overflow-x:auto;margin-bottom:32px;border:1px solid #eee;border-radius:10px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="background:#f5f5f7;">
+        <th style="padding:10px 14px;text-align:left;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;min-width:160px;">Period</th>
+        <th style="${th}">NC</th><th style="${th}">NC AOV</th>
+        <th style="${th}">RC</th><th style="${th}">RC AOV</th>
+        <th style="${th}">Total</th><th style="${th}">Revenue</th>
+      </tr></thead>
+      <tbody>
+      ${periodRows.map((r,i)=>{
+        const m=r.m;const bg=r.bold?'#f0f4ff':(r.italic?'#fafbff':(i%2?'#fafafa':'#fff'));
+        const fw=r.bold?'700':'400';const it=r.italic?'color:#888;font-style:italic;':'';
+        return`<tr style="background:${bg};">
+          <td style="padding:10px 14px;border-bottom:1px solid #eee;font-weight:${fw};${it}">
+            ${r.label}${r.note?`<span style="font-size:10px;color:#aaa;margin-left:6px;">${r.note}</span>`:''}
+          </td>
+          <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.nc,'num')}</td>
+          <td style="${td}${it}">${mmdFmt(m.nc_aov,'cur')}</td>
+          <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.rc,'num')}</td>
+          <td style="${td}${it}">${mmdFmt(m.rc_aov,'cur')}</td>
+          <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.total,'num')}</td>
+          <td style="${td}${it}">${mmdFmt(m.rev,'cur')}</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+      <span style="font-size:13px;font-weight:700;">Month-on-Month Trend</span>
+      <select onchange="mmdMomMetric=this.value;mmdRenderByProdChart('${p.key}')" style="padding:6px 10px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);">${metricOpts}</select>
+    </div>
+    <div id="mmd-byprod-chart" style="width:100%;position:relative;"></div>`;
+  mmdRenderByProdChart(p.key);
+}
+
+function mmdRenderByProdChart(prodKey){
+  const p=MMD_PRODS.find(x=>x.key===prodKey);
+  if(!p||!mmdRaw)return;
+  const monthly=mmdMonthly(mmdFilterProd(mmdRaw,p));
+  const metric=MMD_METRICS.find(m=>m.key===mmdMomMetric)||MMD_METRICS[0];
+  mmdDrawChart('mmd-byprod-chart',[{label:p.label,color:MMD_COLORS[p.key],data:monthly.map(m=>m[mmdMomMetric])}],monthly.map(m=>m.month),metric.fmt);
+}
+
+function mmdDrawChart(containerId,series,labels,fmt){
+  const container=document.getElementById(containerId);
+  if(!container)return;
+  const W=900,H=340,PAD={top:24,right:24,bottom:56,left:78};
+  const CW=W-PAD.left-PAD.right,CH=H-PAD.top-PAD.bottom;
+  const allVals=series.flatMap(s=>s.data).filter(v=>v!=null&&isFinite(v)&&v>0);
+  if(!allVals.length){container.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data to chart.</div>';return;}
+  const rawMax=Math.max(...allVals);
+  const niceMax=mmdNice(rawMax);
+  const n=labels.length;
+  const xAt=i=>n>1?i/(n-1)*CW:CW/2;
+  const yAt=v=>CH*(1-v/niceMax);
+  const N_Y=5;
+  let grid='',yLbls='',xLbls='',lines='',dots='';
+  const ttData={};labels.forEach(l=>ttData[l]=[]);
+  for(let i=0;i<=N_Y;i++){
+    const v=niceMax*i/N_Y;const y=yAt(v);
+    grid+=`<line x1="0" y1="${y.toFixed(1)}" x2="${CW}" y2="${y.toFixed(1)}" stroke="#e5e7eb" stroke-width="1"/>`;
+    yLbls+=`<text x="-10" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="11" fill="#9ca3af">${fmt==='cur'?'₹'+mmdAbbr(v):mmdAbbr(v)}</text>`;
+  }
+  const step=n>18?3:n>12?2:1;
+  labels.forEach((l,i)=>{
+    const x=xAt(i);
+    if(i%step===0||i===n-1)xLbls+=`<text x="${x.toFixed(1)}" y="${(CH+20).toFixed(1)}" text-anchor="middle" font-size="10" fill="#9ca3af">${mmdMonthShort(l)}</text>`;
+    if(i%step===0)grid+=`<line x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${CH}" stroke="#f3f4f6" stroke-width="1"/>`;
+  });
+  series.forEach(s=>{
+    let d='';
+    s.data.forEach((v,i)=>{
+      if(v==null||!isFinite(v)||v<=0)return;
+      const x=xAt(i),y=yAt(v);
+      d+=(d?`L${x.toFixed(1)},${y.toFixed(1)}`:`M${x.toFixed(1)},${y.toFixed(1)}`);
+      if(ttData[labels[i]])ttData[labels[i]].push({label:s.label,color:s.color,val:v});
+    });
+    if(d)lines+=`<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    s.data.forEach((v,i)=>{
+      if(v==null||!isFinite(v)||v<=0)return;
+      const x=xAt(i),y=yAt(v);
+      dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="white" stroke="${s.color}" stroke-width="2" class="mmd-dot" data-idx="${i}" data-lbl="${labels[i]}"/>`;
+    });
+  });
+  const legend=series.map(s=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:12px;color:var(--ink2);"><span style="width:18px;height:3px;background:${s.color};border-radius:2px;display:inline-block;"></span>${s.label}</span>`).join('');
+  const uid=containerId.replace(/[^a-z0-9]/gi,'');
+  container.innerHTML=`
+    <div style="margin-bottom:12px;">${legend}</div>
+    <div style="position:relative;width:100%;">
+      <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet" style="display:block;overflow:visible;" id="${uid}svg">
+        <g transform="translate(${PAD.left},${PAD.top})">
+          ${grid}
+          <line id="${uid}hl" x1="0" y1="0" x2="0" y2="${CH}" stroke="#6366f1" stroke-width="1" stroke-dasharray="4,3" opacity="0"/>
+          ${lines}${dots}
+          <g>${yLbls}</g><g>${xLbls}</g>
+          <rect id="${uid}hr" x="0" y="0" width="${CW}" height="${CH}" fill="transparent" style="cursor:crosshair;"/>
+        </g>
+      </svg>
+      <div id="${uid}tt" style="position:absolute;background:rgba(17,17,17,0.92);color:#fff;padding:10px 14px;border-radius:10px;font-size:12px;pointer-events:none;display:none;z-index:99;min-width:150px;box-shadow:0 4px 20px rgba(0,0,0,0.25);"></div>
+    </div>`;
+  const svg=document.getElementById(uid+'svg');
+  const hr=document.getElementById(uid+'hr');
+  const tt=document.getElementById(uid+'tt');
+  const hl=document.getElementById(uid+'hl');
+  if(hr&&svg&&tt&&hl){
+    hr.addEventListener('mousemove',e=>{
+      const rect=svg.getBoundingClientRect();
+      const svgX=(e.clientX-rect.left)/rect.width*W-PAD.left;
+      const idx=Math.max(0,Math.min(n-1,Math.round(svgX/CW*(n-1))));
+      const lbl=labels[idx];
+      const x=xAt(idx);
+      hl.setAttribute('x1',x.toFixed(1));hl.setAttribute('x2',x.toFixed(1));hl.setAttribute('opacity','0.5');
+      const entries=ttData[lbl]||[];
+      if(!entries.length){tt.style.display='none';return;}
+      const rows=entries.map(e=>`<div style="display:flex;align-items:center;gap:6px;margin-top:5px;">
+        <span style="width:10px;height:10px;border-radius:50%;background:${e.color};flex-shrink:0;"></span>
+        <span style="flex:1;color:rgba(255,255,255,0.65);font-size:11px;">${e.label}</span>
+        <span style="font-weight:700;font-family:monospace;">${fmt==='cur'?'₹'+Math.round(e.val).toLocaleString('en-IN'):Math.round(e.val).toLocaleString('en-IN')}</span>
+      </div>`).join('');
+      tt.innerHTML=`<div style="font-size:10px;color:rgba(255,255,255,0.45);margin-bottom:2px;">${mmdMonthShort(lbl)}</div>${rows}`;
+      tt.style.display='block';
+      const bRect=container.getBoundingClientRect();
+      const ttL=e.clientX-bRect.left+16;
+      const ttT=e.clientY-bRect.top-30;
+      tt.style.left=Math.min(ttL,bRect.width-180)+'px';
+      tt.style.top=Math.max(4,ttT)+'px';
+    });
+    hr.addEventListener('mouseleave',()=>{tt.style.display='none';hl.setAttribute('opacity','0');});
+  }
+}
+
+function mmdNice(v){
+  if(!v)return 100;
+  const mag=Math.pow(10,Math.floor(Math.log10(v)));
+  const nice=[1,2,2.5,5,10];
+  for(const n of nice){if(n*mag>=v)return n*mag*1.1;}
+  return v*1.1;
+}
+function mmdAbbr(v){
+  if(v>=1e7)return (v/1e7).toFixed(1)+'Cr';
+  if(v>=1e5)return (v/1e5).toFixed(1)+'L';
+  if(v>=1e3)return (v/1e3).toFixed(0)+'K';
+  return Math.round(v).toString();
+}
+
+function mmdScheduleAutoRefresh(){
+  if(mmdAutoTimer)clearTimeout(mmdAutoTimer);
+  const now=new Date(),next=new Date();
+  next.setHours(11,30,0,0);
+  if(next<=now)next.setDate(next.getDate()+1);
+  mmdAutoTimer=setTimeout(()=>mmdLoad(),next-now);
+}
 
 function umbrellaScheduleAutoRefresh(){
   if(umbrellaAutoRefreshTimer) clearTimeout(umbrellaAutoRefreshTimer);
