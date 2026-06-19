@@ -516,6 +516,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
     <div id="umbrella-status" style="text-align:center;padding:60px 20px;color:var(--ink2);font-size:14px;">Loading…</div>
     <div id="umbrella-kpis" style="display:none;"></div>
     <div id="umbrella-table-wrap" style="display:none;overflow-x:auto;margin-top:20px;"></div>
+    <div id="umbrella-dims" style="display:none;margin-top:32px;"></div>
+    <div id="umbrella-digest" style="display:none;margin-top:28px;"></div>
   </div>
 </div>
 
@@ -2754,6 +2756,13 @@ function umbrellaParseDD(text){
       pdpViewed:  num('pdp_viewed'),          // DD!AD
       atcBN:      num('atc__bn'),             // DD!AE
       ncsFunnel:  num('ncs__funnel_'),        // DD!AF
+      // Dimension columns from DD tab
+      funnel_type: get('funnel_type'),        // DD!AI
+      int_inf:     get('int___inf'),          // DD!AK
+      ad_type:     get('ad_type'),            // DD!AL
+      language:    get('language'),           // DD!AN
+      narrative:   get('broad_narrative___p0'), // DD!AO
+      ad_format:   get('ad_format'),          // DD!AP
     });
   }
   umbrellaRaw = rows;
@@ -2888,16 +2897,208 @@ function umbrellaToCatPid(product){
   return null;
 }
 
+// Strip trailing _SI / _BCA / _SI_BCA etc. before catalogue lookup
+function umbrellaStripSuffix(name){
+  return (name||'').replace(/[\s_]+(SI_BCA|BCA_SI|SI|BCA)(\s*$|(?=[\s_]))/gi,'').trim();
+}
+
 // Return video links object {link45, link916} or null for an ad name
 function umbrellaAdLinks(adName, product){
   const pid = umbrellaToCatPid(product);
   if(!pid || !catalogue[pid]) return null;
-  const entry = catalogue[pid][normN(adName)];
+  const cat = catalogue[pid];
+  const entry = cat[normN(adName)] || cat[normN(umbrellaStripSuffix(adName))];
   if(!entry) return null;
   return { link45: entry.link45||null, link916: entry.link916||null };
 }
 
-function umbrellaRenderTable(dailyRows, rawRows){
+// Build ad-level standardized rows — fields match what buildDimData / renderDimCards expect
+// Metric fractions (ctr, hook_rate, atc_pct, purchase_pct, prepaid) stored as decimals (0–1)
+function umbrellaToStdRows(rawRows, selectedProduct){
+  const adMap = {};
+  rawRows.forEach(r=>{
+    const k = r.adName || r.adSetName || 'Unknown';
+    if(!adMap[k]) adMap[k]={
+      adName:k, product:r.product,
+      narrative:   r.narrative   ||'Unknown',
+      language:    r.language    ||'Unknown',
+      ad_type:     r.ad_type     ||'Unknown',
+      int_inf:     r.int_inf     ||'Unknown',
+      ad_format:   r.ad_format   ||'Unknown',
+      funnel_type: r.funnel_type ||'Unknown',
+      spend:0,impressions:0,clicks:0,nc:0,
+      video3s:0,sumRev:0,pdpViewed:0,atcBN:0,ncsFunnel:0,prepaid:0
+    };
+    const m=adMap[k];
+    m.spend+=r.spend; m.impressions+=r.impressions; m.clicks+=r.clicks;
+    m.nc+=r.nc; m.video3s+=r.video3s; m.sumRev+=r.sumRev;
+    m.pdpViewed+=r.pdpViewed; m.atcBN+=r.atcBN; m.ncsFunnel+=r.ncsFunnel;
+    m.prepaid+=r.prepaid;
+    // inherit first non-Unknown dimension values
+    ['narrative','language','ad_type','int_inf','ad_format','funnel_type'].forEach(f=>{
+      if((!m[f]||m[f]==='Unknown')&&r[f]&&r[f]!=='Unknown') m[f]=r[f];
+    });
+  });
+  return Object.values(adMap).filter(r=>r.spend>0).map(r=>{
+    const links = umbrellaAdLinks(r.adName, selectedProduct);
+    const ii=(r.int_inf||'').toLowerCase(), at=(r.ad_type||'').toLowerCase();
+    return {
+      name:    r.adName,
+      spend:   r.spend,
+      ncs:     r.nc,
+      roas:    r.spend      ? r.sumRev*UMBRELLA_G1/r.spend : null,
+      cac:     r.nc         ? r.spend/r.nc/UMBRELLA_G1 : null,
+      aov:     r.nc         ? r.sumRev/r.nc : null,
+      ctr:     r.impressions? r.clicks/r.impressions : null,
+      hook_rate:  r.impressions? r.video3s/r.impressions : null,
+      atc_pct:    r.pdpViewed  ? r.atcBN/r.pdpViewed : null,
+      purchase_pct:r.atcBN     ? r.ncsFunnel/r.atcBN : null,
+      prepaid: r.nc>0 ? r.prepaid/r.nc : null,
+      narrative:   r.narrative,
+      language:    r.language,
+      ad_type:     r.ad_type,
+      int_inf:     r.int_inf,
+      ad_format:   r.ad_format,
+      funnel_type: r.funnel_type,
+      source_funnel: ii.includes('inf')?'Influencer':at.includes('static')||at.includes('carousel')?'Static / Carousel':'Internal — Video',
+      person:  'Internal',
+      link45:  links?links.link45:null,
+      link916: links?links.link916:null,
+    };
+  }).sort((a,b)=>b.spend-a.spend);
+}
+
+const UMBRELLA_DIM_TABS=[
+  {key:'narrative',  label:'Narrative'},
+  {key:'language',   label:'Language'},
+  {key:'int_inf',    label:'Source'},
+  {key:'ad_type',    label:'Ad Type'},
+  {key:'ad_format',  label:'Ad Format'},
+  {key:'funnel_type',label:'Funnel'},
+];
+
+function umbrellaSelectDimTab(btn, panelId){
+  btn.closest('#umbrella-dims').querySelectorAll('.dim-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('umbrella-dim-panels').querySelectorAll('.dim-panel').forEach(p=>p.classList.remove('active'));
+  const panel=document.getElementById(panelId);
+  if(panel)panel.classList.add('active');
+}
+
+function umbrellaRenderDims(stdRows, rawRows){
+  const el=document.getElementById('umbrella-dims');
+  if(!stdRows.length){el.style.display='none';return;}
+  const totalSpend=rawRows.reduce((a,r)=>a+r.spend,0);
+  const totalRev=rawRows.reduce((a,r)=>a+r.sumRev,0);
+  const portfolioRoas=totalSpend>0?totalRev*UMBRELLA_G1/totalSpend:null;
+
+  const tabsHtml=UMBRELLA_DIM_TABS.map((d,i)=>
+    `<button class="dim-tab${i===0?' active':''}" onclick="umbrellaSelectDimTab(this,'udtp-${d.key}')">${esc(d.label)}</button>`
+  ).join('');
+
+  const panelsHtml=UMBRELLA_DIM_TABS.map((d,i)=>{
+    const groups=buildDimData(stdRows,d.key);
+    return `<div class="dim-panel${i===0?' active':''}" id="udtp-${d.key}">${renderDimCards(groups,totalSpend,portfolioRoas)}</div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div style="font-size:16px;font-weight:700;margin-bottom:14px;color:var(--ink);">Breakdown by Dimension
+      <span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:8px;">Click any card to see its ads · ▶ Watch opens the video directly</span>
+    </div>
+    <div id="umbrella-dim-tabs" class="dim-tabs" style="margin-bottom:16px;">${tabsHtml}</div>
+    <div id="umbrella-dim-panels">${panelsHtml}</div>`;
+  el.style.display='block';
+}
+
+function umbrellaRenderDigest(rawRows, stdRows, product, dateFrom, dateTo){
+  const el=document.getElementById('umbrella-digest');
+  if(!rawRows.length){el.style.display='none';return;}
+
+  const LINE='━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+  const L2  ='─────────────────────────────────────────────────────';
+  const ts  =rawRows.reduce((a,r)=>a+r.spend,0);
+  const tncs=rawRows.reduce((a,r)=>a+r.nc,0);
+  const totalRev=rawRows.reduce((a,r)=>a+r.sumRev,0);
+  const wRoas=ts>0?totalRev*UMBRELLA_G1/ts:null;
+  const wCAC =tncs>0?ts/tncs/UMBRELLA_G1:null;
+  const wAOV =tncs>0?totalRev/tncs:null;
+
+  // impressions-based aggregates
+  let totImpr=0,totClicks=0,totVid3=0,totPdp=0,totATC=0,totNcsF=0;
+  rawRows.forEach(r=>{totImpr+=r.impressions;totClicks+=r.clicks;totVid3+=r.video3s;totPdp+=r.pdpViewed;totATC+=r.atcBN;totNcsF+=r.ncsFunnel;});
+  const wCTR =totImpr?totClicks/totImpr:null;
+  const wHook=totImpr?totVid3/totImpr:null;
+  const wATC =totPdp?totATC/totPdp:null;
+  const wPurch=totATC?totNcsF/totATC:null;
+
+  const period=dateFrom&&dateTo?`${dateFrom} to ${dateTo}`:dateFrom||dateTo||'Custom Range';
+
+  let out='';
+  out+=LINE+'\n'+product.toUpperCase()+'\n'+period+'\n'+LINE+'\n\n';
+  out+='THE PERIOD IN NUMBERS\n\n';
+  out+=`  Spend       ${fmtS(ts).padStart(10)}    NCs         ${fmtI(tncs)||'—'}\n`;
+  out+=`  ROAS        ${fmtR(wRoas).padStart(10)}    CAC         ${fmtC(wCAC)}\n`;
+  out+=`  AOV         ${fmtC(wAOV).padStart(10)}\n\n`;
+  out+='  Funnel:  CTR '+fmtP(wCTR)+'  →  Hook '+fmtP(wHook)+'  →  ATC '+fmtP(wATC)+'  →  Purchase '+fmtP(wPurch)+'\n\n';
+
+  // Top ads
+  const topAds=stdRows.filter(r=>r.spend>0).slice(0,10);
+  if(topAds.length){
+    out+=LINE+'\n'+'TOP ADS — WATCH LIST\n  '+L2+'\n';
+    topAds.forEach((r,i)=>{
+      out+=`  ${i+1}.  ${r.name}\n`;
+      out+=`       ${fmtS(r.spend)}  ·  ${r.ncs?r.ncs+' NCs  ·  ':''}${fmtR(r.roas)} ROAS  ·  ${fmtC(r.cac)} CAC\n`;
+      if(r.link916) out+=`       ▶ Watch 9:16  ${r.link916}\n`;
+      if(r.link45&&r.link45!==r.link916) out+=`       ▶ Watch 4:5   ${r.link45}\n`;
+      out+='\n';
+    });
+  }
+
+  // Narratives
+  const narData=buildDimData(stdRows,'narrative').slice(0,8);
+  if(narData.length){
+    out+=LINE+'\n'+'NARRATIVES\n  '+L2+'\n';
+    narData.forEach(g=>{
+      const flag=g.roas!=null&&wRoas!=null&&g.roas>wRoas*1.05?'  ← best efficiency':'';
+      out+=`  ${(g.key+'').padEnd(28)}  ${fmtS(g.spend).padStart(8)}  ${fmtI(g.ncs).padStart(6)} NCs  ${fmtR(g.roas).padStart(7)} ROAS  ${fmtC(g.cac).padStart(8)} CAC${flag}\n`;
+    });
+    out+='\n';
+  }
+
+  // Language
+  const langData=buildDimData(stdRows,'language').slice(0,4);
+  if(langData.length>1){
+    out+=LINE+'\n'+'LANGUAGE\n  '+L2+'\n';
+    langData.forEach(g=>{out+=`  ${(g.key+'').padEnd(16)}  ${fmtS(g.spend).padStart(8)}  ${fmtI(g.ncs).padStart(6)} NCs  ${fmtR(g.roas).padStart(7)} ROAS\n`;});
+    out+='\n';
+  }
+
+  // Source
+  const srcData=buildDimData(stdRows,'int_inf').slice(0,4);
+  if(srcData.length>1){
+    out+=LINE+'\n'+'SOURCE (INT / INF)\n  '+L2+'\n';
+    srcData.forEach(g=>{out+=`  ${(g.key+'').padEnd(22)}  ${fmtS(g.spend).padStart(8)}  ${fmtI(g.ncs).padStart(6)} NCs  ${fmtR(g.roas).padStart(7)} ROAS\n`;});
+    out+='\n';
+  }
+
+  out+=LINE+'\n';
+  out+=`Generated by Creative Audit Tool — Umbrella Sheet  ·  ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}\n`;
+  out+=LINE+'\n';
+
+  el.innerHTML=`
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--ink);">Period Digest
+      <button onclick="umbrellaDigestCopy(this)" style="margin-left:14px;padding:5px 14px;border-radius:7px;border:1.5px solid #bbb;background:var(--paper);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">📋 Copy</button>
+    </div>
+    <pre id="umbrella-digest-text" style="background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:18px 20px;font-size:12px;font-family:var(--mono);line-height:1.65;white-space:pre-wrap;word-break:break-word;overflow-x:auto;max-height:500px;overflow-y:auto;">${esc(out)}</pre>`;
+  el.style.display='block';
+}
+
+function umbrellaDigestCopy(btn){
+  const text=document.getElementById('umbrella-digest-text').textContent;
+  navigator.clipboard.writeText(text).then(()=>{btn.textContent='✅ Copied!';setTimeout(()=>{btn.textContent='📋 Copy';},2000);}).catch(()=>{});
+}
+
+function umbrellaRenderTable(dailyRows, rawRows, stdRows){
   const roasFmt = v => umbrellaFmt(v,'x');
   const dailyCols = [
     {key:'dateStr',  label:'Date',      left:true, fmt:v=>v},
@@ -2915,56 +3116,26 @@ function umbrellaRenderTable(dailyRows, rawRows){
     {key:'convPct',  label:'Conv %',    fmt:v=>umbrellaFmt(v,'pct')},
   ];
 
-  // Ad-level aggregation using same formulas as PWDD
-  const adMap = {};
-  rawRows.forEach(r=>{
-    const k = r.adName || r.adSetName || 'Unknown';
-    if(!adMap[k]) adMap[k]={adName:k,spend:0,impressions:0,clicks:0,nc:0,video3s:0,sumRev:0,pdpViewed:0,atcBN:0,ncsFunnel:0};
-    const m=adMap[k];
-    m.spend+=r.spend; m.impressions+=r.impressions; m.clicks+=r.clicks;
-    m.nc+=r.nc; m.video3s+=r.video3s; m.sumRev+=r.sumRev;
-    m.pdpViewed+=r.pdpViewed; m.atcBN+=r.atcBN; m.ncsFunnel+=r.ncsFunnel;
-  });
-  const selectedProduct = document.getElementById('umbrella-product-sel').value;
-  const adRows = Object.values(adMap)
-    .filter(r=>r.spend>0)
-    .map(r=>{
-      const links = umbrellaAdLinks(r.adName, selectedProduct);
-      return {...r,
-        cac:     r.nc         ? r.spend/r.nc/UMBRELLA_G1 : 0,
-        aov:     r.nc         ? r.sumRev/r.nc : 0,
-        roas:    r.spend      ? r.sumRev*UMBRELLA_G1/r.spend : 0,
-        ctr:     r.impressions? r.clicks/r.impressions*100 : 0,
-        cpm:     r.impressions? r.spend/r.impressions*1000 : 0,
-        hookRate:r.impressions? r.video3s/r.impressions*100 : 0,
-        atcPct:  r.pdpViewed  ? r.atcBN/r.pdpViewed*100 : 0,
-        purchPct:r.atcBN      ? r.ncsFunnel/r.atcBN*100 : 0,
-        convPct: r.pdpViewed  ? r.ncsFunnel/r.pdpViewed*100 : 0,
-        link45:  links ? links.link45  : null,
-        link916: links ? links.link916 : null,
-      };
-    })
-    .sort((a,b)=>b.nc-a.nc||b.spend-a.spend);
-
+  // Ad-level table uses stdRows (standardized, PWDD metrics, suffix-stripped links)
   const adCols = [
-    {key:'adName',  label:'Ad Name', left:true,
-      fmt:v=>v?`<span title="${v}" style="max-width:300px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">${v}</span>`:'—'},
+    {key:'name',    label:'Ad Name', left:true,
+      fmt:v=>v?`<span title="${esc(v)}" style="max-width:300px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">${esc(v)}</span>`:'—'},
     {key:'spend',   label:'Spend',    fmt:v=>umbrellaFmt(v,'inrk')},
-    {key:'nc',      label:'NCs',      fmt:v=>umbrellaFmt(v,'num')},
+    {key:'ncs',     label:'NCs',      fmt:v=>umbrellaFmt(v,'num')},
     {key:'cac',     label:'CAC',      fmt:v=>v?umbrellaFmt(v,'inr'):'—'},
     {key:'aov',     label:'AOV',      fmt:v=>v?umbrellaFmt(v,'inr'):'—'},
-    {key:'roas',    label:'ROAS',     fmt:roasFmt},
-    {key:'impressions',label:'Impr.', fmt:v=>umbrellaFmt(v,'num')},
-    {key:'ctr',     label:'CTR',      fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'cpm',     label:'CPM',      fmt:v=>'₹'+v.toFixed(2)},
-    {key:'hookRate',label:'Hook Rate',fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'atcPct',  label:'ATC %',    fmt:v=>umbrellaFmt(v,'pct')},
-    {key:'convPct', label:'Conv %',   fmt:v=>umbrellaFmt(v,'pct')},
+    {key:'roas',    label:'ROAS',     fmt:v=>v!=null?roasFmt(v):'—'},
+    {key:'ctr',     label:'CTR',      fmt:v=>v!=null?umbrellaFmt(v*100,'pct'):'—'},
+    {key:'hook_rate',label:'Hook Rate',fmt:v=>v!=null?umbrellaFmt(v*100,'pct'):'—'},
+    {key:'atc_pct', label:'ATC %',    fmt:v=>v!=null?umbrellaFmt(v*100,'pct'):'—'},
+    {key:'purchase_pct',label:'Purch %',fmt:v=>v!=null?umbrellaFmt(v*100,'pct'):'—'},
+    {key:'narrative',label:'Narrative',left:true,fmt:v=>esc(v||'—')},
+    {key:'language', label:'Lang',    fmt:v=>esc(v||'—')},
     {key:'_links',  label:'Video',    left:true, fmt:(v,r)=>{
-      const links = [];
-      if(r.link45)  links.push(`<a href="${r.link45}"  target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#1a6ef5;text-decoration:none;font-family:var(--sans);padding:2px 7px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;white-space:nowrap;" title="${r.link45}">▶ 4:5</a>`);
-      if(r.link916) links.push(`<a href="${r.link916}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#1a6ef5;text-decoration:none;font-family:var(--sans);padding:2px 7px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;white-space:nowrap;" title="${r.link916}">▶ 9:16</a>`);
-      return links.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${links.join('')}</div>` : '<span style="color:#bbb;font-size:11px;">—</span>';
+      const links=[];
+      if(r.link45)  links.push(`<a href="${r.link45}"  target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#1a6ef5;text-decoration:none;font-family:var(--sans);padding:2px 7px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;white-space:nowrap;">▶ 4:5</a>`);
+      if(r.link916) links.push(`<a href="${r.link916}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#1a6ef5;text-decoration:none;font-family:var(--sans);padding:2px 7px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;white-space:nowrap;">▶ 9:16</a>`);
+      return links.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;">${links.join('')}</div>`:'<span style="color:#bbb;font-size:11px;">—</span>';
     }},
   ];
 
@@ -2972,7 +3143,7 @@ function umbrellaRenderTable(dailyRows, rawRows){
   wrap.style.display = 'block';
   wrap.innerHTML =
     umbrellaGridTable(`Daily Breakdown — ${dailyRows.length} days`, dailyCols, dailyRows, 'dateStr') +
-    umbrellaGridTable(`Ad-Level Breakdown — ${adRows.length} ads`, adCols, adRows, '');
+    umbrellaGridTable(`Ad-Level Breakdown — ${stdRows.length} ads`, adCols, stdRows, '');
 }
 
 function umbrellaApplyFilters(){
@@ -2982,13 +3153,21 @@ function umbrellaApplyFilters(){
     umbrellaStatus('No data for selected product / date range.');
     document.getElementById('umbrella-kpis').style.display = 'none';
     document.getElementById('umbrella-table-wrap').style.display = 'none';
+    document.getElementById('umbrella-dims').style.display = 'none';
+    document.getElementById('umbrella-digest').style.display = 'none';
     return;
   }
   document.getElementById('umbrella-status').style.display = 'none';
+  const selectedProduct = document.getElementById('umbrella-product-sel').value;
+  const dateFrom = document.getElementById('umbrella-date-from').value;
+  const dateTo   = document.getElementById('umbrella-date-to').value;
   const aggByDate = umbrellaAggrByDate(rows);
   const withMetrics = umbrellaCalcMetrics(aggByDate);
+  const stdRows = umbrellaToStdRows(rows, selectedProduct);
   umbrellaRenderKPIs(rows);
-  umbrellaRenderTable(withMetrics, rows);
+  umbrellaRenderTable(withMetrics, rows, stdRows);
+  umbrellaRenderDims(stdRows, rows);
+  umbrellaRenderDigest(rows, stdRows, selectedProduct, dateFrom, dateTo);
 }
 
 function umbrellaRefresh(){ umbrellaFetchData(); }
