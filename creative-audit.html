@@ -3304,7 +3304,73 @@ function umbrellaRenderTable(dailyRows, rawRows, stdRows){
   wrap.style.display = 'block';
   wrap.innerHTML =
     umbrellaGridTable(`Daily Breakdown — ${dailyRows.length} days`, dailyCols, dailyRows, 'dateStr') +
-    umbrellaGridTable(`Ad-Level Breakdown — ${stdRows.length} ads`, adCols, stdRows, '');
+    umbrellaGridTablePaged(`Ad-Level Breakdown — ${stdRows.length} ads`, adCols, stdRows, 10);
+}
+
+// Like umbrellaGridTable but shows first `pageSize` rows with a "See all / Show fewer" toggle.
+// Stores cols+rows in _umbrellaPagedTableData keyed by uid so formatters (functions) survive.
+let _umbrellaPagedTableData = {};
+function umbrellaGridTablePaged(title, cols, rows, pageSize){
+  const uid = 'ugt_' + Math.random().toString(36).slice(2,8);
+  _umbrellaPagedTableData[uid] = {cols, rows, pageSize};
+
+  const BORDER = '1px solid #d0d0d0';
+  const cellStyle = isLeft =>
+    `padding:7px 10px;border:${BORDER};text-align:${isLeft?'left':'right'};font-family:var(--mono);font-size:12px;white-space:nowrap;background:inherit;`;
+  const headStyle = isLeft =>
+    `padding:8px 10px;border:${BORDER};text-align:${isLeft?'left':'right'};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#555;background:#f4f4f4;white-space:nowrap;`;
+
+  const renderRows = subset => subset.map((r,i)=>`<tr style="background:${i%2===1?'#fafafa':'#ffffff'};">
+    ${cols.map(c=>`<td style="${cellStyle(c.left)}">${c.fmt?c.fmt(r[c.key],r):(r[c.key]||'—')}</td>`).join('')}
+  </tr>`).join('');
+
+  const hasMore = rows.length > pageSize;
+  const moreHtml = hasMore ? `<div id="${uid}_more" style="text-align:center;padding:10px 0 4px;">
+    <button onclick="umbrellaExpandTable('${uid}')" style="padding:7px 24px;border-radius:20px;border:1.5px solid var(--blue);background:#fff;color:var(--blue);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans);">▼ See all ${rows.length} ads</button>
+  </div>` : '';
+
+  return `
+    <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;">${title}</div>
+    <div style="overflow-x:auto;margin-bottom:8px;border:${BORDER};border-radius:6px;overflow:hidden;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr>${cols.map(c=>`<th style="${headStyle(c.left)}">${c.label}</th>`).join('')}</tr></thead>
+        <tbody id="${uid}_tbody">${renderRows(rows.slice(0,pageSize))}</tbody>
+      </table>
+    </div>
+    ${moreHtml}
+    <div style="margin-bottom:32px;"></div>`;
+}
+
+function umbrellaExpandTable(uid){
+  const data = _umbrellaPagedTableData[uid]; if(!data) return;
+  const {cols, rows} = data;
+  const BORDER = '1px solid #d0d0d0';
+  const cellStyle = isLeft =>
+    `padding:7px 10px;border:${BORDER};text-align:${isLeft?'left':'right'};font-family:var(--mono);font-size:12px;white-space:nowrap;background:inherit;`;
+  const tbody = document.getElementById(uid+'_tbody');
+  const more  = document.getElementById(uid+'_more');
+  if(tbody) tbody.innerHTML = rows.map((r,i)=>`<tr style="background:${i%2===1?'#fafafa':'#ffffff'};">
+    ${cols.map(c=>`<td style="${cellStyle(c.left)}">${c.fmt?c.fmt(r[c.key],r):(r[c.key]||'—')}</td>`).join('')}
+  </tr>`).join('');
+  if(more) more.innerHTML = `<div style="text-align:center;padding:8px 0 4px;">
+    <button onclick="umbrellaCollapseTable('${uid}')" style="padding:7px 24px;border-radius:20px;border:1.5px solid #bbb;background:#fff;color:var(--ink2);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans);">▲ Show fewer</button>
+  </div>`;
+}
+
+function umbrellaCollapseTable(uid){
+  const data = _umbrellaPagedTableData[uid]; if(!data) return;
+  const {cols, rows, pageSize} = data;
+  const BORDER = '1px solid #d0d0d0';
+  const cellStyle = isLeft =>
+    `padding:7px 10px;border:${BORDER};text-align:${isLeft?'left':'right'};font-family:var(--mono);font-size:12px;white-space:nowrap;background:inherit;`;
+  const tbody = document.getElementById(uid+'_tbody');
+  const more  = document.getElementById(uid+'_more');
+  if(tbody) tbody.innerHTML = rows.slice(0,pageSize).map((r,i)=>`<tr style="background:${i%2===1?'#fafafa':'#ffffff'};">
+    ${cols.map(c=>`<td style="${cellStyle(c.left)}">${c.fmt?c.fmt(r[c.key],r):(r[c.key]||'—')}</td>`).join('')}
+  </tr>`).join('');
+  if(more) more.innerHTML = `<div style="text-align:center;padding:10px 0 4px;">
+    <button onclick="umbrellaExpandTable('${uid}')" style="padding:7px 24px;border-radius:20px;border:1.5px solid var(--blue);background:#fff;color:var(--blue);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans);">▼ See all ${rows.length} ads</button>
+  </div>`;
 }
 
 function umbrellaApplyFilters(){
