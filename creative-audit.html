@@ -499,7 +499,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
         <div style="font-size:17px;font-weight:700;letter-spacing:-0.2px;">📈 MM Revenue Dashboard</div>
         <div id="mmdata-refresh-ts" style="font-size:11px;color:var(--ink2);margin-top:3px;">Not loaded · auto-refreshes at 11:30 AM</div>
       </div>
-      <button onclick="mmdRefresh()" style="padding:7px 16px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button id="mmd-master-copy-btn" onclick="mmdMasterCopy()" style="display:none;padding:7px 14px;border-radius:7px;border:none;background:#6366f1;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">📋 Copy All</button>
+        <button id="mmd-gmail-btn" onclick="mmdSendGmail()" style="display:none;padding:7px 14px;border-radius:7px;border:none;background:#ea4335;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">✉ Gmail</button>
+        <button onclick="mmdRefresh()" style="padding:7px 16px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
+      </div>
     </div>
     <div id="mmdata-status" style="padding:32px;text-align:center;color:var(--ink2);font-size:14px;"></div>
     <div id="mmdata-subnav" class="dim-tabs" style="display:none;margin-bottom:20px;"></div>
@@ -3623,12 +3627,13 @@ function mmdProcessData(data){
       mtd:makePeriod(mtdNC,mtdRC,mtdNCAOV,mtdRCAOV),
       proj:makePeriod(mtdNC*ps,mtdRC*ps,mtdNCAOV,mtdRCAOV),
       daysElapsed:cur.daysElapsed,daysInMonth:cur.daysInMonth,
-      month:cur.month,latestDt:cur.latestDt,
+      month:cur.label,latestDt:cur.latestDt,
     };
   });
 
   mmdRaw=true;
   if(st)st.style.display='none';
+  ['mmd-master-copy-btn','mmd-gmail-btn'].forEach(id=>{const b=document.getElementById(id);if(b)b.style.display='';});
   const nav=document.getElementById('mmdata-subnav');
   if(nav){
     nav.style.display='flex';
@@ -3789,6 +3794,52 @@ function mmdBuildPeriodTable(pd,cur,prodKey){
     </table></div>`;
 }
 
+function mmdMasterText(){
+  if(!mmdPeriodData)return'';
+  const lines=['MM Revenue Dashboard — '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),''];
+  MMD_PRODS.forEach(p=>{
+    const pd=mmdPeriodData[p.key];if(!pd)return;
+    const R=(v,f)=>f==='cur'?'₹'+Math.round(v).toLocaleString('en-IN'):Math.round(v).toLocaleString('en-IN');
+    lines.push('── '+p.label+' ──');
+    lines.push(['Period','NC','NC AOV','RC','RC AOV','Total','Revenue'].join('\t'));
+    [['LD',pd.ld],['L10',pd.l10],['L30',pd.l30],['MTD',pd.mtd],['Projection',pd.proj]].forEach(([lbl,m])=>{
+      lines.push([lbl,R(m.nc,'num'),R(m.nc_aov,'cur'),R(m.rc,'num'),R(m.rc_aov,'cur'),R(m.total,'num'),R(m.rev,'cur')].join('\t'));
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+function mmdMasterCopy(){
+  const text=mmdMasterText();
+  const btn=document.getElementById('mmd-master-copy-btn');
+  const reset=()=>{if(btn){btn.textContent='📋 Copy All';btn.style.background='#6366f1';}};
+  navigator.clipboard.writeText(text).then(()=>{
+    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2000);}
+  }).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2000);}
+  });
+}
+
+function mmdSendGmail(){
+  if(!mmdPeriodData)return;
+  const subject=encodeURIComponent('MM Revenue Dashboard — '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}));
+  let body='MM Revenue Dashboard\n\n';
+  MMD_PRODS.forEach(p=>{
+    const pd=mmdPeriodData[p.key];if(!pd)return;
+    const R=(v,f)=>f==='cur'?'₹'+Math.round(v).toLocaleString('en-IN'):Math.round(v).toLocaleString('en-IN');
+    body+='── '+p.label+' ──\n';
+    body+='Period\tNC\tNC AOV\tRC\tRC AOV\tTotal\tRevenue\n';
+    [['LD',pd.ld],['L10',pd.l10],['L30',pd.l30],['MTD',pd.mtd],['Projection',pd.proj]].forEach(([lbl,m])=>{
+      body+=lbl+'\t'+R(m.nc,'num')+'\t'+R(m.nc_aov,'cur')+'\t'+R(m.rc,'num')+'\t'+R(m.rc_aov,'cur')+'\t'+R(m.total,'num')+'\t'+R(m.rev,'cur')+'\n';
+    });
+    body+='\n';
+  });
+  window.open('https://mail.google.com/mail/?view=cm&fs=1&su='+subject+'&body='+encodeURIComponent(body),'_blank');
+}
+
 function mmdCopyTable(prodKey,btnId){
   const pd=mmdPeriodData&&mmdPeriodData[prodKey];
   const p=MMD_PRODS.find(x=>x.key===prodKey);
@@ -3827,7 +3878,14 @@ function mmdRenderMom(){
   const th='padding:8px 12px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:11px;white-space:nowrap;';
   const td='padding:7px 12px;border-bottom:1px solid #eee;font-family:var(--mono);font-size:12px;text-align:right;';
 
-  let html='';
+  // Jump nav
+  const jumpNav=`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px;padding:12px 14px;background:#f8fafc;border-radius:10px;border:1px solid #e5e7eb;">
+    <span style="font-size:11px;font-weight:700;color:#64748b;margin-right:4px;line-height:28px;">Jump to:</span>
+    ${MMD_PRODS.map(p=>`<a href="#mmd-mom-sec-${p.key}" onclick="document.getElementById('mmd-mom-sec-${p.key}').scrollIntoView({behavior:'smooth'});return false;"
+      style="padding:4px 12px;border-radius:20px;background:${MMD_COLORS[p.key]};color:#fff;font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;">${p.label}</a>`).join('')}
+  </div>`;
+
+  let html=jumpNav;
   MMD_PRODS.forEach(p=>{
     const monthly=mmdGetMonthly(p.key);
     if(!monthly.length)return;
@@ -3870,7 +3928,7 @@ function mmdRenderMom(){
       return`<th style="${th}${st}${fw}">${l}</th>`;
     }).join(''):'';
 
-    html+=`<div style="margin-bottom:40px;">
+    html+=`<div id="mmd-mom-sec-${p.key}" style="margin-bottom:40px;scroll-margin-top:20px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
         <span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0;"></span>
         <span style="font-size:15px;font-weight:700;">${p.label}</span>
