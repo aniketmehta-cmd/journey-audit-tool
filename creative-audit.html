@@ -3745,47 +3745,172 @@ function mmdRenderOverview(){
   el.innerHTML=h;
 }
 
+// ── helpers ──────────────────────────────────────────────────────────────────
+function mmdDateStr(dt){
+  if(!dt)return'';
+  try{return(dt instanceof Date?dt:new Date(dt)).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});}
+  catch(e){return String(dt);}
+}
+
+function mmdBuildPeriodTable(pd,cur,prodKey){
+  const th='padding:10px 14px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;white-space:nowrap;';
+  const td='padding:9px 14px;border-bottom:1px solid #eee;font-family:var(--mono);font-size:13px;text-align:right;';
+  const rows=pd?[
+    {label:'LD',       m:pd.ld,  note:'last day'},
+    {label:'L10',      m:pd.l10, note:'last 10 days'},
+    {label:'L30',      m:pd.l30, note:'last 30 days'},
+    {label:'Month to Date', m:pd.mtd, note:`${pd.daysElapsed}/${pd.daysInMonth} days · ${mmdMonthShort(pd.month)}`, bold:true},
+    {label:'Projection',    m:pd.proj,note:`full ${mmdMonthShort(pd.month)}`, italic:true},
+  ]:cur?[{label:'Month to Date',m:cur,bold:true}]:[];
+  const rowsHtml=rows.map((r,i)=>{
+    const m=r.m||{};
+    const bg=r.bold?'#f0f4ff':(r.italic?'#fafbff':(i%2===0?'#fafafa':'#fff'));
+    const fw=r.bold?'700':'400';const it=r.italic?'color:#888;font-style:italic;':'';
+    return`<tr style="background:${bg};">
+      <td style="padding:9px 14px;border-bottom:1px solid #eee;font-weight:${fw};${it}min-width:130px;">
+        ${r.label}${r.note?`<span style="font-size:10px;color:#aaa;margin-left:6px;">${r.note}</span>`:''}
+      </td>
+      <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.nc,'num')}</td>
+      <td style="${td}${it}">${mmdFmt(m.nc_aov,'cur')}</td>
+      <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.rc,'num')}</td>
+      <td style="${td}${it}">${mmdFmt(m.rc_aov,'cur')}</td>
+      <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.total,'num')}</td>
+      <td style="${td}${it}">${mmdFmt(m.rev,'cur')}</td>
+    </tr>`;
+  }).join('');
+  return`<div style="overflow-x:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
+    <table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="background:#f5f5f7;">
+        <th style="padding:10px 14px;text-align:left;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;">Period</th>
+        <th style="${th}">NC</th><th style="${th}">NC AOV</th>
+        <th style="${th}">RC</th><th style="${th}">RC AOV</th>
+        <th style="${th}">Total</th><th style="${th}">Revenue</th>
+      </tr></thead><tbody>${rowsHtml}</tbody>
+    </table></div>`;
+}
+
+function mmdCopyTable(prodKey,btnId){
+  const pd=mmdPeriodData&&mmdPeriodData[prodKey];
+  const p=MMD_PRODS.find(x=>x.key===prodKey);
+  if(!pd||!p)return;
+  const R=(v,f)=>f==='cur'?'₹'+Math.round(v):String(Math.round(v));
+  const rows=[
+    [p.label,'NC','NC AOV','RC','RC AOV','Total','Revenue'],
+    ['LD',        R(pd.ld.nc,'num'),  R(pd.ld.nc_aov,'cur'),  R(pd.ld.rc,'num'),  R(pd.ld.rc_aov,'cur'),  R(pd.ld.total,'num'),  R(pd.ld.rev,'cur')],
+    ['L10',       R(pd.l10.nc,'num'), R(pd.l10.nc_aov,'cur'), R(pd.l10.rc,'num'), R(pd.l10.rc_aov,'cur'), R(pd.l10.total,'num'), R(pd.l10.rev,'cur')],
+    ['L30',       R(pd.l30.nc,'num'), R(pd.l30.nc_aov,'cur'), R(pd.l30.rc,'num'), R(pd.l30.rc_aov,'cur'), R(pd.l30.total,'num'), R(pd.l30.rev,'cur')],
+    ['MTD',       R(pd.mtd.nc,'num'), R(pd.mtd.nc_aov,'cur'), R(pd.mtd.rc,'num'), R(pd.mtd.rc_aov,'cur'), R(pd.mtd.total,'num'), R(pd.mtd.rev,'cur')],
+    ['Projection',R(pd.proj.nc,'num'),R(pd.proj.nc_aov,'cur'),R(pd.proj.rc,'num'),R(pd.proj.rc_aov,'cur'),R(pd.proj.total,'num'),R(pd.proj.rev,'cur')],
+  ];
+  const text=rows.map(r=>r.join('\t')).join('\n');
+  const btn=document.getElementById(btnId);
+  const reset=()=>{if(btn){btn.textContent='📋 Copy';btn.style.background='';}};
+  navigator.clipboard.writeText(text).then(()=>{
+    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2000);}
+  }).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0;';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2000);}
+  });
+}
+
+// ── Month-on-Month tab: one section per product ───────────────────────────────
 function mmdRenderMom(){
   const el=document.getElementById('mmdata-panel-mom');
   if(!mmdMMData||!el)return;
-  const metricOpts=MMD_METRICS.map(m=>`<option value="${m.key}"${m.key===mmdMomMetric?' selected':''}>${m.label}</option>`).join('');
-  const prodBtns=MMD_PRODS.map(p=>{
-    const on=mmdMomVisProds.has(p.key);const c=MMD_COLORS[p.key];
-    return`<button class="dim-tab${on?' active':''}" onclick="mmdToggleProd('${p.key}',this)" style="border-color:${c};background:${on?c:'var(--paper)'};color:${on?'#fff':c};">${p.label}</button>`;
-  }).join('');
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
-      <div class="dim-tabs" style="margin:0;">${prodBtns}</div>
-      <select onchange="mmdMomMetric=this.value;mmdRenderMomChart()" style="padding:7px 12px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;font-family:var(--sans);">${metricOpts}</select>
-    </div>
-    <div id="mmd-mom-chart" style="width:100%;position:relative;min-height:340px;"></div>`;
-  mmdRenderMomChart();
-}
+  // Deduplicate months (cols C-S only = true monthly data, skip T/U which repeat current month)
+  const allMonths=[...new Set(mmdGetMonthly('overall').slice(0,-2).map(d=>d.month))].sort();
+  // Add current month once
+  const cur=mmdGetMonthly('overall');
+  if(cur.length)allMonths.push(cur[cur.length-1].month);
 
-function mmdToggleProd(key,btn){
-  if(mmdMomVisProds.has(key))mmdMomVisProds.delete(key);
-  else mmdMomVisProds.add(key);
-  const c=MMD_COLORS[key],on=mmdMomVisProds.has(key);
-  btn.classList.toggle('active',on);
-  btn.style.background=on?c:'var(--paper)';btn.style.color=on?'#fff':c;btn.style.borderColor=c;
-  mmdRenderMomChart();
-}
+  const th='padding:8px 12px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:11px;white-space:nowrap;';
+  const td='padding:7px 12px;border-bottom:1px solid #eee;font-family:var(--mono);font-size:12px;text-align:right;';
 
-function mmdRenderMomChart(){
-  const wrap=document.getElementById('mmd-mom-chart');
-  if(!wrap||!mmdMMData)return;
-  const metric=MMD_METRICS.find(m=>m.key===mmdMomMetric)||MMD_METRICS[0];
-  const active=MMD_PRODS.filter(p=>mmdMomVisProds.has(p.key));
-  if(!active.length){wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">Select at least one product.</div>';return;}
-  const allMonths=[...new Set(active.flatMap(p=>mmdGetMonthly(p.key).map(d=>d.month)))].sort();
-  if(allMonths.length<2){wrap.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">Not enough monthly data.</div>';return;}
-  const series=active.map(p=>{
-    const byM=Object.fromEntries(mmdGetMonthly(p.key).map(d=>[d.month,d]));
-    return{label:p.label,color:MMD_COLORS[p.key],data:allMonths.map(m=>byM[m]?byM[m][mmdMomMetric]:null)};
+  let html='';
+  MMD_PRODS.forEach(p=>{
+    const monthly=mmdGetMonthly(p.key);
+    if(!monthly.length)return;
+    const pd=mmdPeriodData&&mmdPeriodData[p.key];
+    const color=MMD_COLORS[p.key];
+    const btnId=`mmd-mom-copy-${p.key}`;
+    // MoM table: rows=metrics, cols=last 6 months + MTD
+    const recentMonths=monthly.slice(-6);
+    const metricRows=[
+      {label:'NC',key:'nc',fmt:'num'},
+      {label:'NC AOV',key:'nc_aov',fmt:'cur'},
+      {label:'RC',key:'rc',fmt:'num'},
+      {label:'RC AOV',key:'rc_aov',fmt:'cur'},
+      {label:'Total',key:'total',fmt:'num'},
+      {label:'Revenue',key:'rev',fmt:'cur'},
+    ];
+    const tableRows=metricRows.map((met,ri)=>{
+      const bg=ri%2?'#fafafa':'#fff';
+      const cells=recentMonths.map(m=>`<td style="${td}">${mmdFmt(m[met.key],met.fmt)}</td>`).join('');
+      // Period cells (LD/L10/L30/MTD/Proj)
+      const period=pd?[
+        {label:'LD',v:pd.ld[met.key]},{label:'L10',v:pd.l10[met.key]},{label:'L30',v:pd.l30[met.key]},
+        {label:'MTD',v:pd.mtd[met.key]},{label:'Proj',v:pd.proj[met.key]},
+      ]:[];
+      const periodCells=period.map(({label,v},i)=>{
+        const bg2=label==='MTD'?'#f0f4ff':label==='Proj'?'#fafbff':'';
+        const fw=label==='MTD'?'font-weight:700;':'';
+        const it=label==='Proj'?'color:#888;':'';
+        return`<td style="${td}${bg2?'background:'+bg2+';':''}${fw}${it}">${mmdFmt(v,met.fmt)}</td>`;
+      }).join('');
+      return`<tr style="background:${bg};">
+        <td style="padding:7px 12px;border-bottom:1px solid #eee;font-weight:600;font-size:12px;min-width:80px;">${met.label}</td>
+        ${cells}${periodCells}
+      </tr>`;
+    }).join('');
+
+    const monthHeaders=recentMonths.map(m=>`<th style="${th}">${mmdMonthShort(m.month)}</th>`).join('');
+    const periodHeaders=pd?['LD','L10','L30','MTD','Proj'].map(l=>{
+      const st=l==='MTD'?'background:#e8eeff;':'';const fw=l==='MTD'?'font-weight:700;':'';
+      return`<th style="${th}${st}${fw}">${l}</th>`;
+    }).join(''):'';
+
+    html+=`<div style="margin-bottom:40px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0;"></span>
+        <span style="font-size:15px;font-weight:700;">${p.label}</span>
+        ${pd?`<button id="${btnId}" onclick="mmdCopyTable('${p.key}','${btnId}')" class="copy-btn" style="margin-left:auto;padding:5px 14px;font-size:12px;">📋 Copy</button>`:''}
+      </div>
+      <div style="overflow-x:auto;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:18px;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="background:#f5f5f7;">
+            <th style="${th}text-align:left;">Metric</th>
+            ${monthHeaders}
+            ${periodHeaders}
+          </tr></thead><tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        ${metricRows.map(met=>`<div>
+          <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:4px;text-align:center;">${met.label}</div>
+          <div id="mmd-mom-chart-${p.key}-${met.key}" style="width:100%;"></div>
+        </div>`).join('')}
+      </div>
+    </div>`;
   });
-  mmdDrawChart('mmd-mom-chart',series,allMonths,metric.fmt);
+
+  el.innerHTML=html||'<div style="padding:40px;text-align:center;color:var(--ink2);">No data loaded.</div>';
+
+  // Draw mini charts after DOM is set
+  MMD_PRODS.forEach(p=>{
+    const monthly=mmdGetMonthly(p.key);
+    if(!monthly.length)return;
+    const color=MMD_COLORS[p.key];
+    const last12=monthly.slice(-12);
+    const labels=last12.map(d=>d.month);
+    [{key:'nc',fmt:'num'},{key:'nc_aov',fmt:'cur'},{key:'rc',fmt:'num'},{key:'rc_aov',fmt:'cur'},{key:'total',fmt:'num'},{key:'rev',fmt:'cur'}]
+      .forEach(met=>{
+        mmdDrawChart(`mmd-mom-chart-${p.key}-${met.key}`,[{label:p.label,color,data:last12.map(d=>d[met.key])}],labels,met.fmt,true);
+      });
+  });
 }
 
+// ── By Product tab ────────────────────────────────────────────────────────────
 function mmdRenderByProduct(){
   const el=document.getElementById('mmdata-panel-product');
   if(!mmdMMData||!el)return;
@@ -3798,83 +3923,68 @@ function mmdRenderByProduct(){
 }
 
 function mmdRenderByProdContent(){
+  // Update active state of product selector buttons
   document.querySelectorAll('#mmdata-panel-product .dim-tab').forEach((btn,i)=>{
     const p=MMD_PRODS[i];if(!p)return;
     const on=p.key===mmdByProdKey;const c=MMD_COLORS[p.key];
     btn.classList.toggle('active',on);btn.style.background=on?c:'var(--paper)';btn.style.color=on?'#fff':c;btn.style.borderColor=c;
   });
-  const el=document.getElementById('mmd-byprod-content');if(!el)return;
-  const p=MMD_PRODS.find(x=>x.key===mmdByProdKey);if(!p)return;
-  const monthly=mmdGetMonthly(p.key);
-  if(!monthly.length){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data for this product.</div>';return;}
-  const c=MMD_COLORS[p.key];
-  const cur=monthly[monthly.length-1];
-  const pd=mmdPeriodData&&mmdPeriodData[p.key];
-  // Period rows: LD, L10, L30, MTD, Projection
-  const periodRows=pd?[
-    {label:'LD',m:pd.ld,note:'last day'},
-    {label:'L10',m:pd.l10,note:'last 10 days'},
-    {label:'L30',m:pd.l30,note:'last 30 days'},
-    {label:'Month to Date',m:pd.mtd,note:`${pd.daysElapsed} of ${pd.daysInMonth} days · ${mmdMonthShort(pd.month)}`,bold:true},
-    {label:'Projection',m:pd.proj,note:`full ${mmdMonthShort(pd.month)}`,italic:true},
-  ]:[
-    {label:'Month to Date',m:cur,note:`${cur.daysElapsed} of ${cur.daysInMonth} days · ${mmdMonthShort(cur.month)}`,bold:true},
-  ];
-  const th='padding:10px 14px;text-align:right;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;white-space:nowrap;';
-  const td='padding:10px 14px;border-bottom:1px solid #eee;font-family:var(--mono);font-size:13px;text-align:right;';
-  const metricOpts=MMD_METRICS.map(m=>`<option value="${m.key}"${m.key===mmdMomMetric?' selected':''}>${m.label}</option>`).join('');
-  el.innerHTML=`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <span style="width:12px;height:12px;border-radius:50%;background:${c};display:inline-block;"></span>
-      <span style="font-size:16px;font-weight:700;">${p.label}</span>
-      <span style="font-size:11px;color:var(--ink2);">as of ${cur.latestDt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span>
-    </div>
-    <div style="overflow-x:auto;margin-bottom:32px;border:1px solid #eee;border-radius:10px;overflow:hidden;">
-    <table style="width:100%;border-collapse:collapse;">
-      <thead><tr style="background:#f5f5f7;">
-        <th style="padding:10px 14px;text-align:left;font-weight:700;border-bottom:2px solid #ddd;font-size:12px;min-width:180px;">Period</th>
-        <th style="${th}">NC</th><th style="${th}">NC AOV</th>
-        <th style="${th}">RC</th><th style="${th}">RC AOV</th>
-        <th style="${th}">Total</th><th style="${th}">Revenue</th>
-      </tr></thead>
-      <tbody>
-      ${periodRows.map((r,i)=>{
-        const m=r.m;const bg=r.bold?'#f0f4ff':(r.italic?'#fafbff':(i%2===0?'#fafafa':'#fff'));
-        const fw=r.bold?'700':'400';const it=r.italic?'color:#888;font-style:italic;':'';
-        return`<tr style="background:${bg};">
-          <td style="padding:10px 14px;border-bottom:1px solid #eee;font-weight:${fw};${it}">
-            ${r.label}${r.note?`<span style="font-size:10px;color:#aaa;margin-left:6px;">${r.note}</span>`:''}
-          </td>
-          <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.nc,'num')}</td>
-          <td style="${td}${it}">${mmdFmt(m.nc_aov,'cur')}</td>
-          <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.rc,'num')}</td>
-          <td style="${td}${it}">${mmdFmt(m.rc_aov,'cur')}</td>
-          <td style="${td}font-weight:${fw};${it}">${mmdFmt(m.total,'num')}</td>
-          <td style="${td}${it}">${mmdFmt(m.rev,'cur')}</td>
-        </tr>`;
-      }).join('')}
-      </tbody>
-    </table></div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-      <span style="font-size:13px;font-weight:700;">Month-on-Month Trend</span>
-      <select onchange="mmdMomMetric=this.value;mmdRenderByProdChart('${p.key}')" style="padding:6px 10px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);">${metricOpts}</select>
-    </div>
-    <div id="mmd-byprod-chart" style="width:100%;position:relative;"></div>`;
-  mmdRenderByProdChart(p.key);
+  const el=document.getElementById('mmd-byprod-content');
+  if(!el)return;
+  try{
+    const p=MMD_PRODS.find(x=>x.key===mmdByProdKey);
+    if(!p){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">Select a product above.</div>';return;}
+    const monthly=mmdGetMonthly(p.key);
+    if(!monthly.length){el.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data for this product.</div>';return;}
+    const color=MMD_COLORS[p.key];
+    const cur=monthly[monthly.length-1];
+    const pd=mmdPeriodData&&mmdPeriodData[p.key];
+    const asOf=mmdDateStr(cur.latestDt);
+    const copyBtnId=`mmd-bp-copy-${p.key}`;
+
+    const tableHtml=mmdBuildPeriodTable(pd,cur,p.key);
+
+    // 6 individual metric charts in 3×2 grid
+    const metricCharts=[
+      {key:'nc',label:'NC (New Customers)',fmt:'num'},
+      {key:'nc_aov',label:'NC AOV',fmt:'cur'},
+      {key:'rc',label:'RC (Repeat Customers)',fmt:'num'},
+      {key:'rc_aov',label:'RC AOV',fmt:'cur'},
+      {key:'total',label:'Total Orders',fmt:'num'},
+      {key:'rev',label:'Revenue',fmt:'cur'},
+    ].map(met=>`<div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;">${met.label}</div>
+      <div id="mmd-bp-chart-${p.key}-${met.key}" style="width:100%;"></div>
+    </div>`).join('');
+
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+        <span style="width:12px;height:12px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0;"></span>
+        <span style="font-size:16px;font-weight:700;">${p.label}</span>
+        <span style="font-size:11px;color:var(--ink2);">as of ${asOf} · ${cur.daysElapsed}/${cur.daysInMonth} days</span>
+        ${pd?`<button id="${copyBtnId}" onclick="mmdCopyTable('${p.key}','${copyBtnId}')" class="copy-btn" style="margin-left:auto;padding:5px 14px;font-size:12px;">📋 Copy Table</button>`:''}
+      </div>
+      <div style="margin-bottom:28px;">${tableHtml}</div>
+      <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:14px;">Month-on-Month Trends</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;">${metricCharts}</div>`;
+
+    // Draw the 6 charts after DOM is ready
+    const last12=monthly.slice(-12);
+    const labels=last12.map(d=>d.month);
+    [{key:'nc',fmt:'num'},{key:'nc_aov',fmt:'cur'},{key:'rc',fmt:'num'},{key:'rc_aov',fmt:'cur'},{key:'total',fmt:'num'},{key:'rev',fmt:'cur'}]
+      .forEach(met=>{
+        mmdDrawChart(`mmd-bp-chart-${p.key}-${met.key}`,[{label:p.label,color,data:last12.map(d=>d[met.key])}],labels,met.fmt,true);
+      });
+  }catch(err){
+    el.innerHTML=`<div style="padding:24px;color:#c0392b;font-size:13px;">Error rendering product: ${err.message}</div>`;
+    console.error('mmdRenderByProdContent error:',err);
+  }
 }
 
-function mmdRenderByProdChart(prodKey){
-  const p=MMD_PRODS.find(x=>x.key===prodKey);
-  if(!p||!mmdMMData)return;
-  const monthly=mmdGetMonthly(p.key);
-  const metric=MMD_METRICS.find(m=>m.key===mmdMomMetric)||MMD_METRICS[0];
-  mmdDrawChart('mmd-byprod-chart',[{label:p.label,color:MMD_COLORS[p.key],data:monthly.map(d=>d[mmdMomMetric])}],monthly.map(d=>d.month),metric.fmt);
-}
-
-function mmdDrawChart(containerId,series,labels,fmt){
+function mmdDrawChart(containerId,series,labels,fmt,mini){
   const container=document.getElementById(containerId);
   if(!container)return;
-  const W=900,H=340,PAD={top:24,right:24,bottom:56,left:78};
+  const W=mini?420:900,H=mini?180:340,PAD=mini?{top:12,right:8,bottom:32,left:52}:{top:24,right:24,bottom:56,left:78};
   const CW=W-PAD.left-PAD.right,CH=H-PAD.top-PAD.bottom;
   const allVals=series.flatMap(s=>s.data).filter(v=>v!=null&&isFinite(v)&&v>0);
   if(!allVals.length){container.innerHTML='<div style="padding:40px;text-align:center;color:var(--ink2);">No data to chart.</div>';return;}
@@ -3912,10 +4022,10 @@ function mmdDrawChart(containerId,series,labels,fmt){
       dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="white" stroke="${s.color}" stroke-width="2" class="mmd-dot" data-idx="${i}" data-lbl="${labels[i]}"/>`;
     });
   });
-  const legend=series.map(s=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:12px;color:var(--ink2);"><span style="width:18px;height:3px;background:${s.color};border-radius:2px;display:inline-block;"></span>${s.label}</span>`).join('');
+  const legend=mini?'':series.map(s=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;font-size:12px;color:var(--ink2);"><span style="width:18px;height:3px;background:${s.color};border-radius:2px;display:inline-block;"></span>${s.label}</span>`).join('');
   const uid=containerId.replace(/[^a-z0-9]/gi,'');
   container.innerHTML=`
-    <div style="margin-bottom:12px;">${legend}</div>
+    ${legend?`<div style="margin-bottom:12px;">${legend}</div>`:''}
     <div style="position:relative;width:100%;">
       <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet" style="display:block;overflow:visible;" id="${uid}svg">
         <g transform="translate(${PAD.left},${PAD.top})">
