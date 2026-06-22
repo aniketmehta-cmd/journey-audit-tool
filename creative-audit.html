@@ -3794,74 +3794,93 @@ function mmdBuildPeriodTable(pd,cur,prodKey){
     </table></div>`;
 }
 
-function mmdMasterText(){
-  if(!mmdPeriodData)return'';
-  const lines=['MM Revenue Dashboard — '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}),''];
-  MMD_PRODS.forEach(p=>{
-    const pd=mmdPeriodData[p.key];if(!pd)return;
-    const R=(v,f)=>f==='cur'?'₹'+Math.round(v).toLocaleString('en-IN'):Math.round(v).toLocaleString('en-IN');
-    lines.push('── '+p.label+' ──');
-    lines.push(['Period','NC','NC AOV','RC','RC AOV','Total','Revenue'].join('\t'));
-    [['LD',pd.ld],['L10',pd.l10],['L30',pd.l30],['MTD',pd.mtd],['Projection',pd.proj]].forEach(([lbl,m])=>{
-      lines.push([lbl,R(m.nc,'num'),R(m.nc_aov,'cur'),R(m.rc,'num'),R(m.rc_aov,'cur'),R(m.total,'num'),R(m.rev,'cur')].join('\t'));
-    });
-    lines.push('');
-  });
-  return lines.join('\n');
+// ── Rich HTML table builder for copy/Gmail ───────────────────────────────────
+function mmdBuildProdHtml(prodKey,color){
+  const pd=mmdPeriodData&&mmdPeriodData[prodKey];
+  const p=MMD_PRODS.find(x=>x.key===prodKey);
+  if(!pd||!p)return'';
+  const N=(v)=>Math.round(v).toLocaleString('en-IN');
+  const C=(v)=>'₹'+Math.round(v).toLocaleString('en-IN');
+  const col=color||'#6366f1';
+  const thS='padding:9px 14px;text-align:right;font-weight:700;font-size:12px;color:#fff;white-space:nowrap;border:1px solid rgba(255,255,255,0.2);';
+  const thL='padding:9px 14px;text-align:left;font-weight:700;font-size:12px;color:#fff;border:1px solid rgba(255,255,255,0.2);';
+  const rowDefs=[
+    {lbl:'LD',           m:pd.ld,  bg:'#ffffff',fw:'normal',it:false},
+    {lbl:'L10',          m:pd.l10, bg:'#fafafa',fw:'normal',it:false},
+    {lbl:'L30',          m:pd.l30, bg:'#ffffff',fw:'normal',it:false},
+    {lbl:'Month to Date',m:pd.mtd, bg:'#eef2ff',fw:'bold',  it:false},
+    {lbl:'Projection',   m:pd.proj,bg:'#f8fafc',fw:'normal',it:true},
+  ];
+  const rowsHtml=rowDefs.map(r=>{
+    const td=`padding:9px 14px;border:1px solid #e5e7eb;font-size:13px;text-align:right;font-family:monospace;font-weight:${r.fw};${r.it?'color:#6b7280;font-style:italic;':''}`;
+    const tdL=`padding:9px 14px;border:1px solid #e5e7eb;font-size:13px;font-weight:${r.fw};${r.it?'color:#6b7280;font-style:italic;':''}`;
+    return`<tr style="background:${r.bg};">
+      <td style="${tdL}">${r.lbl}</td>
+      <td style="${td}">${N(r.m.nc)}</td>
+      <td style="${td}">${C(r.m.nc_aov)}</td>
+      <td style="${td}">${N(r.m.rc)}</td>
+      <td style="${td}">${C(r.m.rc_aov)}</td>
+      <td style="${td};font-weight:bold;">${N(r.m.total)}</td>
+      <td style="${td}">${C(r.m.rev)}</td>
+    </tr>`;
+  }).join('');
+  return`<div style="margin-bottom:28px;font-family:Arial,sans-serif;">
+    <div style="display:inline-block;background:${col};color:#fff;padding:6px 16px;border-radius:6px 6px 0 0;font-size:13px;font-weight:700;">${p.label}</div>
+    <table style="border-collapse:collapse;width:100%;font-family:Arial,sans-serif;">
+      <thead><tr style="background:${col};">
+        <th style="${thL};min-width:130px;">Period</th>
+        <th style="${thS}">NC</th><th style="${thS}">NC AOV</th>
+        <th style="${thS}">RC</th><th style="${thS}">RC AOV</th>
+        <th style="${thS}">Total</th><th style="${thS}">Revenue</th>
+      </tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </div>`;
+}
+
+function mmdBuildAllHtml(){
+  const dateStr=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  let html=`<div style="font-family:Arial,sans-serif;max-width:820px;">
+    <h2 style="font-size:18px;color:#1e293b;margin:0 0 4px;">MM Revenue Dashboard</h2>
+    <p style="font-size:12px;color:#64748b;margin:0 0 24px;">as of ${dateStr}</p>`;
+  MMD_PRODS.forEach(p=>{html+=mmdBuildProdHtml(p.key,MMD_COLORS[p.key]);});
+  html+='</div>';
+  return html;
 }
 
 function mmdMasterCopy(){
-  const text=mmdMasterText();
+  const html=mmdBuildAllHtml();
   const btn=document.getElementById('mmd-master-copy-btn');
   const reset=()=>{if(btn){btn.textContent='📋 Copy All';btn.style.background='#6366f1';}};
-  navigator.clipboard.writeText(text).then(()=>{
-    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2000);}
+  _copyRichHtmlToClipboard(html).then(()=>{
+    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2500);}
   }).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;';
-    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
-    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2000);}
+    if(btn){btn.textContent='❌ Error';setTimeout(reset,2000);}
   });
 }
 
 function mmdSendGmail(){
-  if(!mmdPeriodData)return;
-  const subject=encodeURIComponent('MM Revenue Dashboard — '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}));
-  let body='MM Revenue Dashboard\n\n';
-  MMD_PRODS.forEach(p=>{
-    const pd=mmdPeriodData[p.key];if(!pd)return;
-    const R=(v,f)=>f==='cur'?'₹'+Math.round(v).toLocaleString('en-IN'):Math.round(v).toLocaleString('en-IN');
-    body+='── '+p.label+' ──\n';
-    body+='Period\tNC\tNC AOV\tRC\tRC AOV\tTotal\tRevenue\n';
-    [['LD',pd.ld],['L10',pd.l10],['L30',pd.l30],['MTD',pd.mtd],['Projection',pd.proj]].forEach(([lbl,m])=>{
-      body+=lbl+'\t'+R(m.nc,'num')+'\t'+R(m.nc_aov,'cur')+'\t'+R(m.rc,'num')+'\t'+R(m.rc_aov,'cur')+'\t'+R(m.total,'num')+'\t'+R(m.rev,'cur')+'\n';
-    });
-    body+='\n';
+  const html=mmdBuildAllHtml();
+  const subj=encodeURIComponent('MM Revenue Dashboard — '+new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}));
+  _copyRichHtmlToClipboard(html).then(()=>{
+    const w=window.open('https://mail.google.com/mail/?view=cm&fs=1&su='+subj,'_blank');
+    const toast=document.createElement('div');
+    toast.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.35);text-align:center;';
+    toast.textContent=w?'✅ Tables copied — click the email body and press Ctrl+V (or Cmd+V) to paste.':'✅ Tables copied to clipboard — open Gmail and paste with Ctrl+V.';
+    document.body.appendChild(toast);
+    setTimeout(()=>toast.remove(),6000);
   });
-  window.open('https://mail.google.com/mail/?view=cm&fs=1&su='+subject+'&body='+encodeURIComponent(body),'_blank');
 }
 
 function mmdCopyTable(prodKey,btnId){
-  const pd=mmdPeriodData&&mmdPeriodData[prodKey];
-  const p=MMD_PRODS.find(x=>x.key===prodKey);
-  if(!pd||!p)return;
-  const R=(v,f)=>f==='cur'?'₹'+Math.round(v):String(Math.round(v));
-  const rows=[
-    [p.label,'NC','NC AOV','RC','RC AOV','Total','Revenue'],
-    ['LD',        R(pd.ld.nc,'num'),  R(pd.ld.nc_aov,'cur'),  R(pd.ld.rc,'num'),  R(pd.ld.rc_aov,'cur'),  R(pd.ld.total,'num'),  R(pd.ld.rev,'cur')],
-    ['L10',       R(pd.l10.nc,'num'), R(pd.l10.nc_aov,'cur'), R(pd.l10.rc,'num'), R(pd.l10.rc_aov,'cur'), R(pd.l10.total,'num'), R(pd.l10.rev,'cur')],
-    ['L30',       R(pd.l30.nc,'num'), R(pd.l30.nc_aov,'cur'), R(pd.l30.rc,'num'), R(pd.l30.rc_aov,'cur'), R(pd.l30.total,'num'), R(pd.l30.rev,'cur')],
-    ['MTD',       R(pd.mtd.nc,'num'), R(pd.mtd.nc_aov,'cur'), R(pd.mtd.rc,'num'), R(pd.mtd.rc_aov,'cur'), R(pd.mtd.total,'num'), R(pd.mtd.rev,'cur')],
-    ['Projection',R(pd.proj.nc,'num'),R(pd.proj.nc_aov,'cur'),R(pd.proj.rc,'num'),R(pd.proj.rc_aov,'cur'),R(pd.proj.total,'num'),R(pd.proj.rev,'cur')],
-  ];
-  const text=rows.map(r=>r.join('\t')).join('\n');
+  const html=mmdBuildProdHtml(prodKey,MMD_COLORS[prodKey]);
+  if(!html)return;
   const btn=document.getElementById(btnId);
   const reset=()=>{if(btn){btn.textContent='📋 Copy';btn.style.background='';}};
-  navigator.clipboard.writeText(text).then(()=>{
-    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2000);}
+  _copyRichHtmlToClipboard(html).then(()=>{
+    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2500);}
   }).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0;';
-    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
-    if(btn){btn.textContent='✅ Copied!';btn.style.background='#16a34a';setTimeout(reset,2000);}
+    if(btn){btn.textContent='❌ Error';setTimeout(reset,2000);}
   });
 }
 
