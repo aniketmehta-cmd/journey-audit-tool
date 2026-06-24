@@ -252,6 +252,58 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .month-box{background:var(--blue-bg);border:1px solid var(--blue-soft);border-radius:8px;padding:11px 13px;margin-bottom:14px;font-size:12.5px;}
 .month-box strong{color:var(--ink);}
 .month-box select{margin-left:10px;padding:4px 8px;border:1px solid var(--line);border-radius:5px;font-size:12px;font-family:var(--sans);}
+
+/* ── MOBILE RESPONSIVE ── */
+@media(max-width:640px){
+  /* Core layout */
+  .wrap{padding:0 0 60px;}
+  .topbar{padding:12px 16px;gap:8px;}
+  .topbar-left h1{font-size:16px;}
+  .topbar-right{gap:6px;}
+  .topbar-right .btn{padding:5px 10px;font-size:11px;}
+  .nav-band{padding:0 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .nav-band::-webkit-scrollbar{display:none;}
+  .filter-bar{padding:10px 14px;}
+
+  /* MM Dashboard tab padding */
+  #main-tab-mmdata > div{padding:14px 12px !important;}
+
+  /* MM header: stack title and buttons vertically */
+  #main-tab-mmdata > div > div:first-child{flex-direction:column;align-items:flex-start !important;}
+
+  /* All tables inside MM: scroll horizontally */
+  #mmdata-panel-overview table,
+  #mmdata-panel-mom table,
+  #mmdata-panel-product table{min-width:560px;}
+  #mmdata-panel-overview,
+  #mmdata-panel-mom,
+  #mmdata-panel-product{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+
+  /* Overview KPI cards: 2-column grid */
+  #mmdata-panel-overview .dim-primary{grid-template-columns:1fr 1fr !important;}
+
+  /* MoM jump nav: wrap pills */
+  #mmdata-panel-mom > div:first-child{flex-wrap:wrap !important;}
+
+  /* By Product product buttons: wrap */
+  #mmdata-panel-product > div:first-child{flex-wrap:wrap !important;gap:6px !important;}
+
+  /* Charts: full width on mobile */
+  #mmdata-panel-mom svg,
+  #mmdata-panel-product svg{width:100% !important;height:auto !important;}
+
+  /* Umbrella tab */
+  #main-tab-umbrella > div{padding:14px 12px !important;}
+
+  /* Other main tabs */
+  .main-tab > div{padding:14px 12px !important;}
+
+  /* Modals */
+  .modal{padding:18px 16px;width:96% !important;}
+
+  /* Apps Script setup card */
+  #main-tab-mmdata pre{font-size:10px !important;padding:10px !important;}
+}
 </style>
 </head>
 <body>
