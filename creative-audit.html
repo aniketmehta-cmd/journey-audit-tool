@@ -60,9 +60,14 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .ma-subbtn:hover{color:var(--ink2);}
 .ma-subbtn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
 .ma-subtab{display:none;}.ma-subtab.active{display:block;}
-.ma-prod-sel-wrap{display:flex;align-items:center;gap:10px;padding:12px 28px 0;}
-.ma-prod-sel-wrap label{font-size:12px;font-weight:600;color:var(--ink2);}
+.ma-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:10px 28px;background:var(--paper);border-bottom:1px solid var(--line-soft);}
+.ma-toolbar-label{font-size:12px;font-weight:600;color:var(--ink2);}
+.ma-toolbar-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .ma-prod-sel{padding:5px 10px;border-radius:7px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-size:13px;font-family:var(--sans);cursor:pointer;}
+.ma-tool-btn{padding:5px 11px;border-radius:6px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink2);font-size:11.5px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all 0.12s;white-space:nowrap;}
+.ma-tool-btn:hover{background:var(--paper2);color:var(--ink);}
+.ma-tool-btn-primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+.ma-tool-btn-primary:hover{opacity:0.9;color:#fff;}
 
 /* ── STATUS ── */
 .status-strip{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--paper);margin-bottom:16px;flex-wrap:wrap;box-shadow:var(--shadow-sm);}
@@ -346,22 +351,13 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 
 <div class="wrap">
 
-<div class="topbar">
+<div class="topbar" style="padding:14px 28px;">
   <div class="topbar-left">
     <div class="eyebrow">Mosaic · Hair · Creative Performance Audit</div>
     <h1 id="page-title">Man Matters Ani 🧠</h1>
   </div>
-  <div class="topbar-right">
-    <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,0.7);">
-      <span>Scaling ≥ ₹</span><input type="number" id="tier-hit" value="100000" step="10000" style="width:90px;padding:5px 8px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;font-size:12px;font-family:var(--sans);background:rgba(255,255,255,0.1);color:#fff;">
-    </div>
-    <button class="btn btn-ghost" onclick="openSheetSettings()">☁ Sheet Log</button>
-    <button class="btn btn-ghost" onclick="refreshSheet()">↻ Refresh Sheet</button>
-    <button class="btn btn-ghost" onclick="document.getElementById('perf-input').click()">⬆ Upload CSV</button>
-    <button class="btn btn-ghost" onclick="openPasteModal('monthly')">📋 Paste Data</button>
-    <input type="file" id="perf-input" accept=".csv,.tsv,.txt" style="display:none">
-  </div>
 </div>
+<input type="file" id="perf-input" accept=".csv,.tsv,.txt" style="display:none">
 
 <div class="nav-band">
   <div class="main-nav">
@@ -382,13 +378,24 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 
 <!-- ── Product Analysis Sub-tab ── -->
 <div id="ma-subtab-product" class="ma-subtab active">
-<div class="ma-prod-sel-wrap">
-  <label for="ma-product-sel">Product</label>
-  <select id="ma-product-sel" class="ma-prod-sel" onchange="switchProduct(this.value)">
-    <option value="biotin">Biotin Hair Gummies</option>
-    <option value="s1">Stage 1: Anti-Hairfall Kit</option>
-    <option value="s2">Stage 2: Hair Regrowth Kit</option>
-  </select>
+<div class="ma-toolbar">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <label for="ma-product-sel" class="ma-toolbar-label">Product</label>
+    <select id="ma-product-sel" class="ma-prod-sel" onchange="switchProduct(this.value)">
+      <option value="biotin">Biotin Hair Gummies</option>
+      <option value="s1">Stage 1: Anti-Hairfall Kit</option>
+      <option value="s2">Stage 2: Hair Regrowth Kit</option>
+    </select>
+  </div>
+  <div class="ma-toolbar-actions">
+    <div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--ink2);">
+      <span>Scaling ≥ ₹</span><input type="number" id="tier-hit" value="100000" step="10000" style="width:80px;padding:4px 7px;border:1.5px solid var(--line);border-radius:6px;font-size:11.5px;font-family:var(--sans);background:var(--paper);color:var(--ink);">
+    </div>
+    <button class="ma-tool-btn" onclick="openSheetSettings()">☁ Sheet Log</button>
+    <button class="ma-tool-btn" onclick="refreshSheet()">↻ Refresh</button>
+    <button class="ma-tool-btn ma-tool-btn-primary" onclick="document.getElementById('perf-input').click()">⬆ Upload CSV</button>
+    <button class="ma-tool-btn" onclick="openPasteModal('monthly')">📋 Paste Data</button>
+  </div>
 </div>
 
 <div style="padding:20px 28px 0;">
@@ -597,8 +604,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 
 <!-- ═══ TAB: MM DASHBOARD ═══ -->
 <div id="main-tab-mmdata" class="main-tab">
-  <div style="padding:24px 28px;">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #e0e0e0;">
+  <div style="padding:0 28px 24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:20px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #e0e0e0;">
       <div>
         <div style="font-size:17px;font-weight:700;letter-spacing:-0.2px;">📈 MM Revenue Dashboard</div>
         <div id="mmdata-refresh-ts" style="font-size:11px;color:var(--ink2);margin-top:3px;">Not loaded · auto-refreshes at 11:30 AM</div>
@@ -619,10 +626,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 
 <!-- ═══ TAB: UMBRELLA SHEET ═══ -->
 <div id="main-tab-umbrella" class="main-tab">
-  <div style="padding:24px 28px;">
+  <div style="padding:0 28px 24px;">
 
     <!-- Top bar -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e0e0e0;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:20px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e0e0e0;">
       <div>
         <div style="font-size:17px;font-weight:700;letter-spacing:-0.2px;">☂️ Umbrella Sheet</div>
         <div id="umbrella-last-refreshed" style="font-size:11px;color:var(--ink2);margin-top:3px;">Not loaded yet · auto-refreshes at 11:30 AM</div>
