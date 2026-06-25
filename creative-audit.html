@@ -55,6 +55,14 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .mnav-btn:hover{color:var(--ink2);}
 .mnav-btn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
 .main-tab{display:none;}.main-tab.active{display:block;}
+.ma-subnav{display:flex;gap:0;background:var(--paper2);border-bottom:1px solid var(--line-soft);padding:0 28px;}
+.ma-subbtn{padding:9px 16px;background:none;border:none;border-bottom:2px solid transparent;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;font-family:var(--sans);transition:all 0.12s;white-space:nowrap;}
+.ma-subbtn:hover{color:var(--ink2);}
+.ma-subbtn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
+.ma-subtab{display:none;}.ma-subtab.active{display:block;}
+.ma-prod-sel-wrap{display:flex;align-items:center;gap:10px;padding:12px 28px 0;}
+.ma-prod-sel-wrap label{font-size:12px;font-weight:600;color:var(--ink2);}
+.ma-prod-sel{padding:5px 10px;border-radius:7px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);font-size:13px;font-family:var(--sans);cursor:pointer;}
 
 /* ── STATUS ── */
 .status-strip{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:var(--radius-sm);border:1px solid var(--line);background:var(--paper);margin-bottom:16px;flex-wrap:wrap;box-shadow:var(--shadow-sm);}
@@ -341,7 +349,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 <div class="topbar">
   <div class="topbar-left">
     <div class="eyebrow">Mosaic · Hair · Creative Performance Audit</div>
-    <h1 id="page-title">Hair Creative Audit</h1>
+    <h1 id="page-title">Man Matters Ani 🧠</h1>
   </div>
   <div class="topbar-right">
     <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(255,255,255,0.7);">
@@ -356,12 +364,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 </div>
 
 <div class="nav-band">
-  <div class="product-bar" id="product-bar"></div>
-  <div class="nav-divider"></div>
   <div class="main-nav">
     <button class="mnav-btn active" onclick="switchMainTab('analytics',this)">📊 Monthly Analysis</button>
-    <button class="mnav-btn" onclick="switchMainTab('daily',this)">📅 Daily Digest</button>
-    <button class="mnav-btn" onclick="switchMainTab('planning',this)">🎯 Planning</button>
     <button class="mnav-btn" onclick="switchMainTab('umbrella',this)">☂️ Umbrella Sheet</button>
     <button class="mnav-btn" onclick="switchMainTab('mmdata',this)">📈 MM Dashboard</button>
   </div>
@@ -369,6 +373,23 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 
 <!-- ═══ TAB: ANALYTICS ═══ -->
 <div id="main-tab-analytics" class="main-tab active">
+
+<div class="ma-subnav">
+  <button class="ma-subbtn active" onclick="switchMASub('product',this)">Product Analysis</button>
+  <button class="ma-subbtn" onclick="switchMASub('daily',this)">Daily Digest</button>
+  <button class="ma-subbtn" onclick="switchMASub('planning',this)">Planning</button>
+</div>
+
+<!-- ── Product Analysis Sub-tab ── -->
+<div id="ma-subtab-product" class="ma-subtab active">
+<div class="ma-prod-sel-wrap">
+  <label for="ma-product-sel">Product</label>
+  <select id="ma-product-sel" class="ma-prod-sel" onchange="switchProduct(this.value)">
+    <option value="biotin">Biotin Hair Gummies</option>
+    <option value="s1">Stage 1: Anti-Hairfall Kit</option>
+    <option value="s2">Stage 2: Hair Regrowth Kit</option>
+  </select>
+</div>
 
 <div style="padding:20px 28px 0;">
 <div class="status-strip" id="status-strip">
@@ -490,10 +511,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 
   </div><!-- /content padding -->
 </div><!-- /#analytics -->
-</div><!-- /main-tab-analytics -->
+</div><!-- /ma-subtab-product -->
 
-<!-- ═══ TAB: DAILY DIGEST ═══ -->
-<div id="main-tab-daily" class="main-tab">
+<!-- ── Daily Digest Sub-tab ── -->
+<div id="ma-subtab-daily" class="ma-subtab">
   <div class="daily-upload-box">
     <h2>Daily / Short-Period Digest</h2>
     <p>Upload your daily update CSV. Set the period label. The tool generates a proper category manager update — funnel health, narrative performance, top influencers, watch list — ready to copy-paste into email or Slack.</p>
@@ -522,7 +543,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
   </div>
 </div>
 
-<!-- Combined all-3-products digest -->
+<!-- Combined all-3-products digest (inside daily sub-tab) -->
 <div id="combined-digest-box" style="display:none;padding:0 28px 28px;">
   <div class="daily-upload-box" style="margin-bottom:0;">
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -558,9 +579,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
   </div>
 </div>
 
-<!-- ═══ TAB: TRENDS ═══ -->
-<!-- ═══ TAB: PLANNING ═══ -->
-<div id="main-tab-planning" class="main-tab">
+</div><!-- /ma-subtab-daily -->
+
+<!-- ── Planning Sub-tab ── -->
+<div id="ma-subtab-planning" class="ma-subtab">
   <div style="padding:28px;">
     <div id="planning-empty" style="text-align:center;padding:60px 20px;color:var(--ink2);">
       <div style="font-size:32px;margin-bottom:12px;">📊</div>
@@ -569,7 +591,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
     </div>
     <div id="planning-content" style="display:none;"></div>
   </div>
-</div>
+</div><!-- /ma-subtab-planning -->
+
+</div><!-- /main-tab-analytics -->
 
 <!-- ═══ TAB: MM DASHBOARD ═══ -->
 <div id="main-tab-mmdata" class="main-tab">
@@ -1353,9 +1377,11 @@ function renderMiniDimCards(groups, totalSpend, portfolioRoas) {
     const pc  = perfClass(g.roas, portfolioRoas);
     const rc  = roasClass(g.roas, portfolioRoas);
     const barW = Math.min(100, (g.spend / maxSpend) * 100).toFixed(1);
-    return `<div class="mini-card ${pc}">
+    const uid = 'mc' + (Math.random()*1e9|0).toString(36);
+    _miniCardStore[uid] = g.rows;
+    return `<div class="mini-card ${pc}" onclick="openMiniCardModal('${uid}','${esc(g.key).replace(/'/g,'\\\'')}')" style="cursor:pointer;" title="Click to see ${g.rows.length} ads">
       <div class="mini-card-name">${esc(g.key)}</div>
-      <div class="mini-card-meta">${g.rows.length} ads · ${fmtPct(g.pct)} spend</div>
+      <div class="mini-card-meta">${g.rows.length} ads · ${fmtPct(g.pct)} spend · <span style="color:var(--blue);font-size:10px;">tap to drill</span></div>
       <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${barW}%"></div></div>
       <div class="mini-metrics">
         <span><strong>${fmtS(g.spend)}</strong></span>
@@ -1591,7 +1617,7 @@ function refreshAnalytics(){
   const p=PRODUCTS.find(x=>x.id===activeProduct);
   const catSize=Object.keys(catalogue[activeProduct]||{}).length;
   const months=[...new Set(rows.map(r=>r.month))].sort();
-  document.getElementById('page-title').textContent=p.label;
+  // title stays fixed as "Man Matters Ani 🧠"
   if(!rows.length){document.getElementById('analytics').style.display='none';return;}
   activeMonth='combined';activeSource='all';activeFunnel='all';
   const mt=document.getElementById('month-tabs');mt.innerHTML='';
@@ -1805,9 +1831,18 @@ function clearAllPerf(){
     setTimeout(()=>{if(btn){btn.dataset.confirm='';btn.textContent='🗑 Clear All';btn.style.background='var(--red-bg)';btn.style.color='var(--red)';btn.style.borderColor='var(--red-soft)';}},3000);
   }
 }
+function switchMASub(name, btn) {
+  document.querySelectorAll('.ma-subbtn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.ma-subtab').forEach(t=>t.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const el=document.getElementById('ma-subtab-'+name);
+  if(el) el.classList.add('active');
+}
+
 function switchProduct(id){
   activeProduct=id;
-  document.querySelectorAll('.ptab').forEach(b=>{const p=PRODUCTS.find(x=>x.id===b.dataset.id);b.className='ptab '+p.cls+(b.dataset.id===id?' active':'');});
+  const sel=document.getElementById('ma-product-sel');
+  if(sel) sel.value=id;
   const catSize=Object.keys(catalogue[id]||{}).length;const hasCat=catSize>0;const hasPerfMonths=Object.keys(perfData[id]||{}).length>0;
   document.getElementById('step1-card').className='step-card'+(hasCat?' done active-step':'');
   document.getElementById('step1-label').textContent=hasCat?'✓ Step 1':'Step 1';
@@ -2810,8 +2845,7 @@ function copyPlanningDocs(){
 // ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
-const bar=document.getElementById('product-bar');
-PRODUCTS.forEach(p=>{const btn=document.createElement('button');btn.className='ptab '+p.cls+(p.id===activeProduct?' active':'');btn.dataset.id=p.id;btn.textContent=p.label;btn.onclick=()=>switchProduct(p.id);bar.appendChild(btn);});
+// product selector is now a <select> inside the Monthly Analysis sub-tab
 try{const saved=localStorage.getItem('mm_cat');if(saved){const parsed=JSON.parse(saved);Object.assign(catalogue.biotin,parsed.biotin||{});Object.assign(catalogue.s1,parsed.s1||{});Object.assign(catalogue.s2,parsed.s2||{});invalidateFuzzyIdx();}const savedInsta=localStorage.getItem('mm_insta');if(savedInsta){Object.assign(personInsta,JSON.parse(savedInsta));}const savedIg=localStorage.getItem('mm_ig_profiles');if(savedIg){Object.assign(igProfiles,JSON.parse(savedIg));}const savedP=localStorage.getItem('mm_perf');if(savedP){const parsed=JSON.parse(savedP);Object.assign(perfData.biotin,parsed.biotin||{});Object.assign(perfData.s1,parsed.s1||{});Object.assign(perfData.s2,parsed.s2||{});}markStep1Done();refreshAnalytics();}catch(_){}
 refreshSheet();
 
@@ -3455,7 +3489,7 @@ function umbrellaRenderTable(dailyRows, rawRows, stdRows){
   // Ad-level table uses stdRows (standardized, PWDD metrics, suffix-stripped links)
   const adCols = [
     {key:'name',    label:'Ad Name', left:true,
-      fmt:v=>v?`<span title="${esc(v)}" style="max-width:300px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">${esc(v)}</span>`:'—'},
+      fmt:v=>v?`<span style="font-size:11px;">${esc(v)}</span>`:'—'},
     {key:'spend',   label:'Spend',    fmt:v=>umbrellaFmt(v,'inrk')},
     {key:'ncs',     label:'NCs',      fmt:v=>umbrellaFmt(v,'num')},
     {key:'cac',     label:'CAC',      fmt:v=>v?umbrellaFmt(v,'inr'):'—'},
@@ -3505,7 +3539,10 @@ function umbrellaGridTablePaged(title, cols, rows, pageSize){
   </div>` : '';
 
   return `
-    <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px;">${title}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);">${title}</div>
+      <input id="${uid}_search" type="text" placeholder="🔍 Search ad name…" oninput="umbrellaFilterPagedTable('${uid}')" style="padding:5px 10px;border-radius:6px;border:1.5px solid #bbb;background:var(--paper);color:var(--ink);font-size:12px;font-family:var(--sans);width:220px;outline:none;">
+    </div>
     <div style="overflow-x:auto;margin-bottom:8px;border:${BORDER};border-radius:6px;overflow:hidden;">
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         <thead><tr>${cols.map(c=>`<th style="${headStyle(c.left)}">${c.label}</th>`).join('')}</tr></thead>
@@ -3546,6 +3583,22 @@ function umbrellaCollapseTable(uid){
   if(more) more.innerHTML = `<div style="text-align:center;padding:10px 0 4px;">
     <button onclick="umbrellaExpandTable('${uid}')" style="padding:7px 24px;border-radius:20px;border:1.5px solid var(--blue);background:#fff;color:var(--blue);font-size:12.5px;font-weight:600;cursor:pointer;font-family:var(--sans);">▼ See all ${rows.length} ads</button>
   </div>`;
+}
+
+function umbrellaFilterPagedTable(uid){
+  const data = _umbrellaPagedTableData[uid]; if(!data) return;
+  const {cols, rows, pageSize} = data;
+  const q = (document.getElementById(uid+'_search')?.value||'').trim().toLowerCase();
+  const filtered = q ? rows.filter(r=>(r.name||'').toLowerCase().includes(q)) : rows;
+  const BORDER = '1px solid #d0d0d0';
+  const cellStyle = isLeft =>
+    `padding:7px 10px;border:${BORDER};text-align:${isLeft?'left':'right'};font-family:var(--mono);font-size:12px;white-space:nowrap;background:inherit;`;
+  const tbody = document.getElementById(uid+'_tbody');
+  const more  = document.getElementById(uid+'_more');
+  if(tbody) tbody.innerHTML = filtered.map((r,i)=>`<tr style="background:${i%2===1?'#fafafa':'#ffffff'};">
+    ${cols.map(c=>`<td style="${cellStyle(c.left)}">${c.fmt?c.fmt(r[c.key],r):(r[c.key]||'—')}</td>`).join('')}
+  </tr>`).join('');
+  if(more) more.style.display = (q || filtered.length <= pageSize) ? 'none' : '';
 }
 
 function umbrellaApplyFilters(){
@@ -4327,6 +4380,66 @@ function umbrellaScheduleAutoRefresh(){
   umbrellaAutoRefreshTimer = setTimeout(()=>umbrellaFetchData(), next-now);
 }
 
+/* ── MINI CARD MODAL ── */
+let _miniCardStore = {};
+function openMiniCardModal(uid, groupName, totalSpend, portfolioRoas) {
+  const rows = _miniCardStore[uid]; if(!rows) return;
+  const sorted = [...rows].sort((a,b)=>(b.spend||0)-(a.spend||0));
+  const maxSpend = sorted[0]?.spend || 1;
+  const fmtS = v => v>=1e5?'₹'+(v/1e5).toFixed(1)+'L':v>=1000?'₹'+(v/1000).toFixed(0)+'K':'₹'+Math.round(v);
+  const fmtR = v => v!=null?v.toFixed(2)+'x':'—';
+  const fmtC = v => v?'₹'+Math.round(v):'—';
+  const roasClass = r => r>=2?'roas-great':r>=1?'roas-good':r>=0.5?'roas-mid':'roas-low';
+  const totalSpendGroup = rows.reduce((a,r)=>a+(r.spend||0),0);
+  const totalNcs = rows.reduce((a,r)=>a+(r.ncs||0),0);
+  const wRoas = totalNcs && totalSpend > 0 ? (rows.reduce((a,r)=>a+(r.aov||0)*(r.ncs||0),0)*0.76/totalSpendGroup) : null;
+  const rowsHtml = sorted.map((r,i)=>{
+    const bw = Math.min(100,((r.spend||0)/maxSpend*100)).toFixed(0);
+    const rc = roasClass(r.roas);
+    const same = r.link45 && r.link916 && r.link45===r.link916;
+    let watchHtml='<span style="font-size:11px;color:#bbb;">—</span>';
+    if(r.link45||r.link916){
+      if(same) watchHtml=`<a href="${r.link45}" target="_blank" rel="noopener" style="font-size:11px;color:#1a6ef5;padding:2px 8px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;text-decoration:none;">▶ Watch</a>`;
+      else { watchHtml=''; if(r.link916) watchHtml+=`<a href="${r.link916}" target="_blank" rel="noopener" style="font-size:11px;color:#1a6ef5;padding:2px 8px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;text-decoration:none;margin-right:4px;">▶ 9:16</a>`; if(r.link45) watchHtml+=`<a href="${r.link45}" target="_blank" rel="noopener" style="font-size:11px;color:#1a6ef5;padding:2px 8px;background:#eef3ff;border:1px solid #c2d3ff;border-radius:4px;text-decoration:none;">4:5</a>`;}
+    }
+    return `<div style="position:relative;padding:12px 16px;border-top:1px solid #f0f0f0;display:flex;align-items:center;gap:12px;background:${i%2?'#fafafa':'#fff'};">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:#2563eb;opacity:${0.2+0.8*(r.spend/maxSpend)};border-radius:0 2px 2px 0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-family:var(--mono);color:#666;margin-bottom:3px;word-break:break-all;">${(r.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;font-variant-numeric:tabular-nums;color:#555;">
+          <span><strong style="color:#111;">${fmtS(r.spend)}</strong></span>
+          ${r.ncs!=null?`<span><strong style="color:#111;">${r.ncs}</strong> NCs</span>`:''}
+          ${r.roas!=null?`<span class="${rc}" style="font-weight:700;">${fmtR(r.roas)} ROAS</span>`:''}
+          ${r.cac!=null?`<span><strong style="color:#111;">${fmtC(r.cac)}</strong> CAC</span>`:''}
+        </div>
+      </div>
+      <div style="flex-shrink:0;">${watchHtml}</div>
+    </div>`;
+  }).join('');
+
+  const modal = document.getElementById('mini-card-modal');
+  document.getElementById('mini-card-modal-title').textContent = groupName + ' · ' + rows.length + ' ads';
+  document.getElementById('mini-card-modal-body').innerHTML = `
+    <div style="display:flex;gap:24px;flex-wrap:wrap;padding:12px 20px;background:#f8f9fa;border-bottom:1px solid #e0e0e0;font-size:12px;font-variant-numeric:tabular-nums;">
+      <span>Spend <strong style="color:#111;">${fmtS(totalSpendGroup)}</strong></span>
+      <span>NCs <strong style="color:#111;">${totalNcs||'—'}</strong></span>
+      ${wRoas!=null?`<span>ROAS <strong class="${roasClass(wRoas)}" style="font-weight:700;">${fmtR(wRoas)}</strong></span>`:''}
+    </div>
+    <div style="overflow-y:auto;max-height:60vh;">${rowsHtml}</div>`;
+  modal.style.display = 'flex';
+}
+function closeMiniCardModal(){document.getElementById('mini-card-modal').style.display='none';}
 </script>
+
+<!-- Mini Card Drill-Down Modal -->
+<div id="mini-card-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9500;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeMiniCardModal()">
+  <div style="background:#fff;border-radius:14px;width:100%;max-width:760px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e0e0e0;flex-shrink:0;">
+      <div id="mini-card-modal-title" style="font-size:16px;font-weight:700;color:#111;"></div>
+      <button onclick="closeMiniCardModal()" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;line-height:1;padding:0 4px;">&times;</button>
+    </div>
+    <div id="mini-card-modal-body" style="overflow:hidden;display:flex;flex-direction:column;"></div>
+  </div>
+</div>
 </body>
 </html>
