@@ -685,9 +685,11 @@ const SHEET_ID_OLD1 = '1Ku0UlANpMFIjX3FOPM9aCyr4TbQnJ7x1EWwsahNbqb4';
 const SHEET_ID_OLD2 = '1Cmb7-ddSKGLKFlponkiK9hHhOkgRKp0zVkFJ4LlG4WI';
 
 const PRODUCTS = [
-  { id:'biotin', label:'Biotin Hair Gummies',       sheetName:'Biotin', kw:'biotin',  cls:'p-biotin' },
-  { id:'s1',    label:'Stage 1: Anti-Hairfall Kit', sheetName:'S1',     kw:'stage 1', cls:'p-s1'    },
-  { id:'s2',    label:'Stage 2: Hair Regrowth Kit', sheetName:'S2',     kw:'stage 2', cls:'p-s2'    },
+  { id:'biotin', label:'Biotin Hair Gummies',            sheetName:'Biotin', kw:'biotin',  cls:'p-biotin' },
+  { id:'s1',     label:'Stage 1: Anti-Hairfall Kit',     sheetName:'S1',     kw:'stage 1', cls:'p-s1'    },
+  { id:'s2',     label:'Stage 2: Hair Regrowth Kit',     sheetName:'S2',     kw:'stage 2', cls:'p-s2'    },
+  { id:'s3',     label:'Stage 3: Hair Regrowth Kit',     sheetName:'S3',     kw:'stage 3', cls:'p-s3'    },
+  { id:'s3ceto', label:'Stage 3 Cetosomal',              sheetName:'S3Ceto', kw:'stage 3 ceto', cls:'p-s3ceto' },
 ];
 const MC  = { skip:2, product:2, adName:3, link45:4, link916:5, intInf:10, adType:11, language:12, person:13, narrative:14, adFormat:15 };
 const O1C = { skip:2, product:2, adName:6, link45:4, link916:5, intInf:11, adType:13, narrative:15, language:16, person:17, adFormat:18 };
@@ -732,7 +734,7 @@ const MONTH_NAMES = {jan:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',may:'May',jun:'Jun'
 // ═══════════════════════════════════════════════
 let activeProduct='biotin', activeMonth='combined', activeSource='all', activeFunnel='all';
 let sortKey='spend', sortDir=-1;
-const catalogue={biotin:{},s1:{},s2:{}};
+const catalogue={biotin:{},s1:{},s2:{},s3:{},s3ceto:{}};
 const perfData={biotin:{},s1:{},s2:{}};
 const dailyData={biotin:null,s1:null,s2:null};
 const personInsta={}; // normalized_name → instagram url
@@ -2974,6 +2976,8 @@ function umbrellaGridTable(title, cols, rows, dateColKey){
 function umbrellaToCatPid(product){
   const p = (product||'').toLowerCase().replace(/\s+/g,'');
   if(p.includes('stage1') || p.includes('stage_1') || p.includes('antihairfall')) return 's1';
+  if(p.includes('cetosomal') || p.includes('ceto') || p.includes('s3ceto'))       return 's3ceto';
+  if(p.includes('stage3') || p.includes('stage_3') || p.includes('s3'))           return 's3';
   if(p.includes('stage2') || p.includes('stage_2') || p.includes('regrowth'))     return 's2';
   if(p.includes('biotin') || p.includes('gummies'))                                return 'biotin';
   return null;
