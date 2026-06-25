@@ -586,6 +586,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
         </div>
         <button onclick="umbrellaRefresh()" style="padding:7px 16px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--sans);">↺ Refresh</button>
       </div>
+      <div style="width:100%;margin-top:4px;">
+        <input id="umbrella-ad-search" type="text" placeholder="🔍 Search ad name…" oninput="umbrellaApplyFilters()" style="width:100%;padding:7px 12px;border-radius:7px;border:1.5px solid #bbb;background:var(--surface);color:var(--ink);font-size:13px;font-family:var(--sans);outline:none;">
+      </div>
     </div>
 
     <div id="umbrella-status" style="text-align:center;padding:60px 20px;color:var(--ink2);font-size:14px;">Loading…</div>
@@ -2861,6 +2864,8 @@ function umbrellaGetFilteredRows(){
   const to   = document.getElementById('umbrella-date-to').value;
   if(from) rows = rows.filter(r=>r.dateStr >= from);
   if(to)   rows = rows.filter(r=>r.dateStr <= to);
+  const q = (document.getElementById('umbrella-ad-search').value||'').trim().toLowerCase();
+  if(q) rows = rows.filter(r=>(r.adName||'').toLowerCase().includes(q));
   return rows;
 }
 
