@@ -24,7 +24,7 @@
 }
 *{box-sizing:border-box;}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased;}
-.wrap{max-width:1440px;margin:0 auto;padding:0 0 80px;}
+.wrap{width:100%;margin:0;padding:0 0 80px;box-sizing:border-box;}
 
 /* ── HEADER ── */
 .topbar{background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:0;}
@@ -2824,6 +2824,7 @@ function umbrellaParseDD(text){
     if(isNaN(dateParsed)) continue;
     // Use the pre-computed "Product" column (col 33 = DD!AH) — exact same filter as PWDD
     const product = get('product') || 'Unknown';
+    if(!product || /^#|^n\/a$/i.test(product.trim())) continue;
     rows.push({
       date: dateParsed, dateStr, product,
       adSetName: get('ad_set_name'),
@@ -2852,9 +2853,11 @@ function umbrellaParseDD(text){
 
 function umbrellaPopulateProducts(){
   if(!umbrellaRaw) return;
-  const products = [...new Set(umbrellaRaw.map(r=>r.product).filter(p=>p&&p!=='Unknown'))].sort();
+  const bad = /^#|^n\/a$|^unknown$|^\s*$/i;
+  const products = [...new Set(umbrellaRaw.map(r=>r.product).filter(p=>p && !bad.test(p.trim())))].sort();
   umbrellaProducts = products;
   const sel = document.getElementById('umbrella-product-sel');
+  if(!products.length){ sel.innerHTML='<option value="">No data</option>'; return; }
   sel.innerHTML = products.map(p=>`<option value="${p}">${p}</option>`).join('');
 }
 
@@ -3067,6 +3070,7 @@ const UMBRELLA_DIM_TABS=[
   {key:'int_inf',    label:'Source'},
   {key:'ad_type',    label:'Ad Type'},
   {key:'ad_format',  label:'Ad Format'},
+  {key:'person',     label:'Person'},
   {key:'funnel_type',label:'Funnel'},
 ];
 
