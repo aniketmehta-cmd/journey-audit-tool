@@ -796,18 +796,20 @@ function doGet(e) {
   } catch(err) { return ok({ error: err.toString() }); }
 }
 
-// Scans column A to find the true last data row and max S.No.
-// Handles sheets with thousands of empty pre-formatted rows.
+// Scans column B (Date Added) to find the true last data row.
+// Column A has pre-filled S.No. values in empty rows, so it cannot be used.
+// The max S.No. is read from column A only for rows where column B is non-empty.
 function getSheetInfo(sheet) {
   var lr = sheet.getLastRow();
   if (lr <= 1) return { dataRows: 0, lastSno: '', lastDataRow: 1 };
-  var colA = sheet.getRange(2, 1, lr - 1, 1).getValues();
+  var data = sheet.getRange(2, 1, lr - 1, 2).getValues(); // columns A+B
   var lastDataRow = 1, maxSno = 0;
-  for (var i = 0; i < colA.length; i++) {
-    var val = colA[i][0];
-    if (val !== '' && val !== null && String(val).trim() !== '') {
+  for (var i = 0; i < data.length; i++) {
+    var dateVal = data[i][1]; // column B
+    if (dateVal !== '' && dateVal !== null && String(dateVal).trim() !== '') {
       lastDataRow = i + 2;
-      var n = parseInt(String(val).replace(/\D/g, ''), 10);
+      var snoVal = data[i][0]; // column A
+      var n = parseInt(String(snoVal).replace(/\D/g, ''), 10);
       if (!isNaN(n) && n > maxSno) maxSno = n;
     }
   }
@@ -934,8 +936,8 @@ function ok(data) {
         </div>
 
         <div class="be-field">
-          <label class="be-lbl">Narrative P1 / Sub</label>
-          <select class="be-sel" id="be-p1" onchange="be_updateRows()">
+          <label class="be-lbl">Ad Format</label>
+          <select class="be-sel" id="be-adformat">
             <option value="">(none)</option>
             <option>Non Vo</option>
             <option>Educational</option>
@@ -950,6 +952,11 @@ function ok(data) {
             <option>In car</option>
             <option>PPP</option>
           </select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Person Full Name</label>
+          <input class="be-in" type="text" id="be-personname" placeholder="e.g. Rahul Sharma" oninput="be_updateRows()">
         </div>
 
         <hr class="be-divider">
@@ -4938,9 +4945,9 @@ function be_adName(row, sno){
   if(b.intInf)  parts.push(be_slug(b.intInf).toLowerCase());
   if(b.adType)  parts.push(be_slug(b.adType).toLowerCase());
   if(b.lang)    parts.push(be_slug(b.lang).toLowerCase());
-  parts.push(row.personName ? be_slug(row.personName) : 'none');
+  var person = row.personName || b.personName || '';
+  parts.push(person ? be_slug(person) : 'none');
   if(b.p0) parts.push(be_slug(b.p0));
-  if(b.p1) parts.push(be_slug(b.p1));
   parts.push(String(sno).padStart(5,'0'));
   return parts.filter(Boolean).join('_');
 }
@@ -4957,7 +4964,8 @@ function be_getBatch(){
     adType:  document.getElementById('be-adtype').value,
     lang:    document.getElementById('be-lang').value,
     p0:      document.getElementById('be-p0').value,
-    p1:      document.getElementById('be-p1').value,
+    adFormat:document.getElementById('be-adformat').value,
+    personName:document.getElementById('be-personname').value.trim(),
     canLive: document.getElementById('be-canlive').value,
     onboard: document.getElementById('be-onboard').value.trim(),
     extra:   document.getElementById('be-extra').value.trim(),
@@ -4973,7 +4981,7 @@ function be_buildRow(b, row, sno){
     String(sno).padStart(5,'0'), b.date, b.product, name,
     row.aspect==='4:5'?row.url:'', row.aspect==='9:16'?row.url:'',
     '', b.canLive, b.raisedBy, b.funnel, b.intInf, b.adType, b.lang,
-    row.personName||'', b.p0, b.p1, b.onboard, b.extra,
+    row.personName||b.personName||'', b.p0, b.adFormat, b.onboard, b.extra,
     row.instagram||'', row.creatorType||'',
     '', '', 'No', name,
   ];
