@@ -294,6 +294,86 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 .month-box strong{color:var(--ink);}
 .month-box select{margin-left:10px;padding:4px 8px;border:1px solid var(--line);border-radius:5px;font-size:12px;font-family:var(--sans);}
 
+/* ── BATCH ENTRY TAB ── */
+.be-panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:hidden;margin-bottom:16px;}
+.be-panel-hd{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;background:var(--paper2);transition:background .13s;}
+.be-panel-hd:hover{background:#eaeff6;}
+.be-panel-hd.nocursor{cursor:default;}.be-panel-hd.nocursor:hover{background:var(--paper2);}
+.be-panel-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.be-panel-sub{font-size:11.5px;color:var(--ink2);margin-left:6px;}
+.be-chevron{margin-left:auto;color:var(--muted);font-size:10px;transition:transform .2s;}
+.be-panel-hd.collapsed .be-chevron{transform:rotate(-90deg);}
+.be-panel-body{padding:16px;}.be-panel-body.hidden{display:none;}
+.be-conn-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:600;border:1.5px solid var(--line);color:var(--muted);background:var(--paper3);}
+.be-conn-pill.connected{color:var(--green);border-color:var(--green-soft);background:var(--green-bg);}
+.be-conn-pill.loading{color:var(--amber);border-color:var(--amber-soft);background:var(--amber-bg);}
+.be-conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.be-setup-steps{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.be-step{display:flex;gap:12px;align-items:flex-start;}
+.be-step-num{width:22px;height:22px;border-radius:50%;background:var(--blue-bg);border:1.5px solid var(--blue-soft);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--blue);flex-shrink:0;margin-top:2px;}
+.be-step-text{font-size:13px;color:var(--ink);line-height:1.5;}
+.be-step-text a{color:var(--blue);text-decoration:none;}.be-step-text a:hover{text-decoration:underline;}
+.be-step-text code{background:var(--paper3);border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:var(--mono);font-size:10.5px;}
+.be-code-wrap{position:relative;margin:10px 0;}
+.be-code{background:var(--paper3);border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px;font-family:var(--mono);font-size:11px;color:var(--ink2);line-height:1.7;overflow-x:auto;max-height:200px;overflow-y:auto;white-space:pre;}
+.be-copy-code{position:absolute;top:8px;right:8px;background:var(--paper);border:1px solid var(--line);border-radius:5px;color:var(--ink2);font-size:11px;font-weight:600;font-family:var(--sans);padding:3px 10px;cursor:pointer;transition:all .12s;}
+.be-copy-code:hover{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-soft);}
+.be-copy-code.copied{background:var(--green-bg);color:var(--green);border-color:var(--green-soft);}
+.be-url-row{display:flex;gap:8px;align-items:center;margin-top:14px;}
+.be-url-in{flex:1;background:var(--paper2);border:1.5px solid var(--line);border-radius:7px;color:var(--ink);font-family:var(--mono);font-size:12.5px;padding:8px 12px;outline:none;transition:border-color .15s;}
+.be-url-in:focus{border-color:var(--blue);}
+.be-url-in::placeholder{color:var(--muted);}
+.be-conn-msg{font-size:12px;margin-top:7px;}
+.be-conn-msg.ok{color:var(--green);font-weight:600;}.be-conn-msg.err{color:var(--red);}
+.be-form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;}
+.be-field{display:flex;flex-direction:column;gap:4px;}
+.be-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+.be-sel,.be-in{background:var(--paper2);border:1.5px solid var(--line);border-radius:6px;color:var(--ink);font-size:13px;font-family:var(--sans);padding:6px 10px;outline:none;width:100%;transition:border-color .15s;-webkit-appearance:none;}
+.be-sel{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.be-sel:focus,.be-in:focus{border-color:var(--blue);}
+.be-divider{grid-column:1/-1;border:none;border-top:1px solid var(--line-soft);margin:2px 0;}
+.be-paste-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:6px;}
+.be-paste-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;}
+.be-paste-ta{flex:1;background:var(--paper2);border:1.5px solid var(--line);border-radius:6px;color:var(--ink);font-family:var(--mono);font-size:12px;padding:9px 12px;resize:vertical;min-height:68px;outline:none;transition:border-color .15s;line-height:1.6;}
+.be-paste-ta::placeholder{color:var(--muted);}.be-paste-ta:focus{border-color:var(--blue);}
+.be-parse-btn{background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:13px;font-weight:600;font-family:var(--sans);padding:8px 16px;cursor:pointer;white-space:nowrap;transition:background .15s;}
+.be-parse-btn:hover{background:var(--blue-dark);}
+.be-links-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--paper);}
+.be-links-tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:880px;}
+.be-links-tbl th{text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line);background:var(--paper3);white-space:nowrap;}
+.be-links-tbl td{padding:5px 8px;border-bottom:1px solid var(--line-soft);vertical-align:middle;}
+.be-links-tbl tr:last-child td{border-bottom:none;}
+.be-links-tbl tr:hover td{background:var(--paper2);}
+.be-cell-sno{font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;padding-left:12px;}
+.be-cell-adname{font-family:var(--mono);font-size:10.5px;color:var(--blue);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.be-tbl-in{background:transparent;border:1.5px solid transparent;border-radius:4px;color:var(--ink);font-size:12.5px;font-family:var(--sans);padding:4px 7px;width:100%;outline:none;transition:border-color .12s,background .12s;}
+.be-tbl-in:focus{border-color:var(--blue);background:var(--blue-bg);}
+.be-tbl-in::placeholder{color:var(--muted);}
+.be-tbl-in.mono{font-family:var(--mono);font-size:10.5px;}
+.be-asp-tog{display:inline-flex;background:var(--paper3);border:1.5px solid var(--line);border-radius:6px;padding:2px;gap:1px;}
+.be-asp-tog button{border:none;background:transparent;color:var(--ink2);font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px;cursor:pointer;transition:all .12s;white-space:nowrap;}
+.be-asp-tog button.on{background:var(--blue);color:#fff;}
+.be-del-btn{background:transparent;border:none;color:var(--muted);cursor:pointer;padding:5px 7px;border-radius:4px;font-size:13px;line-height:1;transition:all .12s;}
+.be-del-btn:hover{color:var(--red);background:var(--red-bg);}
+.be-add-row-btn{width:100%;background:transparent;border:1px dashed var(--line);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);color:var(--muted);font-size:12px;font-family:var(--sans);padding:8px;cursor:pointer;transition:all .12s;}
+.be-add-row-btn:hover{color:var(--blue);border-color:var(--blue-soft);}
+.be-empty{padding:30px 24px;text-align:center;color:var(--muted);font-size:13px;}
+.be-empty strong{color:var(--ink2);display:block;margin-bottom:3px;}
+.be-submit-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.be-submit-btn{background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:13px;font-weight:600;font-family:var(--sans);padding:9px 22px;cursor:pointer;transition:all .15s;}
+.be-submit-btn:hover{background:var(--blue-dark);}
+.be-submit-btn:disabled{opacity:.4;cursor:not-allowed;}
+.be-tsv-btn{background:var(--paper);border:1.5px solid var(--line);border-radius:7px;color:var(--ink2);font-size:13px;font-family:var(--sans);padding:9px 16px;cursor:pointer;transition:all .15s;}
+.be-tsv-btn:hover{border-color:var(--blue);color:var(--blue);}
+.be-tsv-btn.copied{color:var(--green);border-color:var(--green-soft);}
+.be-submit-info{font-size:12px;color:var(--muted);}
+.be-progress-bar-bg{height:4px;background:var(--paper3);border-radius:2px;overflow:hidden;margin-top:12px;}
+.be-progress-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .3s ease;width:0;}
+.be-progress-text{font-size:12px;color:var(--ink2);margin-top:6px;}
+.be-progress-text.ok{color:var(--green);font-weight:600;}.be-progress-text.err{color:var(--red);}
+.be-tsv-out{background:var(--paper3);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;font-family:var(--mono);font-size:10.5px;color:var(--ink2);white-space:pre;overflow-x:auto;max-height:160px;overflow-y:auto;line-height:1.65;margin-top:10px;display:none;}
+.be-tsv-out.visible{display:block;}
+
 /* ── MOBILE RESPONSIVE ── */
 @media(max-width:640px){
   /* Core layout */
@@ -364,6 +444,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
     <button class="mnav-btn active" onclick="switchMainTab('analytics',this)">📊 Monthly Analysis</button>
     <button class="mnav-btn" onclick="switchMainTab('umbrella',this)">☂️ Umbrella Sheet</button>
     <button class="mnav-btn" onclick="switchMainTab('mmdata',this)">📈 MM Dashboard</button>
+    <button class="mnav-btn" onclick="switchMainTab('batchentry',this)">📥 Batch Entry</button>
   </div>
 </div>
 
@@ -657,6 +738,287 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
     <div id="umbrella-digest" style="display:none;margin-top:28px;"></div>
   </div>
 </div>
+
+<!-- ═══ TAB: BATCH ENTRY ═══ -->
+<div id="main-tab-batchentry" class="main-tab">
+<div style="padding:16px 28px 24px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding-bottom:14px;border-bottom:2px solid #e0e0e0;">
+    <div>
+      <div style="font-size:17px;font-weight:700;letter-spacing:-0.2px;">📥 Creative Tracker — Batch Entry</div>
+      <div style="font-size:12px;color:var(--ink2);margin-top:3px;">Add Drive links to the creative tracker in bulk — fills all 24 columns automatically</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="be-conn-pill" id="be-conn-pill"><span class="be-conn-dot"></span><span id="be-conn-label">Not connected</span></div>
+      <span id="be-row-badge" style="font-size:11.5px;font-weight:600;color:var(--muted);background:var(--paper3);border:1px solid var(--line);border-radius:99px;padding:3px 10px;">0 rows</span>
+    </div>
+  </div>
+
+  <!-- ① SETUP -->
+  <div class="be-panel" id="be-panel-setup">
+    <div class="be-panel-hd" onclick="be_togglePanel('setup')">
+      <span class="be-panel-label">① Setup — Connect to Tracker</span>
+      <span class="be-panel-sub" id="be-setup-sub">One-time · deploy an Apps Script and paste the URL below</span>
+      <span class="be-chevron">▼</span>
+    </div>
+    <div class="be-panel-body" id="be-setup-body">
+      <div class="be-setup-steps">
+        <div class="be-step"><div class="be-step-num">1</div><div class="be-step-text">Go to <a href="https://script.google.com" target="_blank">script.google.com</a> → click <strong>New project</strong></div></div>
+        <div class="be-step"><div class="be-step-num">2</div><div class="be-step-text">Select all existing code (⌘A), paste the script below, then <strong>Save (⌘S)</strong></div></div>
+        <div class="be-step"><div class="be-step-num">3</div><div class="be-step-text"><strong>Deploy → New deployment</strong> → Type: <code>Web app</code> → Execute as: <code>Me</code> → Who has access: <code>Anyone</code> → Deploy → Authorise when prompted</div></div>
+        <div class="be-step"><div class="be-step-num">4</div><div class="be-step-text">Copy the <strong>Web App URL</strong> and paste it below, then click Connect</div></div>
+      </div>
+      <div class="be-code-wrap">
+        <pre class="be-code" id="be-script-code">var SPREADSHEET_ID = '1DbcV58XCrHQqjqg1Kl6JaEsBHrpBA7jGiqGOB71wj1Y';
+
+function doGet(e) {
+  var p = e.parameter, action = p.action || '';
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    if (action === 'getSheets') {
+      var sheets = ss.getSheets().map(function(s) {
+        var lr = s.getLastRow();
+        return { name: s.getName(), dataRows: lr - 1,
+                 lastSno: lr > 1 ? String(s.getRange(lr, 1).getValue()) : '' };
+      });
+      return ok({ sheets: sheets });
+    }
+    if (action === 'submit') {
+      var sheet = ss.getSheetByName(p.sheet);
+      if (!sheet) return ok({ error: 'Sheet not found: ' + p.sheet });
+      var row = JSON.parse(p.row);
+      sheet.getRange(sheet.getLastRow() + 1, 1, 1, row.length).setValues([row]);
+      return ok({ success: true, sno: row[0] });
+    }
+    return ok({ status: 'Creative Tracker API ready' });
+  } catch(err) { return ok({ error: err.toString() }); }
+}
+
+function ok(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+        <button class="be-copy-code" onclick="be_copyCode()">Copy</button>
+      </div>
+      <div class="be-url-row">
+        <input class="be-url-in" id="be-webapp-url" type="text" placeholder="https://script.google.com/macros/s/…/exec">
+        <button class="btn btn-primary" onclick="be_connect(false)">Connect →</button>
+      </div>
+      <div class="be-conn-msg" id="be-conn-msg"></div>
+    </div>
+  </div>
+
+  <!-- ② BATCH SETTINGS -->
+  <div class="be-panel" id="be-panel-settings">
+    <div class="be-panel-hd" onclick="be_togglePanel('settings')">
+      <span class="be-panel-label">② Batch Settings</span>
+      <span class="be-panel-sub" id="be-settings-summary">Set once — applies to all rows in this batch</span>
+      <span class="be-chevron">▼</span>
+    </div>
+    <div class="be-panel-body" id="be-settings-body">
+      <div class="be-form-grid">
+
+        <div class="be-field">
+          <label class="be-lbl">Target Sheet Tab</label>
+          <select class="be-sel" id="be-sheet" onchange="be_onSheetChange()">
+            <option value="">— connect tracker first —</option>
+          </select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Product Name</label>
+          <select class="be-sel" id="be-product" onchange="be_onProductChange()">
+            <option value="">— select —</option>
+            <option>Biotin30</option>
+            <option>Creatine Powder</option>
+            <option>Beard Growth Kit</option>
+            <option>Stage 1</option>
+            <option>Stage2</option>
+            <option>Stage3</option>
+            <option>Selfasst</option>
+            <option>Advance Regime</option>
+          </select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Raised By</label>
+          <select class="be-sel" id="be-raised">
+            <option value="">— select —</option>
+            <option selected>Aniket</option>
+            <option>Abhijeet</option>
+            <option>Jay</option>
+            <option>Lakshya</option>
+            <option>Pranav</option>
+          </select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">INT / INF</label>
+          <select class="be-sel" id="be-intinf" onchange="be_updateRows()">
+            <option value="">— select —</option>
+            <option>Int</option>
+            <option>Inf</option>
+            <option>Affluence</option>
+            <option>Hair Warriors</option>
+          </select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Funnel Type</label>
+          <select class="be-sel" id="be-funnel" onchange="be_updateRows()">
+            <option value="">(none)</option>
+            <option>TOF</option>
+            <option>MOF</option>
+            <option>BOF</option>
+          </select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Ad Type</label>
+          <select class="be-sel" id="be-adtype" onchange="be_updateRows()">
+            <option value="">— select —</option>
+            <option>Reel</option>
+            <option>Static</option>
+            <option>Carousel</option>
+            <option>vo</option>
+            <option>Motion graphic</option>
+          </select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Language</label>
+          <select class="be-sel" id="be-lang" onchange="be_updateRows()">
+            <option value="">— select —</option>
+            <option selected>English</option>
+            <option>Hindi</option>
+            <option>Hinglish</option>
+            <option>Tamil</option>
+            <option>Telugu</option>
+            <option>Kannada</option>
+            <option>Malayalam</option>
+            <option>Marathi</option>
+          </select>
+        </div>
+
+        <hr class="be-divider">
+
+        <div class="be-field">
+          <label class="be-lbl">Broad Narrative — P0</label>
+          <select class="be-sel" id="be-p0" onchange="be_updateRows()">
+            <option value="">— select product first —</option>
+          </select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Narrative P1 / Sub</label>
+          <select class="be-sel" id="be-p1" onchange="be_updateRows()">
+            <option value="">(none)</option>
+            <option>Non Vo</option>
+            <option>Educational</option>
+            <option>Organic Reviews</option>
+            <option>Testimonial</option>
+            <option>UGC</option>
+            <option>Skit</option>
+            <option>Podcast</option>
+            <option>Statics</option>
+            <option>Carousel</option>
+            <option>Motion Graphic</option>
+            <option>In car</option>
+            <option>PPP</option>
+          </select>
+        </div>
+
+        <hr class="be-divider">
+
+        <div class="be-field">
+          <label class="be-lbl">Can Take Live?</label>
+          <select class="be-sel" id="be-canlive"><option>Yes</option><option>No</option></select>
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Inf Onboarding Month</label>
+          <input class="be-in" type="text" id="be-onboard" placeholder="e.g. March'26">
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Additional Info</label>
+          <input class="be-in" type="text" id="be-extra" placeholder="e.g. PPP">
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Date Added</label>
+          <input class="be-in" type="date" id="be-date">
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Starting S.No.</label>
+          <input class="be-in" type="number" id="be-sno" value="1" min="1" oninput="be_updateRows()">
+        </div>
+
+        <div class="be-field">
+          <label class="be-lbl">Default Aspect</label>
+          <select class="be-sel" id="be-aspect"><option value="9:16">9:16</option><option value="4:5">4:5</option></select>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ LINK ENTRY -->
+  <div class="be-panel">
+    <div class="be-panel-hd nocursor">
+      <span class="be-panel-label">③ Drive Links</span>
+      <span class="be-panel-sub">Paste links then fill creator info per row</span>
+    </div>
+    <div class="be-panel-body">
+      <span class="be-paste-lbl">Paste links — one per line</span>
+      <div class="be-paste-row">
+        <textarea class="be-paste-ta" id="be-paste" rows="3" placeholder="https://drive.google.com/file/d/...&#10;https://drive.google.com/file/d/...&#10;https://drive.google.com/file/d/..."></textarea>
+        <button class="be-parse-btn" onclick="be_parseLinks()">Add →</button>
+      </div>
+      <p style="font-size:11.5px;color:var(--muted);margin-bottom:12px;">Each link becomes one row. Toggle 9:16 / 4:5 per row to map to the correct column.</p>
+      <div class="be-links-wrap">
+        <table class="be-links-tbl">
+          <thead><tr>
+            <th style="width:58px">S.No.</th>
+            <th style="min-width:195px">Drive Link</th>
+            <th style="width:98px">Aspect</th>
+            <th style="min-width:150px">Person Full Name</th>
+            <th style="min-width:175px">Instagram Profile</th>
+            <th style="min-width:120px">Creator Type</th>
+            <th style="min-width:230px">Ad Name (auto)</th>
+            <th style="width:32px"></th>
+          </tr></thead>
+          <tbody id="be-tbody"></tbody>
+        </table>
+        <div id="be-empty" class="be-empty"><strong>No links added yet</strong>Paste Drive links above, or click + Add Row below</div>
+      </div>
+      <button class="be-add-row-btn" onclick="be_addRow('')">+ Add Row</button>
+    </div>
+  </div>
+
+  <!-- ④ SUBMIT -->
+  <div class="be-panel">
+    <div class="be-panel-hd nocursor">
+      <span class="be-panel-label">④ Submit</span>
+    </div>
+    <div class="be-panel-body">
+      <div class="be-submit-row">
+        <button class="be-submit-btn" id="be-submit-btn" onclick="be_submit()">↑ Submit to Tracker</button>
+        <button class="be-tsv-btn" id="be-tsv-btn" onclick="be_copyTSV()">Copy TSV (manual paste)</button>
+        <span class="be-submit-info" id="be-submit-info">Connect the tracker in Setup ① to enable direct submission</span>
+      </div>
+      <div id="be-progress-wrap" style="display:none;">
+        <div class="be-progress-bar-bg"><div class="be-progress-fill" id="be-progress-fill"></div></div>
+        <p class="be-progress-text" id="be-progress-text"></p>
+      </div>
+      <div class="be-tsv-out" id="be-tsv-out"></div>
+    </div>
+  </div>
+
+</div>
+</div><!-- /main-tab-batchentry -->
 
 </div><!-- /.wrap -->
 
@@ -4436,6 +4798,323 @@ function openMiniCardModal(uid, groupName, totalSpend, portfolioRoas) {
   modal.style.display = 'flex';
 }
 function closeMiniCardModal(){document.getElementById('mini-card-modal').style.display='none';}
+</script>
+
+<script>
+// ═══════════════════════════════════════════════
+//  BATCH ENTRY TAB — all functions prefixed be_
+// ═══════════════════════════════════════════════
+(function(){
+const BE_NARRATIVES = {
+  'Biotin30':        ['Problem-Solution','Trust','Myth Busting','Nutrition','Results/Assurance','BeforeAfter','Science','Stages','Price Slash'],
+  'Creatine Powder': ['Creatine for Everyone','Trust','Problem-Solution','Science','Nutrition','Results/Assurance'],
+  'Beard Growth Kit':['Peer Proof/Confidence','Myth Busting','Product First','BeforeAfter','Trust'],
+  'Stage 1':         ['Problem - Solution','Trust','Ingredients','Features','Myth Busting','Designed for men','Science','Stages'],
+  'Stage2':          ['Problem-Solution','Stages','Myth Busting','Why MM is different','Results/Assurance/ProductFirst','Science','Price','Price Slash'],
+  'Stage3':          ['Problem-Solution','Deep Science or Stages Education','Myth Busting','Safety','Results/Assurance/ProductFirst','Trust','Price','Price Slash'],
+  'Selfasst':        ['Trust','Results/Assurance','BeforeAfter','Receding Hairline/Bald Spots','Genetics','Stages','Science','Myth Busting'],
+  'Advance Regime':  ['Problem-Solution','Transplant or PRP','Myth Busting','Trust','Results/Assurance'],
+};
+const BE_SHEET_HINTS = {'Biotin30':'Biotin','Creatine Powder':'Biotin','Stage 1':'S1','Stage2':'S2','Stage3':'S3'};
+
+let beRows=[], beNextId=0, beWebUrl='', beSheetsData=[];
+
+document.addEventListener('DOMContentLoaded', function(){
+  var d = new Date();
+  var el = document.getElementById('be-date');
+  if(el) el.value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  var saved = localStorage.getItem('ct-webapp-url')||'';
+  if(saved){ var ui=document.getElementById('be-webapp-url'); if(ui) ui.value=saved; beWebUrl=saved; be_connect(true); }
+});
+
+window.be_togglePanel = function(id){
+  var hd=document.querySelector('#be-panel-'+id+' .be-panel-hd');
+  var body=document.getElementById('be-'+id+'-body');
+  if(hd) hd.classList.toggle('collapsed');
+  if(body) body.classList.toggle('hidden');
+};
+
+window.be_connect = async function(silent){
+  var url = document.getElementById('be-webapp-url').value.trim();
+  if(!url) return;
+  beWebUrl = url;
+  be_setPill('loading','Connecting…');
+  try {
+    var res = await fetch(url+'?action=getSheets');
+    var data = await res.json();
+    if(data.error) throw new Error(data.error);
+    beSheetsData = data.sheets||[];
+    localStorage.setItem('ct-webapp-url', url);
+    be_setPill('connected','Connected · '+beSheetsData.length+' tabs');
+    if(!silent){ var m=document.getElementById('be-conn-msg'); m.textContent='✓ Connected — '+beSheetsData.length+' sheet tabs found'; m.className='be-conn-msg ok'; }
+    be_populateSheets();
+    be_updateSubmitBtn();
+    var hd=document.querySelector('#be-panel-setup .be-panel-hd');
+    var body=document.getElementById('be-setup-body');
+    if(hd&&body&&!body.classList.contains('hidden')){ hd.classList.add('collapsed'); body.classList.add('hidden'); }
+    var sub=document.getElementById('be-setup-sub'); if(sub) sub.textContent='✓ Connected · click to manage';
+  } catch(err){
+    be_setPill('disconnected','Not connected');
+    if(!silent){ var m=document.getElementById('be-conn-msg'); m.textContent='Error: '+err.message; m.className='be-conn-msg err'; }
+  }
+};
+
+function be_setPill(state, text){
+  var p=document.getElementById('be-conn-pill');
+  if(p) p.className='be-conn-pill'+(state!=='disconnected'?' '+state:'');
+  var l=document.getElementById('be-conn-label'); if(l) l.textContent=text;
+}
+
+window.be_populateSheets = function(){
+  var sel=document.getElementById('be-sheet'); if(!sel) return;
+  sel.innerHTML='<option value="">— select tab —</option>';
+  beSheetsData.forEach(function(s){
+    var o=document.createElement('option'); o.value=s.name;
+    o.textContent=s.name+'  ('+s.dataRows+' rows'+(s.lastSno?' · last: '+s.lastSno:'')+')';
+    sel.appendChild(o);
+  });
+  var prod=document.getElementById('be-product').value;
+  var hint=BE_SHEET_HINTS[prod];
+  if(hint){ var m=beSheetsData.find(function(s){ return s.name.toLowerCase().indexOf(hint.toLowerCase())>=0; }); if(m) sel.value=m.name; }
+  be_onSheetChange();
+};
+
+window.be_onSheetChange = function(){
+  var sh=beSheetsData.find(function(s){ return s.name===document.getElementById('be-sheet').value; });
+  if(sh){ var next=sh.lastSno?(parseInt(sh.lastSno.replace(/\D/g,''))+1):1; document.getElementById('be-sno').value=next; be_updateRows(); }
+  be_updateSubmitBtn();
+};
+
+window.be_onProductChange = function(){
+  var prod=document.getElementById('be-product').value;
+  var p0=document.getElementById('be-p0');
+  p0.innerHTML='<option value="">— select —</option>';
+  var narrs=BE_NARRATIVES[prod]||[];
+  narrs.forEach(function(n){ var o=document.createElement('option'); o.value=n; o.textContent=n; p0.appendChild(o); });
+  if(beSheetsData.length){
+    var hint=BE_SHEET_HINTS[prod];
+    if(hint){ var m=beSheetsData.find(function(s){ return s.name.toLowerCase().indexOf(hint.toLowerCase())>=0; }); if(m){ document.getElementById('be-sheet').value=m.name; be_onSheetChange(); } }
+  }
+  be_updateSummary(); be_updateRows();
+};
+
+function be_updateSummary(){
+  var parts=['be-product','be-intinf','be-adtype','be-lang'].map(function(id){ return document.getElementById(id).value; }).filter(Boolean);
+  var el=document.getElementById('be-settings-summary'); if(el) el.textContent=parts.join(' · ')||'Set once — applies to all rows in this batch';
+}
+
+function be_slug(str){
+  if(!str) return '';
+  return str.toLowerCase().trim().replace(/[\/\s]+/g,'_').replace(/[^a-z0-9_\-]/g,'').replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+}
+
+function be_adName(row, sno){
+  var b=be_getBatch(), parts=[];
+  if(b.product) parts.push(be_slug(b.product));
+  if(b.funnel)  parts.push(be_slug(b.funnel).toLowerCase());
+  if(b.intInf)  parts.push(be_slug(b.intInf).toLowerCase());
+  if(b.adType)  parts.push(be_slug(b.adType).toLowerCase());
+  if(b.lang)    parts.push(be_slug(b.lang).toLowerCase());
+  parts.push(row.personName ? be_slug(row.personName) : 'none');
+  if(b.p0) parts.push(be_slug(b.p0));
+  if(b.p1) parts.push(be_slug(b.p1));
+  parts.push(String(sno).padStart(5,'0'));
+  return parts.filter(Boolean).join('_');
+}
+
+function be_getBatch(){
+  var raw=document.getElementById('be-date').value, date='';
+  if(raw){ var pts=raw.split('-'); date=pts[2]+'/'+pts[1]+'/'+pts[0]; }
+  return {
+    sheet:   document.getElementById('be-sheet').value,
+    product: document.getElementById('be-product').value,
+    raisedBy:document.getElementById('be-raised').value,
+    intInf:  document.getElementById('be-intinf').value,
+    funnel:  document.getElementById('be-funnel').value,
+    adType:  document.getElementById('be-adtype').value,
+    lang:    document.getElementById('be-lang').value,
+    p0:      document.getElementById('be-p0').value,
+    p1:      document.getElementById('be-p1').value,
+    canLive: document.getElementById('be-canlive').value,
+    onboard: document.getElementById('be-onboard').value.trim(),
+    extra:   document.getElementById('be-extra').value.trim(),
+    date:    date,
+    startSno:parseInt(document.getElementById('be-sno').value)||1,
+    defAspect:document.getElementById('be-aspect').value,
+  };
+}
+
+function be_buildRow(b, row, sno){
+  var name=be_adName(row, sno);
+  return [
+    String(sno).padStart(5,'0'), b.date, b.product, name,
+    row.aspect==='4:5'?row.url:'', row.aspect==='9:16'?row.url:'',
+    '', b.canLive, b.raisedBy, b.funnel, b.intInf, b.adType, b.lang,
+    row.personName||'', b.p0, b.p1, b.onboard, b.extra,
+    row.instagram||'', row.creatorType||'',
+    '', '', 'No', name,
+  ];
+}
+
+window.be_parseLinks = function(){
+  var raw=document.getElementById('be-paste').value;
+  var links=raw.split('\n').map(function(l){ return l.trim(); }).filter(function(l){ return l&&l.indexOf('drive.google.com')>=0; });
+  if(!links.length){ alert('No valid Google Drive links found. Make sure each link is on its own line.'); return; }
+  links.forEach(function(url){ be_addRow(url); });
+  document.getElementById('be-paste').value='';
+};
+
+window.be_addRow = function(url){
+  var b=be_getBatch();
+  beRows.push({ id:beNextId++, url:url||'', aspect:b.defAspect, personName:'', instagram:'', creatorType:'' });
+  be_renderTable(); be_updateSubmitBtn();
+};
+
+window.be_deleteRow = function(id){
+  beRows=beRows.filter(function(r){ return r.id!==id; });
+  be_renderTable(); be_updateSubmitBtn();
+};
+
+window.be_setAspect = function(id, val){
+  var r=beRows.find(function(r){ return r.id===id; });
+  if(r) r.aspect=val;
+  var tog=document.getElementById('be-asp-'+id);
+  if(tog) tog.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.dataset.val===val); });
+  be_refreshAdName(id);
+};
+
+window.be_setField = function(id, field, val){
+  var r=beRows.find(function(r){ return r.id===id; });
+  if(r){ r[field]=val; be_refreshAdName(id); }
+};
+
+window.be_setUrl = function(id, val){
+  var r=beRows.find(function(r){ return r.id===id; });
+  if(r) r.url=val;
+};
+
+function be_refreshAdName(id){
+  var r=beRows.find(function(r){ return r.id===id; }); if(!r) return;
+  var b=be_getBatch(), sno=b.startSno+beRows.indexOf(r);
+  var name=be_adName(r, sno);
+  var cell=document.getElementById('be-an-'+id);
+  if(cell){ cell.textContent=name; cell.title=name; }
+}
+
+window.be_updateRows = function(){ be_updateSummary(); be_renderTable(); };
+
+function be_renderTable(){
+  var tbody=document.getElementById('be-tbody');
+  var empty=document.getElementById('be-empty');
+  var b=be_getBatch();
+  var badge=document.getElementById('be-row-badge');
+  if(badge) badge.textContent=beRows.length+' row'+(beRows.length!==1?'s':'');
+  if(!beRows.length){ tbody.innerHTML=''; if(empty) empty.style.display=''; return; }
+  if(empty) empty.style.display='none';
+  tbody.innerHTML=beRows.map(function(row, i){
+    var sno=b.startSno+i, name=be_adName(row, sno);
+    return '<tr>'+
+      '<td class="be-cell-sno">'+String(sno).padStart(5,'0')+'</td>'+
+      '<td><input class="be-tbl-in mono" type="text" value="'+be_esc(row.url)+'" placeholder="https://drive.google.com/…" style="min-width:170px" oninput="be_setUrl('+row.id+',this.value)"></td>'+
+      '<td><div class="be-asp-tog" id="be-asp-'+row.id+'">'+
+        '<button data-val="9:16" class="'+(row.aspect==='9:16'?'on':'')+'" onclick="be_setAspect('+row.id+',\'9:16\')">9:16</button>'+
+        '<button data-val="4:5"  class="'+(row.aspect==='4:5'?'on':'')+'"  onclick="be_setAspect('+row.id+',\'4:5\')">4:5</button>'+
+      '</div></td>'+
+      '<td><input class="be-tbl-in" type="text" value="'+be_esc(row.personName)+'" placeholder="Full name" oninput="be_setField('+row.id+',\'personName\',this.value)"></td>'+
+      '<td><input class="be-tbl-in" type="text" value="'+be_esc(row.instagram)+'" placeholder="instagram.com/handle" oninput="be_setField('+row.id+',\'instagram\',this.value)"></td>'+
+      '<td><select class="be-tbl-in" style="min-width:105px" onchange="be_setField('+row.id+',\'creatorType\',this.value)">'+
+        '<option value=""'+(row.creatorType===''?' selected':'')+'>—</option>'+
+        '<option'+(row.creatorType==='Meta Creator'?' selected':'')+'>Meta Creator</option>'+
+        '<option'+(row.creatorType==='YT Creator'?' selected':'')+'>YT Creator</option>'+
+        '<option'+(row.creatorType==='Hair Warrior'?' selected':'')+'>Hair Warrior</option>'+
+      '</select></td>'+
+      '<td class="be-cell-adname" id="be-an-'+row.id+'" title="'+be_esc(name)+'">'+be_esc(name)+'</td>'+
+      '<td><button class="be-del-btn" onclick="be_deleteRow('+row.id+')">✕</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function be_updateSubmitBtn(){
+  var info=document.getElementById('be-submit-info'), b=be_getBatch();
+  if(!info) return;
+  if(!beWebUrl){ info.textContent='Connect the tracker in Setup ① to enable direct submission'; return; }
+  if(!b.sheet){ info.textContent='Select a sheet tab in Batch Settings ②'; return; }
+  info.textContent=beRows.length+' row'+(beRows.length!==1?'s':'')+' → "'+b.sheet+'"';
+}
+
+window.be_submit = async function(){
+  if(!beWebUrl){ alert('Connect the tracker first (Setup ①)'); return; }
+  if(!beRows.length){ alert('Add at least one row first'); return; }
+  var b=be_getBatch();
+  if(!b.sheet){ alert('Select a sheet tab in Batch Settings ②'); return; }
+  var btn=document.getElementById('be-submit-btn'); btn.disabled=true;
+  var pw=document.getElementById('be-progress-wrap'); if(pw) pw.style.display='';
+  be_setProgress(0, beRows.length, '');
+  for(var i=0; i<beRows.length; i++){
+    var sno=b.startSno+i;
+    var rowData=be_buildRow(b, beRows[i], sno);
+    try{
+      var url=beWebUrl+'?action=submit&sheet='+encodeURIComponent(b.sheet)+'&row='+encodeURIComponent(JSON.stringify(rowData));
+      var res=await fetch(url);
+      var data=await res.json();
+      if(data.error) throw new Error(data.error);
+      be_setProgress(i+1, beRows.length, '');
+    } catch(err){
+      be_setProgress(i, beRows.length, 'err','✗ Failed at row '+sno+': '+err.message);
+      btn.disabled=false; return;
+    }
+  }
+  var last=b.startSno+beRows.length-1;
+  be_setProgress(beRows.length, beRows.length, 'ok',
+    '✓ '+beRows.length+' row'+(beRows.length!==1?'s':'')+' added to "'+b.sheet+'" (S.No. '+String(b.startSno).padStart(5,'0')+'–'+String(last).padStart(5,'0')+')');
+  document.getElementById('be-sno').value=last+1;
+  btn.disabled=false;
+  setTimeout(function(){ be_connect(true); }, 1500);
+};
+
+function be_setProgress(done, total, state, msg){
+  var fill=document.getElementById('be-progress-fill');
+  if(fill){ fill.style.width=Math.round(done/total*100)+'%'; fill.style.background=state==='err'?'var(--red)':state==='ok'?'var(--green)':'var(--blue)'; }
+  var pt=document.getElementById('be-progress-text');
+  if(pt){ pt.className='be-progress-text'+(state?' '+state:''); pt.textContent=msg||(done<total?'Submitting row '+(done+1)+' of '+total+'…':'All '+total+' rows submitted…'); }
+}
+
+window.be_copyTSV = function(){
+  if(!beRows.length){ alert('Add rows first'); return; }
+  var b=be_getBatch();
+  var tsv=beRows.map(function(row,i){ return be_buildRow(b, row, b.startSno+i).join('\t'); }).join('\n');
+  var out=document.getElementById('be-tsv-out');
+  if(out){
+    out.textContent=tsv.split('\n').map(function(line,i){
+      return String(b.startSno+i).padStart(5,'0')+'  '+line.split('\t').slice(3,7).join('  ·  ').substring(0,80)+'…';
+    }).join('\n');
+    out.classList.add('visible');
+  }
+  navigator.clipboard.writeText(tsv).then(function(){
+    var btn=document.getElementById('be-tsv-btn');
+    btn.textContent='Copied ✓'; btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent='Copy TSV (manual paste)'; btn.classList.remove('copied'); }, 2200);
+  }).catch(function(){
+    var ta=document.createElement('textarea'); ta.value=tsv; ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  });
+};
+
+window.be_copyCode = function(){
+  var code=document.getElementById('be-script-code').textContent;
+  navigator.clipboard.writeText(code).then(function(){
+    var btn=document.querySelector('.be-copy-code');
+    btn.textContent='Copied ✓'; btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent='Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+};
+
+function be_esc(str){
+  if(!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+})();
 </script>
 
 <!-- Mini Card Drill-Down Modal -->
