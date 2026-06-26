@@ -778,9 +778,8 @@ function doGet(e) {
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     if (action === 'getSheets') {
       var sheets = ss.getSheets().map(function(s) {
-        var lr = s.getLastRow();
-        return { name: s.getName(), dataRows: lr - 1,
-                 lastSno: lr > 1 ? String(s.getRange(lr, 1).getValue()) : '' };
+        var info = getSheetInfo(s);
+        return { name: s.getName(), dataRows: info.dataRows, lastSno: info.lastSno };
       });
       return ok({ sheets: sheets });
     }
@@ -788,11 +787,35 @@ function doGet(e) {
       var sheet = ss.getSheetByName(p.sheet);
       if (!sheet) return ok({ error: 'Sheet not found: ' + p.sheet });
       var row = JSON.parse(p.row);
-      sheet.getRange(sheet.getLastRow() + 1, 1, 1, row.length).setValues([row]);
-      return ok({ success: true, sno: row[0] });
+      var info = getSheetInfo(sheet);
+      var nextRow = info.lastDataRow + 1;
+      sheet.getRange(nextRow, 1, 1, row.length).setValues([row]);
+      return ok({ success: true, sno: row[0], appendedToRow: nextRow });
     }
     return ok({ status: 'Creative Tracker API ready' });
   } catch(err) { return ok({ error: err.toString() }); }
+}
+
+// Scans column A to find the true last data row and max S.No.
+// Handles sheets with thousands of empty pre-formatted rows.
+function getSheetInfo(sheet) {
+  var lr = sheet.getLastRow();
+  if (lr <= 1) return { dataRows: 0, lastSno: '', lastDataRow: 1 };
+  var colA = sheet.getRange(2, 1, lr - 1, 1).getValues();
+  var lastDataRow = 1, maxSno = 0;
+  for (var i = 0; i < colA.length; i++) {
+    var val = colA[i][0];
+    if (val !== '' && val !== null && String(val).trim() !== '') {
+      lastDataRow = i + 2;
+      var n = parseInt(String(val).replace(/\D/g, ''), 10);
+      if (!isNaN(n) && n > maxSno) maxSno = n;
+    }
+  }
+  return {
+    dataRows: lastDataRow - 1,
+    lastSno: maxSno > 0 ? String(maxSno).padStart(5, '0') : '',
+    lastDataRow: lastDataRow
+  };
 }
 
 function ok(data) {
