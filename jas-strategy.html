@@ -139,6 +139,7 @@ tr:nth-child(even) td{background:var(--paper2);}
   <button class="tab-btn active" onclick="switchTab('influencer')">Influencer Strategy</button>
   <button class="tab-btn" onclick="switchTab('content')">Content Strategy</button>
   <button class="tab-btn" onclick="switchTab('internal')">Internal Assets</button>
+  <button class="tab-btn" onclick="switchTab('tof')">TOF Shoot</button>
   <button class="tab-btn" onclick="switchTab('guidelines')">Creative Guidelines</button>
   <button class="tab-btn" onclick="switchTab('assets')">Asset Snapshot</button>
 </div>
@@ -164,13 +165,27 @@ tr:nth-child(even) td{background:var(--paper2);}
 
   <div class="section">
     <div class="section-title">50 Creators — Format Allocation</div>
-    <div class="card-grid cols-3">
+    <div class="card-grid cols-3" style="margin-bottom:12px;">
       <div class="card green">
         <h3>UGC + Educational</h3>
-        <div class="big">43</div>
-        <div class="sub">86% of pool · proven format</div>
-        <p class="rationale" style="margin-top:8px;">Educational: 0.65x ROAS · ₹870 CAC<br>Core narrative vehicle for Stages Education &amp; Results / Assurance</p>
+        <div class="big">35</div>
+        <div class="sub">70% of pool · proven format</div>
+        <p class="rationale" style="margin-top:8px;">Educational: 0.65x ROAS · ₹870 CAC<br>Core narrative vehicle — Stages Education, Receding Hairline &amp; Results / Assurance</p>
       </div>
+      <div class="card" style="border-left:4px solid #0891b2;">
+        <h3 style="color:#0891b2;">Wedding Format Experiment</h3>
+        <div class="big" style="color:#0891b2;">4</div>
+        <div class="sub">Subset of UGC + Educational pool</div>
+        <p class="rationale" style="margin-top:8px;">Creator shoots in wedding-format angle<br>Net-new creative approach · narrative split equal across 3 buckets</p>
+      </div>
+      <div class="card" style="border-left:4px solid #7c3aed;">
+        <h3 style="color:#7c3aed;">Vox Pop Experiment</h3>
+        <div class="big" style="color:#7c3aed;">4</div>
+        <div class="sub">Subset of UGC + Educational pool</div>
+        <p class="rationale" style="margin-top:8px;">Street / candid interview format<br>Net-new creative approach · narrative split equal across 3 buckets</p>
+      </div>
+    </div>
+    <div class="card-grid cols-2">
       <div class="card purple">
         <h3>Skit Experiment</h3>
         <div class="big">~7</div>
@@ -184,75 +199,52 @@ tr:nth-child(even) td{background:var(--paper2);}
         <p class="rationale" style="margin-top:8px;">Builds on "genetics fear" insight from best-performing scripts (Pawan Khatri pattern)</p>
       </div>
     </div>
-
-    <div class="callout info" style="margin-top:16px;">
-      <strong>Format Experiment — Wedding + Vox Pop (subset of UGC + Educational)</strong><br>
-      8 creators from the UGC + Educational pool will also shoot in two new ad formats: <strong>4 creators → Wedding</strong>, <strong>4 creators → Vox Pop</strong>. Narrative split is equal: 4 Stages Education · 4 Results / Assurance across the 8.
-    </div>
-    <table style="margin-top:10px;">
-      <thead><tr><th>Format Experiment</th><th>Creators</th><th>Source Pool</th><th>Narrative Split</th></tr></thead>
-      <tbody>
-        <tr><td><strong>Wedding</strong></td><td class="num">4</td><td>UGC + Educational</td><td>Equal — 2 Stages Education · 2 Results / Assurance</td></tr>
-        <tr><td><strong>Vox Pop</strong></td><td class="num">4</td><td>UGC + Educational</td><td>Equal — 2 Stages Education · 2 Results / Assurance</td></tr>
-      </tbody>
-    </table>
   </div>
 
   <div class="section">
-    <div class="section-title">Narrative Split — Equal</div>
+    <div class="section-title">Narrative Split — 3 Buckets</div>
     <div class="ratio-bar" style="height:36px;">
-      <div class="ratio-seg" style="width:50%;background:#1e40af;">Stages Education (25 creators)</div>
-      <div class="ratio-seg" style="width:50%;background:#16a34a;">Results / Assurance (25 creators)</div>
+      <div class="ratio-seg" style="width:32%;background:#1e40af;">Stages Education (16 creators)</div>
+      <div class="ratio-seg" style="width:32%;background:#0891b2;">Receding Hairline (16 creators)</div>
+      <div class="ratio-seg" style="width:36%;background:#16a34a;">Results / Assurance / PF (18 creators)</div>
     </div>
 
     <div style="margin-top:14px;">
       <table>
-        <thead><tr><th>Narrative Bucket</th><th>Spend</th><th>NCs</th><th>ROAS</th><th>CAC</th><th>What it covers</th></tr></thead>
+        <thead><tr><th>Narrative Bucket</th><th>Creators</th><th>Style</th><th>Core Focus</th><th>Data Anchor</th></tr></thead>
         <tbody>
           <tr>
-            <td>
-              <strong>Stages Education</strong><br>
-              <span style="font-size:11px;color:var(--muted);">Stages (₹44.2L, 0.60x) + Receding Hairline/Bald Spots (₹40.7L, 0.58x) — combined</span>
-            </td>
-            <td class="num">₹84.9L</td>
-            <td class="num">6,516</td>
-            <td class="num">0.59x</td>
-            <td class="num">₹1,303</td>
-            <td>Temple recession, M-shape, DHT villain, window urgency, genetics reframe. Source: Rishabh Jain + Pawan Khatri</td>
+            <td><strong>Stages Education</strong></td>
+            <td class="num">16</td>
+            <td>Educational · heavy science · explainer-led · can be UGC</td>
+            <td>Stage 2 science — DHT, follicle miniaturization, action window urgency. Genetics = risk not destiny. Temple/M-shape education.</td>
+            <td>Stages (₹44.2L, 0.60x ROAS). Source: Rishabh Jain</td>
           </tr>
           <tr>
-            <td>
-              <strong>Results / Assurance / Product First</strong><br>
-              <span style="font-size:11px;color:var(--muted);">Results/Assurance (₹36.3L) + Product Based (₹21.1L) + R/A/PF (₹19.1L) + Product First (₹14.9L) + BeforeAfter (₹5.1L) — combined</span>
-            </td>
-            <td class="num">₹96.6L</td>
-            <td class="num">7,862</td>
-            <td class="num">0.66x</td>
-            <td class="num">₹1,228</td>
-            <td>Product first, month-0-to-5 journey, shedding reassurance, app CTA. Source: Techy Eagle + Bhuvan Mehta + Rohit Sadhwani</td>
+            <td><strong>Receding Hairline</strong></td>
+            <td class="num">16</td>
+            <td>UGC-led · limited science · more results-oriented · can be educational</td>
+            <td>Creator talks about his own receding hairline — early stage worry, what he noticed, what he did. Lighter science touch, more personal journey into results territory.</td>
+            <td>Receding Hairline/Bald Spots (₹40.7L, 0.58x ROAS). Source: Pawan Khatri</td>
+          </tr>
+          <tr>
+            <td><strong>Results / Assurance / Product First</strong></td>
+            <td class="num">18</td>
+            <td>Results-focused · conversion intent · product-first</td>
+            <td>How he achieved it — month 0-5 journey, shedding reassurance, before/after, consistency story, product on camera in first 3 seconds.</td>
+            <td>Results/Assurance + PF combined (₹96.6L, 0.66x ROAS). Source: Techy Eagle + Bhuvan Mehta + Rohit Sadhwani</td>
           </tr>
         </tbody>
       </table>
-      <p class="rationale" style="margin-top:6px;">Results / Assurance delivers better ROAS (0.66x vs 0.59x) and lower CAC (₹1,228 vs ₹1,303) — equal split across both narratives for JAS.</p>
+      <p class="rationale" style="margin-top:6px;">Results / Assurance / PF delivers the best ROAS (0.66x) and lowest CAC (₹1,228) — overweighted at 18 creators. Stages Education and Receding Hairline split the education/awareness load equally at 16 each.</p>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">Narrative Consolidation — What Changed &amp; Why</div>
-    <table>
-      <thead><tr><th>Original Narrative</th><th>JAS Bucket</th><th>Rationale</th></tr></thead>
-      <tbody>
-        <tr><td>Receding Hairline / Bald Spots</td><td><strong>Stages Education</strong></td><td>Hairline + temple recession = Stage 2 definition. Kept in Stages Education as the primary education hook.</td></tr>
-        <tr><td>Results / Assurance</td><td rowspan="4" style="vertical-align:middle;"><strong>Results / Assurance / Product First</strong></td><td>High NCs, conversion-stage asset — merged with related narratives for consistency.</td></tr>
-        <tr><td>Product Based</td><td>Same product-first opening as Results/Assurance — no meaningful difference in structure.</td></tr>
-        <tr><td>Product First</td><td>Product on-camera opening narrative overlaps fully with Product Based.</td></tr>
-        <tr><td>Before / After</td><td>BeforeAfter lands with conversion-intent users — belongs in Results / Assurance bucket.</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Language — Hinglish Only</div>
+    <div class="section-title">Language — Hinglish Primary, 5 English Creators</div>
+    <div class="callout info" style="margin-top:0;margin-bottom:12px;">
+      <strong>Split:</strong> 5 creators from the UGC + Educational pool will shoot in <strong>English</strong>. The remaining 45 creators shoot in <strong>Hinglish</strong>. English creatives will be used for metro/premium audience targeting; all other delivery stays Hinglish.
+    </div>
     <table>
       <thead><tr><th>Language (Stage 2 Data)</th><th>Spend</th><th>NCs</th><th>ROAS</th><th>CAC</th><th>JAS Decision</th></tr></thead>
       <tbody>
@@ -262,7 +254,7 @@ tr:nth-child(even) td{background:var(--paper2);}
           <td class="num">11,625</td>
           <td class="num">0.64x</td>
           <td class="num">&#x20B9;1,232</td>
-          <td rowspan="2" style="vertical-align:middle;font-weight:600;">Merged &#x2192; <strong>Hinglish</strong><br><span style="font-size:11px;font-weight:400;color:var(--muted);">Same audience register</span></td>
+          <td rowspan="2" style="vertical-align:middle;font-weight:600;">Merged &#x2192; <strong>Hinglish</strong><br><span style="font-size:11px;font-weight:400;color:var(--muted);">45 creators</span></td>
         </tr>
         <tr style="background:var(--paper2);">
           <td>Hinglish</td>
@@ -277,21 +269,18 @@ tr:nth-child(even) td{background:var(--paper2);}
           <td class="num"><strong>11,753</strong></td>
           <td class="num"><strong>0.64x</strong></td>
           <td class="num"><strong>&#x20B9;1,232</strong></td>
-          <td><strong>Primary — all 50 JAS creators</strong></td>
+          <td><strong>Primary — 45 creators</strong></td>
         </tr>
         <tr>
-          <td style="color:var(--muted);">English (not briefed for JAS)</td>
+          <td>English</td>
           <td class="num" style="color:var(--muted);">&#x20B9;86.1L</td>
           <td class="num" style="color:var(--muted);">6,536</td>
           <td class="num" style="color:var(--muted);">0.59x</td>
           <td class="num" style="color:var(--muted);">&#x20B9;1,317</td>
-          <td style="color:var(--muted);">Lower ROAS than Hindi/Hinglish</td>
+          <td><strong>5 UGC+Ed creators</strong> — metro targeting</td>
         </tr>
       </tbody>
     </table>
-    <div class="callout info" style="margin-top:10px;">
-      <strong>Why Hinglish?</strong> Hindi dominates spend (&#x20B9;1.43Cr, 11,625 NCs) and delivers better efficiency than English (0.64x vs 0.59x ROAS, &#x20B9;1,232 vs &#x20B9;1,317 CAC). Hindi and Hinglish serve the same delivery register — merging into one Hinglish brief ensures all 50 creators speak in one consistent voice, accessible to Hindi-first Tier 2/3 and metro audiences alike. Best-performing scripts (Rishabh Jain, Pawan Khatri) are both Hinglish.
-    </div>
   </div>
 
   <div class="section">
@@ -307,7 +296,7 @@ tr:nth-child(even) td{background:var(--paper2);}
 <div class="tab-pane" id="tab-content">
 
   <div class="section">
-    <div class="section-title">Stages Education <span class="badge">25 Creators</span></div>
+    <div class="section-title">Stages Education <span class="badge">16 Creators</span></div>
 
     <div class="insight-box">
       <h4>Core Insight (Data-Backed)</h4>
@@ -375,7 +364,73 @@ tr:nth-child(even) td{background:var(--paper2);}
   </div>
 
   <div class="section">
-    <div class="section-title">Results / Assurance / Product First <span class="badge">25 Creators</span></div>
+    <div class="section-title">Receding Hairline <span class="badge">16 Creators</span></div>
+
+    <div class="insight-box">
+      <h4>Core Insight (Data-Backed)</h4>
+      <p>Receding Hairline / Bald Spots delivered ₹40.7L spend at 0.58x ROAS. The brief leans UGC — creator talks from personal experience about noticing his own recession. Less science than Stages Education, more emotional relatability. Bridges education into results territory. Source: Pawan Khatri.</p>
+    </div>
+
+    <div class="script-card">
+      <div class="meta-row">
+        <span class="tag" style="background:#e0f2fe;color:#0369a1;">Receding Hairline</span>
+        <span class="tag" style="background:var(--paper2);color:var(--ink2);">UGC-led · Can be Educational</span>
+      </div>
+      <h4>Hook — Personal Observation, Relatable Trigger</h4>
+      <div style="overflow-x:auto;">
+        <table style="margin-top:8px;">
+          <thead><tr><th>Hook Type</th><th>Example (Hinglish)</th><th>Script Proof</th></tr></thead>
+          <tbody>
+            <tr><td>Mirror moment</td><td><em>"Ek din subah uthke mirror mein dekha — forehead thodi zyada dikhi. Temples pe baal nahi the jahan pe pehle the."</em></td><td>Receding Hairline best-performing pattern</td></tr>
+            <tr><td>Photo trigger</td><td><em>"Kisi ne photo bheja — mujhe samajh nahi aaya pehle. Phir dhyan se dekha, hairline peeche thi."</em></td><td>UGC creator observation hook</td></tr>
+            <tr><td>Early denial → realization</td><td><em>"Maine socha angle kharab tha. Tha nahi."</em></td><td>Pawan Khatri arc</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="script-card">
+      <h4>Body — Personal Journey, Light Science, Results Teaser</h4>
+      <div class="beat">
+        <div class="beat-num">1</div>
+        <div class="beat-body">
+          <strong>Acknowledge the thing (main hook extension)</strong>
+          <p>Creator confirms what he saw — temples receding, M-shape starting. Speaks to the guy who's noticed but hasn't done anything yet.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <div class="beat-num">2</div>
+        <div class="beat-body">
+          <strong>Light science — one or two lines max</strong>
+          <p>"Temples pe jo recession hoti hai woh DHT se hoti hai — hormone jo follicles ko weak karta hai." No deeper explanation needed. This audience is awareness-stage, not science-seeking.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <div class="beat-num">3</div>
+        <div class="beat-body">
+          <strong>What he did (bridge to product)</strong>
+          <p>Creator found Man Matters Stage 2 Kit. Walked through the process — app stage check, doctor consult, kit delivery. Not a product demo, a personal decision story.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <div class="beat-num">4</div>
+        <div class="beat-body">
+          <strong>Results teaser (not before/after, just progress)</strong>
+          <p>"After a few months, hairline stabilised — temples not getting worse." Don't overclaim. Consistency + early result is enough.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <div class="beat-num">5</div>
+        <div class="beat-body">
+          <strong>CTA</strong>
+          <p>"Agar tumhara bhi yahi hai — Man Matters app pe stage check karo, link bio mein hai."</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Results / Assurance / Product First <span class="badge">18 Creators</span></div>
 
     <div class="insight-box">
       <h4>Core Insight (Data-Backed)</h4>
@@ -450,7 +505,7 @@ tr:nth-child(even) td{background:var(--paper2);}
     <div class="section-title">Internal Asset Plan — JAS Quarter</div>
     <div class="callout info">All internal assets dubbed in <strong>English, Telugu, Kannada, and Marathi</strong> (4 language versions each).</div>
 
-    <div class="card-grid cols-3" style="margin-top:14px;">
+    <div class="card-grid cols-2" style="margin-top:14px;">
       <div class="card green">
         <h3>Statics</h3>
         <div class="big">25%</div>
@@ -468,6 +523,12 @@ tr:nth-child(even) td{background:var(--paper2);}
         <div class="big">30%</div>
         <div class="sub">2/week Design + 2/week Content</div>
         <p style="font-size:12px;color:var(--ink2);margin-top:8px;">Formats: Whiteboard · Wedding · Barbershop · Non-VO · Vox Pop · Doctor-Patient<br>Equal distribution across the quarter · All dubbed · 4 languages</p>
+      </div>
+      <div class="card" style="border:2px solid #0891b2;background:#f0f9ff;">
+        <h3 style="color:#0891b2;">Internal Reels</h3>
+        <div class="big" style="color:#0891b2;">1 shoot / month</div>
+        <div class="sub">3 shoots total (Jul · Aug · Sep)</div>
+        <p style="font-size:12px;color:var(--ink2);margin-top:8px;">Formats: Barbershop · Wedding · Vox Pop<br>1 shoot per format · assets TBD as we go</p>
       </div>
     </div>
   </div>
@@ -490,21 +551,14 @@ tr:nth-child(even) td{background:var(--paper2);}
     <div class="section-title">Internal Shoot — Reels Plan</div>
     <div class="callout info">
       <strong>1 shoot per month · 3 shoots total (Jul · Aug · Sep)</strong><br>
-      6 ad formats tested per shoot · 5 videos per format · 30 videos per shoot · <strong>90 master videos across the quarter</strong>
-    </div>
-    <div class="callout tbd" style="margin-top:8px;">
-      <strong>Distribution TBD:</strong> Exact ad format distribution and shoot plan will be decided quarter as we go, based on content team feasibility and early performance signals.
+      3 ad formats · 1 shoot each · number of assets to be decided as we go forward
     </div>
     <table style="margin-top:12px;">
-      <thead><tr><th>Ad Format</th><th>Videos / Shoot</th><th>Shoots (Quarter)</th><th>Total Masters</th></tr></thead>
+      <thead><tr><th>Ad Format</th><th>Shoots (Quarter)</th><th>Assets</th></tr></thead>
       <tbody>
-        <tr><td><strong>Whiteboard</strong></td><td class="num">5</td><td class="num">3</td><td class="num">15</td></tr>
-        <tr><td><strong>Wedding</strong></td><td class="num">5</td><td class="num">3</td><td class="num">15</td></tr>
-        <tr><td><strong>Barbershop</strong></td><td class="num">5</td><td class="num">3</td><td class="num">15</td></tr>
-        <tr><td><strong>Non-VO</strong></td><td class="num">5</td><td class="num">3</td><td class="num">15</td></tr>
-        <tr><td><strong>Vox Pop</strong></td><td class="num">5</td><td class="num">3</td><td class="num">15</td></tr>
-        <tr><td><strong>Doctor - Patient</strong></td><td class="num">5</td><td class="num">3</td><td class="num">15</td></tr>
-        <tr style="border-top:2px solid var(--accent);font-weight:700;"><td><strong>Total</strong></td><td class="num"><strong>30</strong></td><td class="num"><strong>3</strong></td><td class="num"><strong>90</strong></td></tr>
+        <tr><td><strong>Barbershop</strong></td><td class="num">1</td><td style="color:var(--muted);">TBD</td></tr>
+        <tr><td><strong>Wedding</strong></td><td class="num">1</td><td style="color:var(--muted);">TBD</td></tr>
+        <tr><td><strong>Vox Pop</strong></td><td class="num">1</td><td style="color:var(--muted);">TBD</td></tr>
       </tbody>
     </table>
   </div>
@@ -564,6 +618,130 @@ tr:nth-child(even) td{background:var(--paper2);}
 
 </div>
 
+<!-- ─────────────────────────── TAB: TOF SHOOT ─────────────────────────── -->
+<div class="tab-pane" id="tab-tof">
+
+  <div class="callout tbd" style="margin-bottom:20px;">
+    <strong>Rough Draft</strong> — This strategy will be updated. Details below are directional, not final.
+  </div>
+
+  <div class="section">
+    <div class="section-title">TOF Shoot — Why MM is Different</div>
+    <div class="card-grid cols-3" style="margin-top:12px;">
+      <div class="card" style="border:2px solid #0891b2;background:#f0f9ff;">
+        <h3 style="color:#0891b2;">Narrative</h3>
+        <div style="font-size:18px;font-weight:700;color:#0369a1;margin:8px 0;">Why MM is Different</div>
+        <div style="font-size:12px;color:var(--muted);">Platform-focused · Not product-first</div>
+      </div>
+      <div class="card" style="border:2px solid #7c3aed;background:#faf5ff;">
+        <h3 style="color:#7c3aed;">Scope</h3>
+        <div style="font-size:18px;font-weight:700;color:#6d28d9;margin:8px 0;">Common — S2 + S3</div>
+        <div style="font-size:12px;color:var(--muted);">Same shoot, same content — used across Stage 2 and Stage 3</div>
+      </div>
+      <div class="card" style="border:2px solid #d97706;background:#fffbeb;">
+        <h3 style="color:#d97706;">Status</h3>
+        <div style="font-size:18px;font-weight:700;color:#b45309;margin:8px 0;">Rough Draft</div>
+        <div style="font-size:12px;color:var(--muted);">To be updated before shoot goes live</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">What This Shoot Is About</div>
+    <div class="insight-box">
+      <h4>Core Brief</h4>
+      <p>This shoot communicates the platform story — <em>what makes Man Matters different from any other hair solution</em>. It is not a product walkthrough. It is not ingredient-focused. The focus is on what MM <em>does as a platform</em>: doctor consultation, personalised treatment, stage-based assessment, ongoing guidance. The ad can include product in editing but the script and on-screen communication must be platform-first.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Content Strategy — Platform-Focused Communication</div>
+
+    <div class="script-card">
+      <h4>What "Platform-Focused" Means</h4>
+      <table style="margin-top:8px;">
+        <tbody>
+          <tr><td style="width:140px;font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Not this</td><td>"Minoxidil + Procapil + Biotin Gummies — yeh sab hai Man Matters kit mein." <span style="color:var(--muted);font-size:12px;">(product-first framing)</span></td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">This</td><td>"Man Matters pe doctor tumhara exact stage identify karta hai — phir tumhare liye specific plan banata hai. No guesswork." <span style="color:var(--green);font-size:12px;">(platform-first framing)</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="script-card">
+      <h4>Platform Differentiators to Script Around</h4>
+      <div class="beat">
+        <div class="beat-num">1</div>
+        <div class="beat-body">
+          <strong>Doctor-led diagnosis</strong>
+          <p>Not self-diagnosis. Not random internet advice. A doctor reviews your hair stage and prescribes your plan. This is a clinical platform, not a product store.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <div class="beat-num">2</div>
+        <div class="beat-body">
+          <strong>Stage-based personalisation</strong>
+          <p>MM identifies where you are in your hair loss journey before recommending anything. Stage 1, 2, 3 — each has a different plan. You get what's right for your stage, not a generic kit.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <div class="beat-num">3</div>
+        <div class="beat-body">
+          <strong>Ongoing guidance, not one-time purchase</strong>
+          <p>App check-ins, doctor follow-up, routine tracking. MM stays with you through the journey — not just at the point of sale.</p>
+        </div>
+      </div>
+      <div class="beat">
+        <div class="beat-num">4</div>
+        <div class="beat-body">
+          <strong>CTA — platform action</strong>
+          <p>"Man Matters app pe apna hair stage check karo — doctor se consult lo." Drives app download and assessment, not direct product purchase.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="script-card">
+      <h4>Hook Angles — Platform-Led</h4>
+      <table style="margin-top:8px;">
+        <thead><tr><th>Hook Type</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td>Comparison</td><td><em>"Sab products bechte hain. MM pehle bolta hai — kaunsa stage hai tumhara?"</em></td></tr>
+          <tr><td>Trust signal</td><td><em>"Random kuch bhi nahi — doctor dekhta hai, plan banata hai, track karta hai."</em></td></tr>
+          <tr><td>Problem with alternatives</td><td><em>"Pehle maine online sab try kiya. Kisi ne nahi poocha — tumhara stage kya hai?"</em></td></tr>
+          <tr><td>Platform reveal</td><td><em>"Man Matters sirf product nahi — yeh ek hair health platform hai."</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Guardrails</div>
+    <div class="card-grid cols-2">
+      <div class="card green">
+        <h3>Safe territory</h3>
+        <ul style="padding-left:16px;font-size:13px;color:var(--ink2);margin-top:6px;line-height:2;">
+          <li>Doctor consultation and guidance</li>
+          <li>Stage-based assessment (app)</li>
+          <li>Personalised treatment plan</li>
+          <li>Ongoing tracking and check-ins</li>
+          <li>Platform reliability and clinical backing</li>
+          <li>Product can appear in editing — not as the hero</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:#ef4444;background:#fef2f2;">
+        <h3 style="color:#ef4444;">Avoid</h3>
+        <ul style="padding-left:16px;font-size:13px;color:var(--ink2);margin-top:6px;line-height:2;">
+          <li>Leading with product name or ingredients</li>
+          <li>Guaranteed outcome claims</li>
+          <li>Stage-specific product promotion as the main message</li>
+          <li>Exact timelines ("results in 3 months")</li>
+        </ul>
+      </div>
+    </div>
+    <p class="rationale" style="margin-top:10px;">Human review required before this content is used externally — medical/regulatory team must sign off on final scripts.</p>
+  </div>
+
+</div>
+
 <!-- ─────────────────────────── TAB 5: CREATIVE GUIDELINES ─────────────────────────── -->
 <div class="tab-pane" id="tab-guidelines">
 
@@ -582,6 +760,26 @@ tr:nth-child(even) td{background:var(--paper2);}
           <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Must hit</td><td>Stage 2 signs (temple/M-shape) · DHT one-liner · Genetics = risk not destiny · Action window urgency · Doctor/stage-check CTA · Shedding mention if minoxidil discussed</td></tr>
           <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Do not say</td><td>"Stop your hairline from receding" (guaranteed) · "DHT block kiya ja sakta hai" (unless approved) · "No side effects" · Exact ingredient quantities · Guaranteed regrowth timelines</td></tr>
           <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Format</td><td>UGC-style creator reel (Hinglish) · 60–90 seconds · Can include personal journey only if substantiated proof exists</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Receding Hairline Brief <span class="badge">Creator Facing</span></div>
+    <div class="script-card">
+      <div class="meta-row"><span class="tag" style="background:#e0f2fe;color:#0369a1;">Receding Hairline</span><span class="tag" style="background:var(--paper2);color:var(--ink2);">Stage 2 Kit</span><span class="tag" style="background:var(--paper2);color:var(--ink2);">Hinglish</span></div>
+      <table style="margin-top:8px;">
+        <tbody>
+          <tr><td style="width:140px;font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Objective</td><td>Connect with men who are personally noticing their hairline recede — and take them from "I've noticed it" to "I should do something about it."</td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Who you're talking to</td><td>Men 22–32. Actively noticing temple recession, M-shape forming, or forehead getting bigger in photos and videos. Not yet in panic — but aware something is happening.</td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Core insight</td><td>He's already spotted it. He doesn't need science to convince him it's happening. He needs someone who went through the same thing to tell him what to do next — and reassure him that acting now makes a difference.</td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Hook</td><td>Creator talks from personal experience — mirror moment, photo trigger, or early denial into realization. Must feel real, not scripted. Audience is someone who has had this exact moment.</td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Body</td><td>Acknowledge → light science (one or two lines max, not a lecture) → what creator did (personal decision story, not a product demo) → early results or stabilisation → app/doctor CTA.</td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">CTA</td><td style="font-weight:600;">"Agar tumhara bhi yahi hai — Man Matters app pe stage check karo, link bio mein hai."</td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Must hit</td><td>Personal observation (creator's own experience) · Light DHT mention (one liner) · What he did (MM Stage 2 Kit, doctor consult) · Result or stabilisation · Stage check CTA</td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Do not say</td><td>"Your hairline will come back" (guaranteed) · Deep science blocks (this is not a Stages Education video) · "No side effects" absolute claim · Exact timelines for regrowth</td></tr>
+          <tr><td style="font-weight:700;font-size:12px;text-transform:uppercase;color:var(--muted);">Format</td><td>UGC reel · Hinglish · 45–75 seconds · Personal journey tone, not explainer tone · BeforeAfter only with substantiated same-angle proof</td></tr>
         </tbody>
       </table>
     </div>
