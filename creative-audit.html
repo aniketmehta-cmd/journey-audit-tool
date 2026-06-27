@@ -848,7 +848,7 @@ function doGet(e) {
     if (action === 'getSheets') {
       var sheets = ss.getSheets().map(function(s) {
         var info = getSheetInfo(s);
-        return { name: s.getName(), dataRows: info.dataRows, lastSno: info.lastSno };
+        return { name: s.getName(), dataRows: info.dataRows, lastSno: info.lastSno, insertRow: info.insertRow };
       });
       return ok({ sheets: sheets });
     }
@@ -857,35 +857,52 @@ function doGet(e) {
       if (!sheet) return ok({ error: 'Sheet not found: ' + p.sheet });
       var row = JSON.parse(p.row);
       var info = getSheetInfo(sheet);
-      var nextRow = info.lastDataRow + 1;
-      sheet.getRange(nextRow, 1, 1, row.length).setValues([row]);
-      return ok({ success: true, sno: row[0], appendedToRow: nextRow });
+      sheet.getRange(info.insertRow, 1, 1, row.length).setValues([row]);
+      return ok({ success: true, sno: row[0], appendedToRow: info.insertRow });
     }
     return ok({ status: 'Creative Tracker API ready' });
   } catch(err) { return ok({ error: err.toString() }); }
 }
 
-// Scans column B (Date Added) to find the true last data row.
-// Column A has pre-filled S.No. values in empty rows, so it cannot be used.
-// The max S.No. is read from column A only for rows where column B is non-empty.
+// Scan column C (Product Name) FORWARD from row 4 and stop at the first empty cell.
+// This correctly ignores any wrongly-appended rows at the bottom of the sheet.
+// Columns A and B can have pre-filled values in empty rows; column C (Product Name)
+// is only filled for real data rows.
 function getSheetInfo(sheet) {
-  var lr = sheet.getLastRow();
-  if (lr <= 1) return { dataRows: 0, lastSno: '', lastDataRow: 1 };
-  var data = sheet.getRange(2, 1, lr - 1, 2).getValues(); // columns A+B
-  var lastDataRow = 1, maxSno = 0;
-  for (var i = 0; i < data.length; i++) {
-    var dateVal = data[i][1]; // column B
-    if (dateVal !== '' && dateVal !== null && String(dateVal).trim() !== '') {
-      lastDataRow = i + 2;
-      var snoVal = data[i][0]; // column A
-      var n = parseInt(String(snoVal).replace(/\D/g, ''), 10);
-      if (!isNaN(n) && n > maxSno) maxSno = n;
+  var maxRows = sheet.getMaxRows();
+  if (maxRows < 4) return { dataRows: 0, lastSno: '', lastDataRow: 3, insertRow: 4 };
+
+  var batchSize = 300, insertRow = 4;
+
+  for (var start = 4; start <= maxRows; start += batchSize) {
+    var count = Math.min(batchSize, maxRows - start + 1);
+    var colC = sheet.getRange(start, 3, count, 1).getValues();
+    var foundEmpty = false;
+    for (var i = 0; i < colC.length; i++) {
+      var v = colC[i][0];
+      if (v === '' || v === null || String(v).trim() === '') {
+        insertRow = start + i;
+        foundEmpty = true;
+        break;
+      }
     }
+    if (foundEmpty) break;
+    insertRow = start + count;
   }
+
+  var lastDataRow = insertRow - 1;
+  var lastSno = '';
+  if (lastDataRow >= 4) {
+    var snoVal = sheet.getRange(lastDataRow, 1).getValue();
+    var n = parseInt(String(snoVal).replace(/\D/g, ''), 10);
+    if (!isNaN(n)) lastSno = String(n).padStart(5, '0');
+  }
+
   return {
-    dataRows: lastDataRow - 1,
-    lastSno: maxSno > 0 ? String(maxSno).padStart(5, '0') : '',
-    lastDataRow: lastDataRow
+    dataRows: Math.max(0, lastDataRow - 3),
+    lastSno: lastSno,
+    lastDataRow: lastDataRow,
+    insertRow: insertRow
   };
 }
 
@@ -918,6 +935,7 @@ function ok(data) {
           <select class="be-sel" id="be-sheet" onchange="be_onSheetChange()">
             <option value="">— connect tracker first —</option>
           </select>
+          <div id="be-insert-indicator" style="font-size:11px;color:var(--green,#16a34a);margin-top:4px;font-weight:600;"></div>
         </div>
 
         <div class="be-field">
@@ -4969,7 +4987,7 @@ window.be_populateSheets = function(){
   sel.innerHTML='<option value="">— select tab —</option>';
   beSheetsData.forEach(function(s){
     var o=document.createElement('option'); o.value=s.name;
-    o.textContent=s.name+'  ('+s.dataRows+' rows'+(s.lastSno?' · last: '+s.lastSno:'')+')';
+    o.textContent=s.name+'  (last: '+(s.lastSno||'—')+')';
     sel.appendChild(o);
   });
   var prod=document.getElementById('be-product').value;
@@ -4980,7 +4998,15 @@ window.be_populateSheets = function(){
 
 window.be_onSheetChange = function(){
   var sh=beSheetsData.find(function(s){ return s.name===document.getElementById('be-sheet').value; });
-  if(sh){ var next=sh.lastSno?(parseInt(sh.lastSno.replace(/\D/g,''))+1):1; document.getElementById('be-sno').value=next; be_updateRows(); }
+  var ind=document.getElementById('be-insert-indicator');
+  if(sh){
+    var next=sh.lastSno?(parseInt(sh.lastSno.replace(/\D/g,''))+1):1;
+    document.getElementById('be-sno').value=next;
+    if(ind) ind.textContent='↳ Will insert at sheet row '+sh.insertRow+' (after S.No. '+(sh.lastSno||'—')+')';
+    be_updateRows();
+  } else {
+    if(ind) ind.textContent='';
+  }
   be_updateSubmitBtn();
 };
 
