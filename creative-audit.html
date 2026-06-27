@@ -376,54 +376,123 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font
 
 /* ── MOBILE RESPONSIVE ── */
 @media(max-width:640px){
-  /* Core layout */
+  /* ── Core layout ── */
   .wrap{padding:0 0 60px;}
-  .topbar{padding:12px 16px;gap:8px;}
-  .topbar-left h1{font-size:16px;}
-  .topbar-right{gap:6px;}
-  .topbar-right .btn{padding:5px 10px;font-size:11px;}
-  .nav-band{padding:0 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .nav-band::-webkit-scrollbar{display:none;}
-  .filter-bar{padding:10px 14px;}
+  .topbar{padding:11px 14px;gap:6px;}
+  .topbar-left h1{font-size:15px;}
+  .topbar-left .eyebrow{font-size:9px;}
+  .topbar-right{gap:5px;}
+  .topbar-right .btn{padding:5px 9px;font-size:11px;}
 
-  /* MM Dashboard tab padding */
-  #main-tab-mmdata > div{padding:14px 12px !important;}
+  /* ── Nav bands: always scrollable, no left padding wasted ── */
+  .nav-band{padding:0 8px;}
+  .mnav-btn{padding:12px 13px;font-size:12px;}
+  .ma-subnav{padding:0 8px;}
+  .ma-subbtn{padding:10px 12px;font-size:12px;}
 
-  /* MM header: stack title and buttons vertically */
+  /* ── Toolbar: stack label above actions ── */
+  .ma-toolbar{flex-direction:column;align-items:flex-start;padding:10px 14px;gap:8px;}
+  .ma-toolbar-actions{flex-wrap:wrap;gap:5px;}
+  .ma-toolbar-actions .btn{padding:5px 9px;font-size:11px;}
+  #ma-product-sel{font-size:13px;padding:5px 8px;}
+
+  /* ── Filter bar ── */
+  .filter-bar{padding:10px 14px;gap:8px;}
+  .filter-group{flex-wrap:wrap;}
+  .ftabs{flex-wrap:wrap;}
+
+  /* ── Summary hero / KPI section ── */
+  .summary-hero{padding:16px 14px 20px;}
+  .summary-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .sg-val{font-size:22px !important;}
+
+  /* ── Funnel strip: stack and scroll ── */
+  .funnel-strip{padding:12px 14px;gap:8px;}
+  .funnel-flow{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;padding-bottom:4px;}
+  .funnel-extras{margin-left:0;padding-left:0;border-left:none;border-top:1px solid var(--line);padding-top:8px;margin-top:4px;width:100%;flex-wrap:wrap;gap:14px;}
+
+  /* ── Dim cards: single column, reduce inner padding ── */
+  .dim-cards-grid{grid-template-columns:1fr;}
+  .dim-card-inner{padding:12px 12px 0;}
+  .dim-primary{grid-template-columns:1fr 1fr !important;font-size:11px;}
+  .dim-secondary{flex-wrap:wrap;}
+  .dim-secondary .dm{min-width:calc(50% - 1px);}
+  .dm-val{font-size:13px !important;}
+  .dm-lbl{font-size:9px !important;}
+
+  /* ── Sub-breakdown inside cards ── */
+  .card-sub-tabs{padding:0 8px 6px;gap:3px;}
+  .card-sub-tab-btn{padding:4px 8px;font-size:10.5px;}
+  .mini-cards-grid{grid-template-columns:repeat(2,1fr);gap:6px;}
+  .mini-card{padding:9px 10px;}
+  .mini-card-name{font-size:11px;}
+
+  /* ── Dim tabs (breakdown selector) ── */
+  .dim-tabs{gap:4px;}
+  .dim-tabs .btn{padding:5px 10px;font-size:11px;}
+
+  /* ── Ads table: horizontal scroll ── */
+  .ads-table{max-height:380px;}
+  .ads-table table{min-width:600px;}
+  .name-cell{max-width:180px;}
+
+  /* ── Planning / period inputs ── */
+  .period-row{flex-direction:column;align-items:flex-start;gap:6px;}
+  .period-row input{width:100%;}
+  .quick-stats{gap:6px;}
+  .qs-item{min-width:calc(50% - 6px);}
+
+  /* ── Content sections — reduce 28px gutters to 14px ── */
+  .main-tab > div{padding:14px 14px !important;}
+  #main-tab-analytics > div[style]{padding:14px 14px !important;}
+
+  /* ── Status strip ── */
+  .status-strip{padding:10px 12px;gap:8px;}
+  .smsg{font-size:11px;}
+
+  /* ── Daily digest ── */
+  #combined-digest-box{padding:0 14px 20px !important;}
+  .email-toolbar{padding:10px 12px;}
+  .email-body{font-size:11.5px;padding:14px 14px;}
+
+  /* ── MM Dashboard ── */
+  #main-tab-mmdata > div{padding:14px 14px !important;}
   #main-tab-mmdata > div > div:first-child{flex-direction:column;align-items:flex-start !important;}
-
-  /* All tables inside MM: scroll horizontally */
   #mmdata-panel-overview table,
   #mmdata-panel-mom table,
-  #mmdata-panel-product table{min-width:560px;}
-  #mmdata-panel-overview,
-  #mmdata-panel-mom,
-  #mmdata-panel-product{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-
-  /* Overview KPI cards: 2-column grid */
+  #mmdata-panel-product table{min-width:520px;}
+  #mmdata-panel-overview,#mmdata-panel-mom,#mmdata-panel-product{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   #mmdata-panel-overview .dim-primary{grid-template-columns:1fr 1fr !important;}
-
-  /* MoM jump nav: wrap pills */
   #mmdata-panel-mom > div:first-child{flex-wrap:wrap !important;}
-
-  /* By Product product buttons: wrap */
   #mmdata-panel-product > div:first-child{flex-wrap:wrap !important;gap:6px !important;}
-
-  /* Charts: full width on mobile */
-  #mmdata-panel-mom svg,
-  #mmdata-panel-product svg{width:100% !important;height:auto !important;}
-
-  /* Umbrella tab */
-  #main-tab-umbrella > div{padding:14px 12px !important;}
-
-  /* Other main tabs */
-  .main-tab > div{padding:14px 12px !important;}
-
-  /* Modals */
-  .modal{padding:18px 16px;width:96% !important;}
-
-  /* Apps Script setup card */
+  #mmdata-panel-mom svg,#mmdata-panel-product svg{width:100% !important;height:auto !important;}
   #main-tab-mmdata pre{font-size:10px !important;padding:10px !important;}
+
+  /* ── Umbrella tab ── */
+  #main-tab-umbrella > div{padding:14px 14px !important;}
+  #umbrella-product-sel,#umbrella-date-from{font-size:12px !important;padding:5px 8px !important;}
+
+  /* ── Batch entry ── */
+  .be-form-grid{grid-template-columns:1fr 1fr;}
+  .be-links-wrap{overflow-x:auto;}
+  .be-links-tbl{min-width:760px;}
+
+  /* ── Modals ── */
+  .modal{padding:16px 14px;width:96% !important;}
+  .map-grid{grid-template-columns:1fr;}
+  .modal-btns{flex-wrap:wrap;}
+
+  /* ── Mini card modal ── */
+  #mini-card-modal > div{padding:16px !important;max-width:96vw !important;max-height:90vh !important;}
+
+  /* ── Umbrella paged table search ── */
+  #umbrella-grid-search-wrap input{width:100% !important;}
+
+  /* ── Steps (mapping) ── */
+  .steps{grid-template-columns:1fr;}
+
+  /* ── Section headings ── */
+  .section-h h2{font-size:15px;}
 }
 </style>
 </head>
