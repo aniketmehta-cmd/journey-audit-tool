@@ -857,7 +857,11 @@ function doGet(e) {
       if (!sheet) return ok({ error: 'Sheet not found: ' + p.sheet });
       var row = JSON.parse(p.row);
       var info = getSheetInfo(sheet);
-      sheet.getRange(info.insertRow, 1, 1, row.length).setValues([row]);
+      if (info.insertRow <= sheet.getMaxRows()) {
+        sheet.getRange(info.insertRow, 1, 1, row.length).setValues([row]);
+      } else {
+        sheet.appendRow(row); // extend sheet if insertRow is beyond last row
+      }
       return ok({ success: true, sno: row[0], appendedToRow: info.insertRow });
     }
     return ok({ status: 'Creative Tracker API ready' });
@@ -5212,7 +5216,14 @@ window.be_submit = async function(){
       if(data.error) throw new Error(data.error);
       be_setProgress(i+1, beRows.length, '');
     } catch(err){
-      be_setProgress(i, beRows.length, 'err','✗ Failed at row '+sno+': '+err.message);
+      var msg=err.message;
+      if(msg==='Failed to fetch'||msg.indexOf('fetch')>=0){
+        // Test if the webapp URL itself is reachable
+        try{ await fetch(beWebUrl+'?action=ping'); }
+        catch(e){ msg='Apps Script not reachable — check the URL or redeploy'; }
+        if(msg==='Failed to fetch') msg='Apps Script blocked the request — redeploy the script (copy new code → Deploy → New version)';
+      }
+      be_setProgress(i, beRows.length, 'err','✗ Row '+sno+': '+msg);
       btn.disabled=false; return;
     }
   }
