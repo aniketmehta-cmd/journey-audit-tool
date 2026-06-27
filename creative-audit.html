@@ -939,6 +939,12 @@ function ok(data) {
         </div>
 
         <div class="be-field">
+          <label class="be-lbl">Insert after S.No.</label>
+          <input class="be-in" type="number" id="be-after-sno" min="0" placeholder="auto" style="width:100%;" oninput="be_onAfterSnoChange(this.value)">
+          <div style="font-size:10.5px;color:var(--muted);margin-top:3px;">Leave blank to auto-detect</div>
+        </div>
+
+        <div class="be-field">
           <label class="be-lbl">Product Name</label>
           <select class="be-sel" id="be-product" onchange="be_onProductChange()">
             <option value="">— select —</option>
@@ -4999,15 +5005,35 @@ window.be_populateSheets = function(){
 window.be_onSheetChange = function(){
   var sh=beSheetsData.find(function(s){ return s.name===document.getElementById('be-sheet').value; });
   var ind=document.getElementById('be-insert-indicator');
+  var afterIn=document.getElementById('be-after-sno');
   if(sh){
     var next=sh.lastSno?(parseInt(sh.lastSno.replace(/\D/g,''))+1):1;
     document.getElementById('be-sno').value=next;
-    if(ind) ind.textContent='↳ Will insert at sheet row '+sh.insertRow+' (after S.No. '+(sh.lastSno||'—')+')';
+    if(afterIn) afterIn.value='';
+    if(ind) ind.textContent='↳ Auto: will insert at sheet row '+sh.insertRow+' (after S.No. '+(sh.lastSno||'—')+')';
     be_updateRows();
   } else {
     if(ind) ind.textContent='';
   }
   be_updateSubmitBtn();
+};
+
+window.be_onAfterSnoChange = function(val){
+  var n=parseInt(val,10);
+  var snoIn=document.getElementById('be-sno');
+  var ind=document.getElementById('be-insert-indicator');
+  if(!isNaN(n) && n>=0){
+    if(snoIn) snoIn.value=n+1;
+    if(ind) ind.textContent='↳ Manual: starting S.No. '+(n+1)+' (after S.No. '+String(n).padStart(5,'0')+')';
+  } else {
+    var sh=beSheetsData.find(function(s){ return s.name===document.getElementById('be-sheet').value; });
+    if(sh){
+      var next=sh.lastSno?(parseInt(sh.lastSno.replace(/\D/g,''))+1):1;
+      if(snoIn) snoIn.value=next;
+      if(ind) ind.textContent='↳ Auto: will insert at sheet row '+sh.insertRow+' (after S.No. '+(sh.lastSno||'—')+')';
+    }
+  }
+  be_updateRows();
 };
 
 window.be_onProductChange = function(){
